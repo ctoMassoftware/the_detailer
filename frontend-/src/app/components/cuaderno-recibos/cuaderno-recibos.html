@@ -1,0 +1,84 @@
+<div class="page-container">
+  <app-nav></app-nav>
+
+  <main class="main-content">
+    <div class="content-wrapper">
+
+      <header class="page-header">
+        <h1 class="page-title">Cuaderno de Recibos</h1>
+      </header>
+
+      <div class="filter-card">
+        <div class="filter-grid">
+
+          <label class="filter-group">
+            <span class="label-text">Fecha</span>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">calendar_today</span>
+              <input type="date" class="form-input" [(ngModel)]="filtroFecha" />
+            </div>
+          </label>
+
+          <div class="filter-actions">
+            <button class="btn btn-secondary" (click)="limpiarFiltros()">Limpiar</button>
+            <button class="btn btn-primary" (click)="aplicarFiltros()">Aplicar</button>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>No. Venta</th>
+                <th>Hora</th>
+                <th>Cliente</th>
+                <th>Método Pago</th>
+                <th>Vendedor</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let venta of historialVentas">
+                <td class="font-medium"># {{ venta.id_venta }}</td>
+                <td>{{ venta.hora | slice:0:5 }}</td>
+                <td>{{ venta.cliente_nombre }}</td>
+                <td>
+                  <span class="badge"
+                    [ngClass]="{'bg-lista': venta.metodo_pago === 'Efectivo', 'bg-proceso': venta.metodo_pago !== 'Efectivo'}">
+                    {{ venta.metodo_pago }}
+                  </span>
+                </td>
+
+                <td class="font-medium" style="color: #9ca3af;">
+                  {{ obtenerNombreVendedor(venta) }}
+                </td>
+
+                <td class="text-right font-medium" style="color: #00e676;">$ {{ venta.total | number }}</td>
+              </tr>
+              <tr *ngIf="historialVentas.length === 0">
+                <td colspan="6" class="text-center" style="padding: 2rem; color: #9ca3af;">
+                  No hay ventas registradas en esta fecha.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="total-summary-card">
+        <div class="summary-container" style="justify-content: flex-end;">
+          <div class="total-wrapper">
+            <label class="total-label">Total del Día:</label>
+            <div class="input-wrapper-simple">
+              <input type="text" class="total-input" [value]="'$ ' + (totalDelDia | number)" readonly />
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

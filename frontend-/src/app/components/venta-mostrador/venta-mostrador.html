@@ -1,0 +1,332 @@
+<div class="page-container">
+  <app-nav></app-nav>
+
+  <main class="main-content">
+    <div class="content-wrapper">
+
+      <header class="page-header">
+        <h1 class="page-title">Venta de Mostrador</h1>
+      </header>
+
+      <button class="btn btn-primary" style="background-color: #ffaa00; margin-bottom: 20px; width: 100%; padding: 15px; font-size: 1.1rem; border:none; cursor:pointer;" (click)="probarImpresoraDirecto()">
+        🖨️ FORZAR PRUEBA DE IMPRESORA (BYPASS SIN BASE DE DATOS)
+      </button>
+
+      <div class="pos-container">
+        
+        <div class="pos-products filter-card">
+          <h2 class="section-subtitle" style="margin-top: 0;">Catálogo de Productos</h2>
+          
+          <div class="filter-group mb-4">
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">search</span>
+              <input type="text" class="form-input" placeholder="Buscar producto por nombre o categoría..." 
+                     [(ngModel)]="terminoBusqueda" (keyup)="buscarProducto()" />
+            </div>
+          </div>
+
+          <div class="products-grid">
+            <div class="product-item" *ngFor="let prod of productosFiltrados" (click)="agregarAlCarrito(prod)">
+              <div class="product-info">
+                <span class="product-name">{{ prod.nombre_producto }}</span>
+                <span class="product-category">{{ prod.categoria || 'General' }}</span>
+              </div>
+              <div class="product-price-stock">
+                <span class="product-price">$ {{ prod.precio_venta | number }}</span>
+                <span class="product-stock" [class.low-stock]="prod.cantidad <= prod.stock_minimo">
+                  Stock: {{ prod.cantidad }}
+                </span>
+              </div>
+              <button class="btn-add-icon">
+                <span class="material-symbols-outlined">add_shopping_cart</span>
+              </button>
+            </div>
+
+            <div *ngIf="productosFiltrados.length === 0" class="text-center text-muted" style="padding: 2rem; grid-column: 1 / -1;">
+              No se encontraron productos con stock disponible.
+            </div>
+          </div>
+        </div>
+
+        <div class="pos-cart filter-card">
+          <h2 class="section-subtitle" style="margin-top: 0; display: flex; justify-content: space-between;">
+            Carrito
+            <span class="material-symbols-outlined" style="cursor: pointer; color: #9ca3af;" (click)="limpiarCarrito()" title="Vaciar Carrito">delete_sweep</span>
+          </h2>
+
+          <div class="cart-items-container scrollable">
+            <div class="cart-item" *ngFor="let item of carrito; let i = index">
+              <div class="cart-item-details">
+                <span class="cart-item-name">{{ item.nombre_producto }}</span>
+                <span class="cart-item-price">$ {{ item.precio_venta | number }} c/u</span>
+              </div>
+              <div class="cart-item-controls">
+                <input type="number" class="form-input small-input text-center" [(ngModel)]="item.cantidad" 
+                       (change)="actualizarCantidad(i, item.cantidad)" min="1">
+                <span class="cart-item-subtotal">$ {{ item.subtotal | number }}</span>
+                <button class="btn-icon delete-icon" (click)="quitarDelCarrito(i)">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </div>
+            </div>
+            
+            <div *ngIf="carrito.length === 0" class="text-center text-muted" style="padding: 2rem;">
+              <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.5;">shopping_cart</span>
+              <p>El carrito está vacío</p>
+            </div>
+          </div>
+
+          <div class="cart-checkout-section mt-4">
+            <div class="modal-grid" style="gap: 1rem;">
+              
+              <div class="form-group full-width">
+                <label>Nombre del Cliente (Opcional)</label>
+                <input type="text" class="input-dark" placeholder="Cliente General" 
+                       [(ngModel)]="clienteNombre" 
+                       (blur)="clienteNombre = capitalizarTexto(clienteNombre)">
+              </div>
+              <div class="form-group full-width">
+                <label>WhatsApp (Para enviar recibo virtual)</label>
+                <input type="text" class="input-dark" placeholder="Ej: 3120000000" [(ngModel)]="clienteTelefono">
+              </div>
+              <div class="form-group full-width">
+                <label>Método de Pago</label>
+                <select class="input-dark" [(ngModel)]="metodoPago">
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Tarjeta">Tarjeta / Datáfono</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="change-calculator-section mt-4" *ngIf="metodoPago === 'Efectivo'">
+              <div class="form-group full-width">
+                <label style="color: #10b981; font-weight: bold;">Monto Recibido ($)</label>
+                <input type="number" class="input-dark input-lg text-right" placeholder="Ej: 50000" 
+                       [(ngModel)]="montoRecibido" min="0">
+              </div>
+              
+              <div class="quick-cash-buttons mt-2">
+                <button class="btn-cash" (click)="setMontoRecibido(20000)">$20k</button>
+                <button class="btn-cash" (click)="setMontoRecibido(50000)">$50k</button>
+                <button class="btn-cash" (click)="setMontoRecibido(100000)">$100k</button>
+                <button class="btn-cash exacto" (click)="setMontoRecibido(totalCarrito)">Exacto</button>
+              </div>
+
+              <div class="change-display mt-3" [ngClass]="{'insufficient': (montoRecibido || 0) > 0 && cambioDevolver < 0}">
+                <span>Devuelve:</span>
+                <span class="change-amount" *ngIf="(montoRecibido || 0) >= totalCarrito">$ {{ cambioDevolver | number }}</span>
+                <span class="change-amount error" *ngIf="(montoRecibido || 0) > 0 && cambioDevolver < 0">Faltan $ {{ (cambioDevolver * -1) | number }}</span>
+                <span class="change-amount" *ngIf="!(montoRecibido || 0)">$ 0</span>
+              </div>
+            </div>
+            <div class="checkout-total mt-4">
+              <span>Total a Pagar:</span>
+              <span class="price-display">$ {{ totalCarrito | number }}</span>
+            </div>
+
+            <button class="btn btn-primary full-width mt-4" style="height: 3.5rem; font-size: 1.1rem;" 
+                    (click)="abrirFactura()" 
+                    [disabled]="carrito.length === 0 || (metodoPago === 'Efectivo' && (montoRecibido || 0) < totalCarrito)">
+              Registrar Venta <span class="material-symbols-outlined btn-icon">point_of_sale</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="modal-overlay" *ngIf="mostrarFactura">
+    <div class="factura-modal">
+      <div class="factura-header">
+        <div class="header-left">
+          <img src="assets/logo.jpeg" alt="Logo The Detailer" class="factura-logo" />
+        </div>
+        <div class="header-right">
+          <p class="factura-title">Factura de Venta</p>
+        </div>
+      </div>
+
+      <div class="factura-company-info">
+        <div class="info-content">
+          <p class="info-bold">NIT 100002212-9 REGIMEN RESPONSABLE DEL IVA</p>
+          <p class="info-muted">Crr 18 #2-13 Armenia Q.</p>
+          <p class="info-muted">3127736569</p>
+        </div>
+      </div>
+
+      <div class="factura-body scrollable">
+        <h3 class="section-heading">Datos Generales</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <p class="label">Orden ID</p>
+            <p class="value">{{ facturaActual.numero }}</p>
+          </div>
+          <div class="data-item">
+            <p class="label">Fecha</p>
+            <p class="value">{{ facturaActual.fecha }}</p>
+          </div>
+          <div class="data-item">
+            <p class="label">Cliente</p>
+            <p class="value">{{ facturaActual.cliente }}</p>
+          </div>
+          <div class="data-item">
+            <p class="label">Celular</p>
+            <p class="value">{{ facturaActual.celular }}</p>
+          </div>
+        </div>
+
+        <div class="factura-table-container">
+          <div class="table-border">
+            <table class="factura-table">
+              <thead>
+                <tr>
+                  <th>Producto / Servicio</th>
+                  <th class="text-right">Cantidad</th>
+                  <th class="text-right">Valor Unitario</th>
+                  <th class="text-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of facturaActual.serviciosDetallados">
+                  <td>{{ item.servicio }}</td>
+                  <td class="text-right">{{ item.cantidad }}</td>
+                  <td class="text-right">$ {{ item.precio_unitario | number }}</td>
+                  <td class="text-right">$ {{ item.subtotal | number }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="factura-totals">
+          <div class="totals-box">
+            <div class="total-row border-top">
+              <p class="value-bold">Total a Pagar</p>
+              <p class="value-bold">$ {{ facturaActual.valorTotal | number }}</p>
+            </div>
+            <div class="total-row" *ngIf="facturaActual.metodoPago === 'Efectivo'">
+              <p class="label">Recibido</p>
+              <p class="value">$ {{ facturaActual.montoRecibido | number }}</p>
+            </div>
+            <div class="total-row" *ngIf="facturaActual.metodoPago === 'Efectivo'" style="color: #10b981;">
+              <p class="label">Cambio</p>
+              <p class="value font-medium">$ {{ facturaActual.cambio | number }}</p>
+            </div>
+            <div class="total-row">
+              <p class="label">Forma de Pago</p>
+              <p class="value">{{ facturaActual.metodoPago }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="rifa-section">
+          <p class="rifa-question">¿Desea agregar la rifa?</p>
+          <div class="rifa-buttons">
+            <button class="btn-rifa-yes" (click)="aceptarRifa()">Sí</button>
+            <button class="btn-rifa-no" (click)="rechazarRifa()">No</button>
+          </div>
+        </div>
+
+        <div class="boleta-container" *ngIf="mostrarRifa">
+          <h2 class="boleta-title">Boleta de Rifa</h2>
+          <div class="boleta-grid">
+            <div class="boleta-form">
+              <h3 class="section-heading-sm">Campos del participante</h3>
+              <div class="form-stack">
+                <div class="input-group">
+                  <label for="rifa-nombre">Nombre</label>
+                  <input id="rifa-nombre" type="text" [(ngModel)]="facturaActual.cliente" class="input-rifa" />
+                </div>
+                <div class="input-group">
+                  <label for="rifa-celular">Celular</label>
+                  <input id="rifa-celular" type="tel" [(ngModel)]="facturaActual.celular" class="input-rifa" />
+                </div>
+                <div class="input-group">
+                  <label for="rifa-placa">Placa del vehículo (Opcional)</label>
+                  <input id="rifa-placa" type="text" [(ngModel)]="facturaActual.vehiculoPlaca" class="input-rifa" placeholder="N/A" />
+                </div>
+              </div>
+            </div>
+
+            <div class="boleta-card">
+              <div class="boleta-card-header">
+                <img src="assets/logo.jpeg" alt="Logo" class="boleta-logo" />
+                <div>
+                  <p class="boleta-date">Juega el {{ datosRifaActiva.fecha_sorteo | date:'dd/MM/yyyy' }}</p>
+                </div>
+              </div>
+              <div class="boleta-card-body">
+                <p class="boleta-prize">Premios:</p>
+                <div class="boleta-list" style="white-space: pre-wrap;">{{ datosRifaActiva.descripcion_premios }}</div>
+
+                <div class="input-group mt-2">
+                  <label>Seleccionar Número de Boleta</label>
+                  <div class="search-rifa-bar">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="text" placeholder="Buscar número..." [(ngModel)]="filtroRifa" (keyup)="aplicarFiltroRifa()" />
+                  </div>
+                  <div class="grid-numeros-rifa">
+                    <div class="numero-item" *ngFor="let item of numerosRifaFiltrados"
+                      [class.ocupado]="item.estado === 'ocupado'" [class.seleccionado]="item.estado === 'seleccionado'"
+                      (click)="seleccionarNumeroRifa(item)"
+                      [title]="item.ocupadoPor ? 'Ocupado por: ' + item.ocupadoPor : 'Disponible'">
+                      {{ item.valor }}
+                    </div>
+                  </div>
+                  <div class="seleccion-info" *ngIf="numeroBoletaRifa">
+                    Número seleccionado: <strong>{{ numeroBoletaRifa }}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="boleta-footer">
+            <p>Responsable: {{ datosRifaActiva.encargado }}. Cel: 3127736569. Caducidad: 30 días.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 2rem; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <label style="margin-bottom: 0.5rem; color: white; display:block; font-weight: 600;">¿Cómo desea enviar el recibo?</label>
+          <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" name="tipoReciboMostrador" [(ngModel)]="preferenciaRecibo" value="VIRTUAL" style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
+              Virtual (WhatsApp)
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" name="tipoReciboMostrador" [(ngModel)]="preferenciaRecibo" value="FISICO" style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
+              Físico (Impresora)
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="factura-actions">
+        <button class="btn-send" (click)="confirmarFacturaYVenta()">Aceptar Venta</button>
+        <button class="btn-cancel-factura" (click)="cerrarFactura()">Cancelar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarAlerta">
+    <div class="modal-content" style="z-index: 10001;">
+      <div class="modal-icon" 
+           [class.icon-error]="tipoAlerta === 'error'"
+           [class.icon-confirm]="tipoAlerta === 'confirm'">
+        <span class="material-symbols-outlined" *ngIf="tipoAlerta === 'success'">check_circle</span>
+        <span class="material-symbols-outlined" *ngIf="tipoAlerta === 'error'">error</span>
+        <span class="material-symbols-outlined" *ngIf="tipoAlerta === 'confirm'">help_outline</span>
+      </div>
+      <h2 class="modal-title">
+        {{ tipoAlerta === 'success' ? '¡Excelente!' : (tipoAlerta === 'error' ? 'Atención' : 'Confirmación') }}
+      </h2>
+      <p class="modal-message">{{ mensajeAlerta }}</p>
+      <div class="modal-actions">
+        <button class="btn-modal" (click)="cerrarAlerta()">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>

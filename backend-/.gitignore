@@ -1,0 +1,9 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (Seguridad)
+.env
+
+# Logs y otros archivos de sistema
+npm-debug.log*
+.DS_Store

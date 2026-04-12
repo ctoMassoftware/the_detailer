@@ -1,0 +1,502 @@
+<div class="page-wrapper">
+  <header class="home-header">
+    <div class="container header-inner">
+      <div class="logo">
+        <a routerLink="/home">
+          <img src="assets/logo.jpeg" alt="The Detailer Logo" />
+        </a>
+      </div>
+
+      <nav class="nav-links" [class.active]="isMenuOpen">
+        <a routerLink="/home" fragment="servicios">Servicios</a>
+        <a routerLink="/home" fragment="nosotros">Nosotros</a>
+        <a routerLink="/home" fragment="contacto">Contacto</a>
+
+        <a (click)="logout()" class="logout-btn">
+          Salir
+          <span class="material-icons-outlined icon-logout">logout</span>
+        </a>
+      </nav>
+
+      <button class="mobile-menu-btn" (click)="toggleMenu()">
+        <span class="material-icons-outlined">menu</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <section class="hero-section">
+      <div class="container hero-content">
+        <h1 class="hero-title">
+          Gestión de Servicios de <span class="text-primary">Lavado de Autos</span>
+        </h1>
+        <p class="hero-subtitle">
+          Una solución moderna e intuitiva para administrar sus órdenes de lavado. Optimice su flujo
+          de trabajo y mejore la satisfacción del cliente.
+        </p>
+
+        @if (role !== 'SUPER_ADMIN' && sede) {
+          <h1 class="hero-title" style="margin-top: 1rem; text-transform: uppercase">
+            <span style="color: var(--primary-color)">SEDE</span>&nbsp;<span style="color: white">{{
+              sede
+            }}</span>
+          </h1>
+        }
+
+        @if (role === 'SUPER_ADMIN') {
+          <div
+            class="admin-section"
+            style="
+              margin-top: 3rem;
+              margin-bottom: 4rem;
+              background: rgba(0, 0, 0, 0.5);
+              border: 1px solid #374151;
+              border-radius: var(--radius);
+              padding: 2rem;
+            "
+          >
+            <h2 class="section-title" style="margin-bottom: 1.5rem">Resumen por Sedes</h2>
+
+            <div
+              style="
+                display: flex;
+                gap: 1rem;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 2.5rem;
+                flex-wrap: wrap;
+              "
+            >
+              <label style="color: white; font-weight: bold; font-size: 1.1rem"
+                >Filtrar Fecha:</label
+              >
+              <input
+                type="date"
+                [(ngModel)]="fechaSeleccionada"
+                style="
+                  padding: 0.5rem 1rem;
+                  border-radius: var(--radius);
+                  border: 2px solid var(--primary-color);
+                  background: #1a1a1a;
+                  color: white;
+                  outline: none;
+                  font-size: 1rem;
+                "
+              />
+              <button
+                class="btn-primary"
+                (click)="cargarResumenDia()"
+                style="padding: 0.5rem 1.5rem; display: flex; align-items: center; gap: 0.5rem"
+              >
+                Aplicar
+                <span class="material-icons-outlined" style="font-size: 1.2rem">search</span>
+              </button>
+            </div>
+
+            @if (dashboardData && dashboardData.metricas_sedes?.length > 0) {
+              <div
+                class="grid-cards"
+                style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem"
+              >
+                @for (metrica of dashboardData.metricas_sedes; track metrica.sede_nombre) {
+                  <div
+                    class="card"
+                    style="
+                      border: 1px solid var(--primary-color);
+                      background: rgba(30, 30, 30, 0.8);
+                    "
+                  >
+                    <div class="card-body" style="padding: 1.5rem; text-align: left; display: flex; flex-direction: column; gap: 0.8rem;">
+                      <h3
+                        style="
+                          font-size: 1.5rem;
+                          color: var(--primary-color);
+                          margin-bottom: 0.5rem;
+                          text-align: center;
+                          border-bottom: 1px solid #444;
+                          padding-bottom: 0.8rem;
+                          text-transform: uppercase;
+                        "
+                      >
+                        <span
+                          class="material-icons-outlined"
+                          style="vertical-align: middle; margin-right: 0.5rem"
+                          >store</span
+                        >
+                        Sede {{ metrica.sede_nombre }}
+                      </h3>
+
+                      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem;">
+                        <span style="color: #ccc; display: flex; align-items: center; gap: 0.8rem;">
+                          <span class="material-icons-outlined" style="font-size: 1.2rem; color: #60a5fa;">local_car_wash</span>
+                          <span>Servicios Hoy:&nbsp;</span>
+                        </span>
+                        <span style="color: white; font-weight: bold; margin-left: auto;">{{ metrica.total_servicios }}</span>
+                      </div>
+
+                      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem;">
+                        <span style="color: #ccc; display: flex; align-items: center; gap: 0.8rem;">
+                          <span class="material-icons-outlined" style="font-size: 1.2rem; color: #facc15;">engineering</span>
+                          <span>Operarios Activos:&nbsp;</span>
+                        </span>
+                        <span style="color: white; font-weight: bold; margin-left: auto;">{{ metrica.operarios_activos }}</span>
+                      </div>
+
+                      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem;">
+                        <span style="color: #ccc; display: flex; align-items: center; gap: 0.8rem;">
+                          <span class="material-icons-outlined" style="font-size: 1.2rem; color: #f87171;">payments</span>
+                          <span>Comisión 60%:&nbsp;</span>
+                        </span>
+                        <span style="color: white; font-weight: bold; margin-left: auto;">$ {{ metrica.comision_lavadero | number }}</span>
+                      </div>
+
+                      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem;">
+                        <span style="color: #ccc; display: flex; align-items: center; gap: 0.8rem;">
+                          <span class="material-icons-outlined" style="font-size: 1.2rem; color: #a78bfa;">point_of_sale</span>
+                          <span>Venta Mostrador:&nbsp;</span>
+                        </span>
+                        <span style="color: white; font-weight: bold; margin-left: auto;">$ {{ metrica.ventas_mostrador | number }}</span>
+                      </div>
+
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding-top: 1rem; border-top: 1px dashed #555; font-size: 1.2rem;">
+                        <span style="color: #4ade80; font-weight: bold; display: flex; align-items: center; gap: 0.8rem;">
+                          <span class="material-icons-outlined" style="font-size: 1.4rem;">account_balance_wallet</span>
+                          <span>Ganancia Total:&nbsp;</span>
+                        </span>
+                        <span style="color: #4ade80; font-weight: bold; margin-left: auto;">$ {{ metrica.ganancia_total_dia | number }}</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div style="text-align: center; color: #888; padding: 2rem">
+                <span class="material-icons-outlined" style="font-size: 3rem; margin-bottom: 1rem"
+                  >event_busy</span
+                >
+                <p>No hay servicios registrados en esta fecha.</p>
+              </div>
+            }
+          </div>
+
+          <h2 class="section-title" id="servicios">Administración Multisede</h2>
+
+          <div class="grid-cards">
+            <div class="card">
+              <img src="assets/imgInventario.jpg" alt="Inventario" class="card-img" />
+              <div class="card-body" style="display: flex; flex-direction: column">
+                <h2 class="card-title">Inventario</h2>
+                <p class="card-text flex-grow">Gestione materiales y herramientas por sede.</p>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto">
+                  <a
+                    class="btn-primary"
+                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
+                    routerLink="/inventario"
+                    [queryParams]="{ sede: 'CENTENARIO' }"
+                    >S. Centenario</a
+                  >
+                  <a
+                    class="btn-primary"
+                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
+                    routerLink="/inventario"
+                    [queryParams]="{ sede: 'GALAN' }"
+                    >S. Galán</a
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <img src="assets/Inventario2.jpg" alt="Inventario Productos" class="card-img" />
+              <div class="card-body" style="display: flex; flex-direction: column">
+                <h2 class="card-title">Inventario Productos</h2>
+                <p class="card-text flex-grow">Control de productos de aseo y lavado por sede.</p>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto">
+                  <a
+                    class="btn-primary"
+                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
+                    routerLink="/inventario2"
+                    [queryParams]="{ sede: 'CENTENARIO' }"
+                    >S. Centenario</a
+                  >
+                  <a
+                    class="btn-primary"
+                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
+                    routerLink="/inventario2"
+                    [queryParams]="{ sede: 'GALAN' }"
+                    >S. Galán</a
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="card"
+              style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8)"
+            >
+              <div
+                class="card-body"
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  height: 100%;
+                  text-align: center;
+                "
+              >
+                <span
+                  class="material-icons-outlined"
+                  style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem"
+                  >bar_chart</span
+                >
+                <h2 class="card-title">Gráficas</h2>
+                <p class="card-text flex-grow">Analice el rendimiento y métricas de cada sede.</p>
+                <div
+                  style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; width: 100%"
+                >
+                  <a
+                    class="btn-primary"
+                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
+                    routerLink="/visualizar-graficas"
+                    [queryParams]="{ sede: 'CENTENARIO' }"
+                    >S. Centenario</a
+                  >
+                  <a
+                    class="btn-primary"
+                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
+                    routerLink="/visualizar-graficas"
+                    [queryParams]="{ sede: 'GALAN' }"
+                    >S. Galán</a
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="card"
+              style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8)"
+            >
+              <div
+                class="card-body"
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  height: 100%;
+                  text-align: center;
+                "
+              >
+                <span
+                  class="material-icons-outlined"
+                  style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem"
+                  >local_activity</span
+                >
+                <h2 class="card-title">Gestionar Rifa</h2>
+                <p class="card-text flex-grow">
+                  Modifica la información global de las rifas compartidas.
+                </p>
+                <a
+                  class="btn-primary full-width"
+                  style="margin-top: auto; text-align: center"
+                  routerLink="/boleta-mensajes"
+                >
+                  Modificar <span class="material-icons-outlined btn-icon">edit</span>
+                </a>
+              </div>
+            </div>
+
+            <div
+              class="card"
+              style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8)"
+            >
+              <div
+                class="card-body"
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  height: 100%;
+                  text-align: center;
+                "
+              >
+                <span
+                  class="material-icons-outlined"
+                  style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem"
+                  >auto_awesome_motion</span
+                >
+                <h2 class="card-title">Combos y Servicios</h2>
+                <p class="card-text flex-grow">Paquetes y ofertas especiales globales.</p>
+                <a
+                  class="btn-primary full-width"
+                  style="margin-top: auto; text-align: center"
+                  routerLink="/combos-servicios"
+                >
+                  Ver Combos <span class="material-icons-outlined btn-icon">arrow_forward</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (role !== 'SUPER_ADMIN') {
+          <h2 class="section-title" id="servicios" style="margin-top: 2rem">Servicios Generales</h2>
+
+          <div class="grid-cards">
+            <div class="card">
+              <img class="card-img" src="assets/img5.jpeg" alt="Car wash" />
+              <div class="card-body">
+                <h2 class="card-title">Crear Orden</h2>
+                <p class="card-text">Inicie un nuevo servicio de lavado para un vehículo.</p>
+                <a class="btn-primary" routerLink="/crear-orden">
+                  Crear Orden <span class="material-icons-outlined btn-icon">arrow_forward</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="card">
+              <img class="card-img" src="assets/Inventario2.jpg" alt="Venta de Mostrador" />
+              <div class="card-body">
+                <h2 class="card-title">Venta Mostrador</h2>
+                <p class="card-text">Venta rápida de productos directos e insumos al cliente.</p>
+                <a class="btn-primary" routerLink="/venta-mostrador">
+                  Punto de Venta <span class="material-icons-outlined btn-icon">point_of_sale</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="card">
+              <img src="assets/consultar.png" alt="Cuaderno Recibos" class="card-img" />
+              <div class="card-body">
+                <h2 class="card-title">Cuaderno de Recibos</h2>
+                <p class="card-text">Historial de ventas de mostrador y cuadre de caja.</p>
+                <a class="btn-primary" routerLink="/cuaderno-recibos">
+                  Ver Recibos <span class="material-icons-outlined btn-icon">receipt_long</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="card">
+              <img src="assets/consultar.png" alt="Consulta" class="card-img" />
+              <div class="card-body">
+                <h2 class="card-title">Consultar Órdenes</h2>
+                <p class="card-text">Busque y administre órdenes existentes e historial.</p>
+                <a class="btn-primary" routerLink="/consultar-orden">
+                  Ver Órdenes <span class="material-icons-outlined btn-icon">list_alt</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="card">
+              <img src="assets/imgInventario.jpg" alt="Inventario" class="card-img" />
+              <div class="card-body">
+                <h2 class="card-title">Inventario</h2>
+                <p class="card-text">Gestione materiales y herramientas disponibles.</p>
+                <a class="btn-primary" routerLink="/inventario">
+                  Ver Inventario <span class="material-icons-outlined btn-icon">inventory_2</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="card">
+              <img src="assets/Inventario2.jpg" alt="Inventario" class="card-img" />
+              <div class="card-body">
+                <h2 class="card-title">Inventario Productos</h2>
+                <p class="card-text">Controla los productos de aseo y lavado.</p>
+                <a class="btn-primary" routerLink="/inventario2">
+                  Ver Productos <span class="material-icons-outlined btn-icon">inventory</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          @if (role === 'ADMIN' || role === 'ADMIN_SEDE') {
+            <h2 class="section-title" style="margin-top: 3rem; margin-bottom: 2rem">
+              Administración de Sede
+            </h2>
+
+            <div
+              class="admin-grid"
+              style="display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem"
+            >
+              <div class="admin-card" style="max-width: 300px; width: 100%">
+                <h3 class="card-title">Gráficas</h3>
+                <p class="card-text flex-grow">Analice el rendimiento y métricas de su sede.</p>
+                <a class="btn-primary full-width" routerLink="/visualizar-graficas">
+                  Ver gráficas <span class="material-icons-outlined btn-icon">bar_chart</span>
+                </a>
+              </div>
+
+              <div class="admin-card" style="max-width: 300px; width: 100%">
+                <h3 class="card-title">Combos y Servicios</h3>
+                <p class="card-text flex-grow">Consultar paquetes y ofertas especiales.</p>
+                <a class="btn-primary full-width" routerLink="/combos-servicios">
+                  Ver combos
+                  <span class="material-icons-outlined btn-icon">auto_awesome_motion</span>
+                </a>
+              </div>
+
+              <div class="admin-card" style="max-width: 300px; width: 100%">
+                <h3 class="card-title">Operarios</h3>
+                <p class="card-text flex-grow">Gestión de pagos y servicios realizados.</p>
+                <a class="btn-primary full-width" routerLink="/gestion-operarios">
+                  Gestionar <span class="material-icons-outlined btn-icon">engineering</span>
+                </a>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </section>
+
+    <section class="about-section" id="nosotros">
+      <div class="container">
+        <h2 class="section-title">Quiénes Somos</h2>
+        <div class="about-grid">
+          <div class="about-text">
+            <h3>Revolucionando la gestión del lavado</h3>
+            <p>
+              En <span class="text-primary font-bold">The Detailer</span>, transformamos la
+              industria a través de tecnología para maximizar su rentabilidad.
+            </p>
+            <p>
+              Innovación constante, calidad excepcional y servicio al cliente que supera
+              expectativas.
+            </p>
+          </div>
+
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="icon-circle">
+                <span class="material-icons-outlined">emoji_objects</span>
+              </div>
+              <h4>Innovación</h4>
+            </div>
+            <div class="feature-card">
+              <div class="icon-circle"><span class="material-icons-outlined">verified</span></div>
+              <h4>Calidad</h4>
+            </div>
+            <div class="feature-card">
+              <div class="icon-circle">
+                <span class="material-icons-outlined">support_agent</span>
+              </div>
+              <h4>Soporte</h4>
+            </div>
+            <div class="feature-card">
+              <div class="icon-circle">
+                <span class="material-icons-outlined">trending_up</span>
+              </div>
+              <h4>Crecimiento</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="contacto">
+    <app-footer></app-footer>
+  </div>
+</div>

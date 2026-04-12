@@ -1,0 +1,217 @@
+<div class="page-container">
+  
+  <app-nav></app-nav>
+
+  <div class="alert-success" *ngIf="mostrarAlerta">
+    <span class="material-symbols-outlined">
+      {{ tipoAlerta === 'error' ? 'warning' : 'check_circle' }}
+    </span>
+    <div style="display: flex; flex-direction: column;">
+      <span>{{ tipoAlerta === 'error' ? 'Atención' : '¡Excelente!' }}</span>
+      <span style="font-size: 0.75rem; opacity: 0.8; font-weight: 500; text-transform: none;">
+        {{ mensajeAlerta }}
+      </span>
+    </div>
+  </div>
+
+  <div class="layout-container">
+    <main class="main-content">
+      
+      <div class="header-actions">
+        <h1 class="page-title">Inventario Productos de Lavado (Insumos)</h1>
+        <button class="btn-add" (click)="abrirModal()">
+          <span class="material-symbols-outlined">add</span>
+          Agregar Producto
+        </button>
+      </div>
+
+      <div class="search-card">
+        <div class="input-wrapper">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input 
+            class="search-input" 
+            placeholder="Buscar por Nombre, Categoría o Proveedor..." 
+            type="text"
+            [(ngModel)]="filtroBusqueda"
+            (keyup)="aplicarFiltro()"
+          />
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th style="text-align: center;">Stock</th>
+                <th>Min.</th>
+                <th>Costo</th>
+                <th>Proveedor</th>
+                <th>Ubicación</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let prod of productosPaginados">
+                <td class="text-muted">{{ prod.id_producto }}</td>
+                <td class="font-medium text-white">{{ prod.nombre_producto }}</td>
+                <td class="text-muted">{{ prod.categoria }}</td>
+                
+                <td style="text-align: center;">
+                  <span class="status-badge"
+                        [ngClass]="{
+                          'badge-red': prod.cantidad === 0,
+                          'badge-yellow': prod.cantidad > 0 && prod.cantidad <= (prod.stock_minimo || 5),
+                          'badge-green': prod.cantidad > (prod.stock_minimo || 5)
+                        }">
+                    {{ prod.cantidad }}
+                  </span>
+                </td>
+                <td class="text-muted" style="font-size: 0.75rem;">{{ prod.stock_minimo || 5 }}</td>
+
+                <td class="text-muted">$ {{ prod.costo | number:'1.0-0' }}</td>
+                <td class="text-muted">{{ prod.proveedor }}</td>
+                <td class="text-muted">{{ prod.ubicacion }}</td>
+                <td class="text-right">
+                  <div class="action-buttons">
+                    <button class="btn-icon" (click)="editarProducto(prod)" title="Editar">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="btn-icon" (click)="confirmarEliminacion(prod)" title="Eliminar">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr *ngIf="productosFiltrados.length === 0">
+                <td colspan="9" style="text-align: center; padding: 3rem; color: #6b7280;">
+                  No se encontraron productos que coincidan con "{{ filtroBusqueda }}"
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" *ngIf="totalPaginas > 1">
+          <button 
+            class="page-link icon-link" 
+            [disabled]="paginaActual === 1"
+            (click)="cambiarPagina(paginaActual - 1)"
+            style="background: transparent; border: none; cursor: pointer;">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+
+          <span class="page-link active">{{ paginaActual }}</span>
+          <span class="page-dots">de {{ totalPaginas }}</span>
+
+          <button 
+            class="page-link icon-link" 
+            [disabled]="paginaActual === totalPaginas"
+            (click)="cambiarPagina(paginaActual + 1)"
+            style="background: transparent; border: none; cursor: pointer;">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModal">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h2 class="modal-title">
+          {{ esEdicion ? 'Editar Producto' : 'Agregar Nuevo Producto' }}
+        </h2>
+        <button class="btn-close" (click)="cerrarModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form class="modal-form">
+          
+          <div class="form-group" *ngIf="esEdicion">
+            <label>ID</label>
+            <input 
+              type="text" 
+              class="modal-input input-readonly" 
+              readonly
+              [value]="nuevoProducto.id_producto" 
+              name="id" 
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Producto *</label>
+            <input type="text" placeholder="Ej. Shampoo con Cera" class="modal-input" [(ngModel)]="nuevoProducto.nombre_producto" name="nombre" required/>
+          </div>
+          <div class="form-group">
+            <label>Categoría *</label>
+            <input type="text" placeholder="Ej. Químicos" class="modal-input" [(ngModel)]="nuevoProducto.categoria" name="categoria" required/>
+          </div>
+          <div class="form-group">
+            <label>Cantidad Actual *</label>
+            <input type="number" placeholder="Ej. 10" class="modal-input" [(ngModel)]="nuevoProducto.cantidad" name="cantidad" required/>
+          </div>
+          <div class="form-group">
+            <label>Min. (Amarillo) *</label>
+            <input type="number" placeholder="Ej. 5" class="modal-input" [(ngModel)]="nuevoProducto.stock_minimo" name="stock_minimo" required/>
+          </div>
+          <div class="form-group">
+            <label for="product-cost">Costo</label>
+            <div class="relative-input-container">
+              <span class="currency-symbol">$</span>
+              <input 
+                id="product-cost" 
+                type="number" 
+                class="modal-input has-currency" 
+                [(ngModel)]="nuevoProducto.costo" 
+                name="costo" 
+                min="0"
+              />
+            </div>
+          </div>
+          
+          <div class="form-group col-span-2">
+            <label>Proveedor</label>
+            <input type="text" placeholder="Ej. Químicos Pro" class="modal-input" [(ngModel)]="nuevoProducto.proveedor" name="proveedor"/>
+          </div>
+          <div class="form-group col-span-2">
+            <label>Ubicación</label>
+            <input type="text" placeholder="Ej. Estante A1" class="modal-input" [(ngModel)]="nuevoProducto.ubicacion" name="ubicacion"/>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn-add-modal" (click)="guardarProducto()">
+          {{ esEdicion ? 'Guardar Cambios' : 'Agregar' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+  
+  <div class="modal-overlay" *ngIf="mostrarConfirmacion" style="z-index: 2000;">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <span class="material-symbols-outlined" style="font-size: 3rem; color: #ff4444; margin-bottom: 1rem;">warning</span>
+      <h3 style="color: white; margin-bottom: 1rem;">¿Eliminar Producto?</h3>
+      <p style="color: #aaa; margin-bottom: 2rem;">
+        Se eliminará <strong>{{ productoAEliminar?.nombre_producto }}</strong> permanentemente.
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button class="btn-cancel" (click)="cancelarEliminacion()">Cancelar</button>
+        <button class="btn-add-modal" style="background-color: #ff4444;" (click)="eliminarProducto()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,309 @@
+<div class="background-pattern"></div>
+
+<div class="layout-wrapper">
+
+  <app-nav></app-nav>
+
+  <div class="alert-success" *ngIf="mostrarAlerta">
+    <span class="material-symbols-outlined">check_circle</span>
+    <div style="display: flex; flex-direction: column;">
+      <span>¡Excelente!</span>
+      <span style="font-size: 0.75rem; opacity: 0.8; font-weight: 500; text-transform: none;">
+        {{ mensajeAlerta }}
+      </span>
+    </div>
+  </div>
+
+  <main class="main-content">
+
+    <div class="breadcrumbs">
+      <span class="crumb-link">Panel</span>
+      <span class="crumb-separator">/</span>
+      <span class="crumb-active">Gestion rifas</span>
+    </div>
+
+    <div class="page-header">
+      <h1 class="page-title">
+        Gestión de <span class="text-highlight">Rifas</span>
+      </h1>
+      <p class="page-subtitle">Personaliza las rifas registradas</p>
+    </div>
+
+    <!-- <div class="cards-grid">
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <div class="card-body">
+            <div class="card-header">
+              <div class="icon-circle icon-red">
+                <span class="material-symbols-outlined">waving_hand</span>
+              </div>
+              <h3 class="card-title">Mensaje de Bienvenida</h3>
+            </div>
+            <p class="card-desc">Mensaje automático enviado a nuevos clientes.</p>
+            <div class="quote-box">
+              <p class="quote-text">"{{ mensajeBienvenida | slice:0:60 }}..."</p>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn-action" (click)="abrirModalMensaje()">
+              <span class="material-symbols-outlined btn-icon">edit_note</span>
+              <span>Editar Texto</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <div class="card-body">
+            <div class="card-header">
+              <div class="icon-circle icon-red">
+                <span class="material-symbols-outlined">celebration</span>
+              </div>
+              <h3 class="card-title">Mensaje de Despedida</h3>
+            </div>
+            <p class="card-desc">Mensaje automático al finalizar servicio.</p>
+            <div class="quote-box">
+              <p class="quote-text">"{{ mensajeDespedida | slice:0:60 }}..."</p>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn-action" (click)="abrirModalDespedida()">
+              <span class="material-symbols-outlined btn-icon">edit_note</span>
+              <span>Editar Texto</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div> -->
+
+    <div class="table-section">
+      <div class="table-header-row">
+        <h2 class="section-title">Rifas Registradas</h2>
+
+        <div class="search-actions">
+          <div class="search-container">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" class="search-input" placeholder="Buscar por fecha, encargado o premio..."
+              [(ngModel)]="busquedaBoleta">
+          </div>
+
+          <button class="btn-create" (click)="abrirModalCrear()">
+            <span class="material-symbols-outlined">add</span>
+            Nueva Rifa
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Premio</th>
+              <th>Encargado</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rifa of rifasFiltradas">
+              <td>{{ rifa.fecha }}</td>
+              <td>{{ rifa.premio }}</td>
+              <td>
+                <div class="encargado-badge">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">person</span>
+                  {{ rifa.encargado }}
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="{
+                  'status-active': rifa.estado === 'Activa',
+                  'status-finished': rifa.estado === 'inactiva'
+                }">
+                  {{ rifa.estado }}
+                </span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn-icon-action red" title="Visualizar" (click)="visualizarRifa(rifa)">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+                  <button class="btn-icon-action red" title="Eliminar" (click)="eliminarRifa(rifa)">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="rifasFiltradas.length === 0">
+              <td colspan="5" class="empty-state">
+                No se encontraron rifas.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="modal-overlay" *ngIf="mostrarModalBoleta">
+    <div class="modal-content-sm">
+      <div class="modal-top-line"></div>
+      <div class="modal-header">
+        <div class="header-left">
+          <div class="header-icon-box">
+            <span class="material-symbols-outlined">add_circle</span>
+          </div>
+          <h2 class="header-title">Nueva Rifa</h2>
+        </div>
+        <button class="btn-close-modal" (click)="cerrarModalBoleta()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form class="modal-form-stack">
+          <div class="input-group">
+            <label for="fecha">Fecha del Sorteo</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">calendar_today</span>
+              <input id="fecha" type="date" class="modal-input" [(ngModel)]="datosBoleta.fecha" [min]="fechaMinima" name="fecha" />
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="premio">Premio</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">emoji_events</span>
+              <input id="premio" type="text" class="modal-input" [(ngModel)]="datosBoleta.premio" name="premio"
+                placeholder="Ej: Corte Gratis" />
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="encargado">Encargado</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">person</span>
+              <input id="encargado" type="text" class="modal-input" [(ngModel)]="datosBoleta.encargado"
+                name="encargado" />
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" (click)="cerrarModalBoleta()">Cancelar</button>
+        <button class="btn-modal-save" (click)="guardarNuevaRifa()">
+          <span class="material-symbols-outlined">save</span> Crear Rifa
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalMensaje">
+    <div class="modal-message-content">
+      <div class="message-header">
+        <h2 class="message-title">Editar Bienvenida</h2>
+        <button class="btn-close-modal" (click)="cerrarModalMensaje()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="message-body">
+        <textarea class="message-textarea" [(ngModel)]="mensajeBienvenida"></textarea>
+      </div>
+      <div class="message-footer">
+        <button class="btn-message-cancel" (click)="cerrarModalMensaje()">Cancelar</button>
+        <button class="btn-message-save" (click)="guardarMensaje()">
+          <span class="material-symbols-outlined">save</span> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalDespedida">
+    <div class="modal-message-content">
+      <div class="message-header">
+        <h2 class="message-title">Editar Despedida</h2>
+        <button class="btn-close-modal" (click)="cerrarModalDespedida()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="message-body">
+        <textarea class="message-textarea" [(ngModel)]="mensajeDespedida"></textarea>
+      </div>
+      <div class="message-footer">
+        <button class="btn-message-cancel" (click)="cerrarModalDespedida()">Cancelar</button>
+        <button class="btn-message-save" (click)="guardarDespedida()">
+          <span class="material-symbols-outlined">save</span> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalVisualizar">
+    <div class="modal-content-large">
+      <div class="modal-top-line"></div>
+      <div class="modal-header">
+        <div class="header-left">
+          <div class="header-icon-box">
+            <span class="material-symbols-outlined">confirmation_number</span>
+          </div>
+          <div style="display: flex; flex-direction: column;">
+            <h2 class="header-title">Boletas Registradas</h2>
+            <span style="font-size: 0.8rem; color: #9ca3af;">{{ rifaSeleccionadaTitulo }}</span>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="cerrarModalVisualizar()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body scrollable-body">
+        <div *ngIf="cargandoBoletas" class="loading-state">
+          <span class="material-symbols-outlined spin">sync</span>
+          <p>Cargando boletas...</p>
+        </div>
+
+        <div *ngIf="!cargandoBoletas">
+          <div class="search-row" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="search-container" style="flex: 1;">
+              <span class="material-symbols-outlined search-icon">confirmation_number</span>
+              <input type="text" class="search-input" placeholder="# Boleta..." [(ngModel)]="filtroBoleta">
+            </div>
+            <div class="search-container" style="flex: 1;">
+              <span class="material-symbols-outlined search-icon">person</span>
+              <input type="text" class="search-input" placeholder="Nombre Cliente..." [(ngModel)]="filtroBoletaNombre">
+            </div>
+
+          </div>
+
+          <div class="table-wrapper">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th># Boleta</th>
+                  <th>Nombre Cliente</th>
+                  <th>Teléfono</th>
+                  <th>Placa</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let boleta of boletasFiltradas">
+                  <td style="font-weight: bold; color: #ea2a33;">{{ boleta.numero_boleta }}</td>
+                  <td>{{ boleta.nombre }}</td>
+                  <td>{{ boleta.telefono }}</td>
+                  <td>{{ boleta.placa_vehiculo }}</td>
+                </tr>
+                <tr *ngIf="boletasFiltradas.length === 0">
+                  <td colspan="4" class="empty-state">
+                    No se encontraron boletas con ese número.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" (click)="cerrarModalVisualizar()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

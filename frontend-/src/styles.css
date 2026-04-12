@@ -1,0 +1,67 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+
+:root {
+  --primary-color: #fd0100;
+  --primary-hover: #e00000;
+  --bg-dark: #121212;
+  --content-dark: #1F1F1F;
+  --text-main: #e5e7eb;
+  --text-muted: #9ca3af;
+  --black: #000000;
+  --font-main: 'Poppins', sans-serif;
+  --radius: 0.5rem;
+
+  --primary: #ec1313;
+  --bg-page: #f8f6f6;
+  --bg-card: #ffffff;
+  --border-color: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --header-bg: #fd0100;
+  --row-hover: #f9fafb;
+}
+
+.dark {
+  --bg-page: #1A1A1A;
+  --bg-card: #2C2C2C;
+  --border-color: #333333;
+  --text-primary: #F5F5F5;
+  --text-secondary: #A0A0A0;
+  --row-hover: rgba(255, 255, 255, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-main), 'Inter', sans-serif;
+  
+  background-color: var(--bg-dark); 
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+img { max-width: 100%; display: block; }
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  display: inline-block;
+}
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}

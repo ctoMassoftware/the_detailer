@@ -1,0 +1,263 @@
+<div class="page-container">
+  <app-nav></app-nav>
+
+  <div class="alert-toast" *ngIf="mostrarAlerta" [class.error]="tipoAlerta === 'error'">
+    <span class="material-symbols-outlined">
+      {{ tipoAlerta === 'error' ? 'error' : 'check_circle' }}
+    </span>
+    <div class="toast-content">
+      <span class="toast-title">{{ tipoAlerta === 'error' ? 'Error' : '¡Éxito!' }}</span>
+      <span class="toast-message">{{ mensajeAlerta }}</span>
+    </div>
+  </div>
+
+  <main class="main-content">
+    <div class="content-wrapper">
+      <div class="page-header">
+        <div class="header-text">
+          <h1 class="title">Gestión de Operarios</h1>
+          <p class="subtitle">Administra el personal y sus estados.</p>
+        </div>
+        <button class="btn-create" (click)="abrirModal()">
+          <span class="material-symbols-outlined">add</span>
+          Crear Operario
+        </button>
+      </div>
+
+      <!-- selector de sede para usuarios con privilegios multisede -->
+      <div
+        *ngIf="roleUsuario === 'SUPER_ADMIN' || roleUsuario === 'ADMIN'"
+        class="filter-section"
+        style="margin-bottom: 1rem"
+      >
+        <label style="color: #ddd; font-weight: 600; margin-right: 0.5rem">Sede:</label>
+        <select
+          [(ngModel)]="sedeSeleccionada"
+          (change)="onSedeChange()"
+          class="input-dark"
+          style="width: 10rem"
+        >
+          <option value="">Todas</option>
+          <option *ngFor="let s of sedes" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+
+      <div class="search-section">
+        <div class="search-bar">
+          <div class="search-icon">
+            <span class="material-symbols-outlined">search</span>
+          </div>
+          <input
+            class="search-input"
+            placeholder="Buscar operario por nombre o correo..."
+            type="text"
+            [(ngModel)]="filtroBusqueda"
+            (keyup)="aplicarFiltro()"
+          />
+        </div>
+      </div>
+
+      <div class="operarios-grid" *ngIf="operariosFiltrados.length > 0">
+        <div class="operario-card group" *ngFor="let op of operariosFiltrados">
+          <div class="card-glow"></div>
+
+          <div class="card-body">
+            <div class="avatar-container">
+              <div
+                class="avatar"
+                style="
+                  background-color: #333;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: white;
+                  font-weight: bold;
+                  font-size: 1.5rem;
+                "
+              >
+                {{ op.nombre.charAt(0).toUpperCase() }}
+              </div>
+              <div class="status-indicator" [class.inactive]="!op.estado_operario"></div>
+            </div>
+            <div class="info">
+              <p class="name">{{ op.nombre }}</p>
+            </div>
+          </div>
+
+          <div
+            class="card-footer"
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding-top: 1rem;
+            "
+          >
+            <div style="display: flex; align-items: center; gap: 8px">
+              <label
+                style="
+                  position: relative;
+                  display: inline-block;
+                  width: 44px;
+                  height: 24px;
+                  cursor: pointer;
+                "
+              >
+                <input
+                  type="checkbox"
+                  style="opacity: 0; width: 0; height: 0"
+                  [checked]="op.estado_operario"
+                  (change)="cambiarEstado(op)"
+                />
+                <span
+                  style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    transition: 0.4s;
+                    border-radius: 34px;
+                  "
+                  [style.backgroundColor]="op.estado_operario ? '#22c55e' : '#ef4444'"
+                >
+                  <span
+                    style="
+                      position: absolute;
+                      height: 18px;
+                      width: 18px;
+                      left: 3px;
+                      bottom: 3px;
+                      background-color: white;
+                      transition: 0.4s;
+                      border-radius: 50%;
+                    "
+                    [style.transform]="op.estado_operario ? 'translateX(20px)' : 'translateX(0)'"
+                  >
+                  </span>
+                </span>
+              </label>
+              <span
+                [style.color]="op.estado_operario ? '#22c55e' : '#ef4444'"
+                style="font-weight: 600; font-size: 0.9rem"
+              >
+                {{ op.estado_operario ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+
+            <div class="actions">
+              <button class="btn-icon" title="Editar" (click)="editarOperario(op)">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <button class="btn-icon delete" title="Eliminar" (click)="confirmarEliminacion(op)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="operarios.length > 0 && operariosFiltrados.length === 0">
+        <p style="color: #94a3b8; text-align: center; font-size: 1rem">
+          No se encontraron operarios que coincidan con "{{ filtroBusqueda }}"
+        </p>
+      </div>
+
+      <div class="empty-state" *ngIf="operarios.length === 0">
+        <div class="empty-card">
+          <div class="empty-icon"><span class="material-symbols-outlined">group_off</span></div>
+          <div class="empty-text">
+            <p class="empty-title">No hay operarios registrados</p>
+            <p class="empty-desc">Añade tu primer operario para empezar.</p>
+          </div>
+          <button class="btn-create-outline" (click)="abrirModal()">
+            <span class="material-symbols-outlined">add</span>
+            Crear Operario
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" *ngIf="mostrarModal">
+    <div class="modal-content">
+      <h2 class="modal-title">{{ esEdicion ? 'Editar Operario' : 'Crear Operario' }}</h2>
+
+      <form class="modal-form" (ngSubmit)="guardarOperario()">
+        <div class="modal-grid">
+          <div class="form-group full-width">
+            <label for="nombre">Nombre Completo</label>
+            <input
+              id="nombre"
+              type="text"
+              class="input-dark"
+              placeholder="Ingrese el nombre"
+              [ngModel]="nuevoOperario.nombre"
+              (ngModelChange)="nuevoOperario.nombre = capitalizarPalabras($event)"
+              name="nombre"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="operario-telefono">Teléfono</label>
+            <input
+              id="operario-telefono"
+              type="text"
+              class="input-dark"
+              placeholder="Ingrese el teléfono"
+              [(ngModel)]="nuevoOperario.telefono"
+              name="telefono"
+              inputmode="numeric"
+            />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="domicilio">Domicilio</label>
+            <input
+              id="domicilio"
+              type="text"
+              class="input-dark"
+              placeholder="Dirección de residencia"
+              [ngModel]="nuevoOperario.domicilio"
+              (ngModelChange)="nuevoOperario.domicilio = capitalizarPalabras($event)"
+              name="domicilio"
+            />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-save">
+            {{ esEdicion ? 'Guardar Cambios' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarConfirmacion" style="z-index: 2000">
+    <div class="modal-content" style="max-width: 400px; text-align: center">
+      <div style="margin-bottom: 1rem">
+        <span class="material-symbols-outlined" style="font-size: 3rem; color: #ef4444"
+          >warning</span
+        >
+      </div>
+      <h3 style="color: white; margin-bottom: 0.5rem; font-size: 1.25rem">¿Eliminar Operario?</h3>
+      <p style="color: #9ca3af; margin-bottom: 2rem">
+        Estás a punto de eliminar a <strong>{{ operarioAEliminar?.nombre }}</strong
+        >. Esta acción no se puede deshacer.
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center">
+        <button class="btn-cancel" (click)="cancelarEliminacion()">Cancelar</button>
+        <button
+          class="btn-save"
+          style="background-color: #ef4444; border-color: #ef4444"
+          (click)="eliminarOperario()"
+        >
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

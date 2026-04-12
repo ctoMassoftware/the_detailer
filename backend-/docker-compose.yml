@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Servicio de Base de Datos
+  db_detailer:
+    image: postgres:15
+    container_name: postgres_db_detailer
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Valen123}
+      POSTGRES_DB: detailer
+    ports:
+      - "5439:5432" # Mapea el puerto 5436 local al 5439 del contenedor
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Servicio del Backend
+  api:
+    build: .
+    container_name: express_api
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_USER=postgres
+      - DB_HOST=db_detailer
+      - DB_PASSWORD=Valen123
+      - DB_NAME=detailer
+      - DB_PORT=5432
+      - JWT_SECRET=${JWT_SECRET:-mi_secreto_super_seguro}
+      - PORT=3000
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_WHATSAPP_NUMBER=${TWILIO_WHATSAPP_NUMBER}
+    depends_on:
+      - db_detailer
+
+volumes:
+  postgres_data:

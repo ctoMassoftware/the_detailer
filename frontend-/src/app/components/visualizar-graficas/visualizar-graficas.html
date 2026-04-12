@@ -1,0 +1,125 @@
+<div class="page-container">
+  
+  <app-nav></app-nav>
+
+  <main class="main-content">
+    <div class="content-wrapper">
+      
+      <header class="page-header">
+        <div class="header-text">
+          <h1 class="page-title">Visualizar Gráficas</h1>
+          <p class="page-subtitle">Análisis de ventas y rendimiento de servicios.</p>
+        </div>
+      </header>
+
+      <div *ngIf="loading" style="color: white; margin-bottom: 20px;">
+        Cargando datos...
+      </div>
+
+      <div class="dashboard-grid" *ngIf="!loading">
+        
+        <div class="stat-card">
+          <div class="card-header">
+            <p class="card-label">Ventas del día</p>
+            <p class="card-value">{{ stats.ventas.dia | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+            <div class="trend-indicator">
+              <span class="trend-label">Hoy</span>
+              <div class="trend-badge positive">
+                <span class="material-symbols-outlined">payments</span>
+                <span>Ingreso Neto</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="chart-area">
+            <svg class="line-chart" viewBox="0 0 472 150" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="gradient-red" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#fd0100" stop-opacity="0.4"/>
+                  <stop offset="100%" stop-color="#fd0100" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path class="chart-fill" d="M0 109C18.15 109 18.15 21 36.3 21C54.46 21 54.46 41 72.6 41C90.77 41 90.77 93 108.9 93C127.08 93 127.08 33 145.2 33C163.38 33 163.38 101 181.5 101C199.7 101 199.7 61 217.8 61C236 61 236 45 254.1 45C272.3 45 272.3 121 290.4 121C308.6 121 308.6 149 326.7 149C344.9 149 344.9 1 363 1C381.2 1 381.2 81 399.4 81C417.5 81 417.5 129 435.7 129C453.8 129 453.8 25 472 25V149H0V109Z" fill="url(#gradient-red)"></path>
+              <path class="chart-stroke" d="M0 109C18.15 109 18.15 21 36.3 21C54.46 21 54.46 41 72.6 41C90.77 41 90.77 93 108.9 93C127.08 93 127.08 33 145.2 33C163.38 33 163.38 101 181.5 101C199.7 101 199.7 61 217.8 61C236 61 236 45 254.1 45C272.3 45 272.3 121 290.4 121C308.6 121 308.6 149 326.7 149C344.9 149 344.9 1 363 1C381.2 1 381.2 81 399.4 81C417.5 81 417.5 129 435.7 129C453.8 129 453.8 25 472 25" fill="none" stroke="#fd0100" stroke-width="3" stroke-linecap="round"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="card-header">
+            <p class="card-label">Ventas de la semana</p>
+            <p class="card-value">{{ stats.ventas.semana | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+            <div class="trend-indicator">
+              <span class="trend-label">Esta Semana</span>
+              <div class="trend-badge positive">
+                <span class="material-symbols-outlined">calendar_view_week</span>
+                <span>Acumulado</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bar-chart-container">
+            <div class="bar-group"> <div class="bar" style="height: 30%;"></div> <span class="bar-label">L</span> </div>
+            <div class="bar-group"> <div class="bar" style="height: 50%;"></div> <span class="bar-label">M</span> </div>
+            <div class="bar-group"> <div class="bar" style="height: 40%;"></div> <span class="bar-label">X</span> </div>
+            <div class="bar-group"> <div class="bar" style="height: 70%;"></div> <span class="bar-label">J</span> </div>
+            <div class="bar-group"> <div class="bar" style="height: 55%;"></div> <span class="bar-label">V</span> </div>
+            <div class="bar-group"> <div class="bar" style="height: 80%;"></div> <span class="bar-label">S</span> </div>
+            <div class="bar-group active"> <div class="bar" style="height: 60%;"></div> <span class="bar-label">D</span> </div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="card-header">
+            <p class="card-label">Ventas del mes</p>
+            <p class="card-value">{{ stats.ventas.mes | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+            <div class="trend-indicator">
+              <span class="trend-label">Este Mes</span>
+              <div class="trend-badge positive">
+                <span class="material-symbols-outlined">bar_chart</span>
+                <span>Global</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-area">
+            <svg class="line-chart" viewBox="0 0 472 150" xmlns="http://www.w3.org/2000/svg">
+              <path class="chart-stroke" d="M0 137.5C18.15 137.5 18.15 62.5 36.3 62.5C54.46 62.5 54.46 101.5 72.6 101.5C90.77 101.5 90.77 48.5 108.9 48.5C127.08 48.5 127.08 114.5 145.2 114.5C163.38 114.5 163.38 71.5 181.5 71.5C199.7 71.5 199.7 109.5 217.8 109.5C236 109.5 236 29.5 254.1 29.5C272.3 29.5 272.3 1.5 290.4 1.5C308.6 1.5 308.6 120.5 326.7 120.5C344.9 120.5 344.9 83.5 363 83.5C381.2 83.5 381.2 149.5 399.4 149.5C417.5 149.5 417.5 41.5 435.7 41.5C453.8 41.5 453.8 122.5 472 122.5" fill="none" stroke="#fd0100" stroke-width="3" stroke-linecap="round"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="card-header">
+            <p class="card-label">Lo más vendido del mes</p>
+            <p class="card-value truncate">
+                {{ stats.top_servicios.length > 0 ? stats.top_servicios[0].nombre_servicio : 'Sin datos' }}
+            </p>
+            <div class="trend-indicator">
+              <span class="trend-label">Top 5</span>
+            </div>
+          </div>
+
+          <div class="horizontal-bars-container">
+            
+            <div class="bar-row" *ngFor="let item of stats.top_servicios">
+              <p class="bar-row-label">
+                {{ item.nombre_servicio }} 
+                <span style="font-weight: 400; opacity: 0.7">({{ item.total_vendido }})</span>
+              </p>
+              <div class="progress-track">
+                <div class="progress-fill" [style.width]="getPorcentajeBarra(item.total_vendido)"></div>
+              </div>
+            </div>
+
+            <div *ngIf="stats.top_servicios.length === 0" style="color: gray; text-align: center; padding: 20px;">
+                No hay ventas registradas este mes.
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>

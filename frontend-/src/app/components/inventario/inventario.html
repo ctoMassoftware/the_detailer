@@ -1,0 +1,209 @@
+<div class="main-wrapper">
+  
+  <app-nav></app-nav>
+
+  <div class="alert-success" *ngIf="mostrarAlerta" [class.error]="tipoAlerta === 'error'">
+    <span class="material-symbols-outlined">{{ tipoAlerta === 'success' ? 'check_circle' : 'error' }}</span>
+    <div style="display: flex; flex-direction: column;">
+      <span>{{ tipoAlerta === 'success' ? '¡Excelente!' : 'Atención' }}</span>
+      <span style="font-size: 0.75rem; opacity: 0.8; font-weight: 500; text-transform: none;">
+        {{ mensajeAlerta }}
+      </span>
+    </div>
+  </div>
+
+  <div class="layout-container">
+    <main class="content-area">
+      
+      <div class="page-actions">
+        <h1 class="page-title">Inventario de Productos Venta</h1>
+        <button class="btn-primary" (click)="abrirModal()">
+          <span class="material-symbols-outlined">add</span>
+          <span>Agregar Producto</span>
+        </button>
+      </div>
+
+      <div class="search-container">
+        <div class="search-wrapper">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input 
+            class="search-input" 
+            placeholder="Buscar por Nombre, Categoría o Proveedor..." 
+            type="text"
+            [(ngModel)]="filtroBusqueda"
+            (keyup)="aplicarFiltro()"
+          />
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th style="text-align: center;">Stock</th>
+                <th>Min.</th>
+                <th>Costo</th>
+                <th>Precio</th>
+                <th>Proveedor</th>
+                <th>Ubicación</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            
+            <tbody>
+              <tr *ngFor="let producto of productosPaginados">
+                <td>{{ producto.id_producto_venta }}</td>
+                <td class="font-medium text-primary">{{ producto.nombre_producto }}</td>
+                <td>{{ producto.categoria }}</td>
+                
+                <td style="text-align: center;">
+                  <span class="status-badge"
+                        [ngClass]="{
+                          'badge-red': producto.cantidad === 0,
+                          'badge-yellow': producto.cantidad > 0 && producto.cantidad <= (producto.stock_minimo || 5),
+                          'badge-green': producto.cantidad > (producto.stock_minimo || 5)
+                        }">
+                    {{ producto.cantidad }}
+                  </span>
+                </td>
+                <td class="text-muted" style="font-size: 0.75rem;">{{ producto.stock_minimo || 5 }}</td>
+
+                <td>${{ producto.costo | number:'1.0-0' }}</td>
+                <td>${{ producto.precio_venta | number:'1.0-0' }}</td>
+                <td>{{ producto.proveedor }}</td>
+                <td>{{ producto.ubicacion }}</td>
+                
+                <td class="text-right actions-cell">
+                  <button class="btn-icon" (click)="editarProducto(producto)">
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                  <button class="btn-icon" (click)="confirmarEliminacion(producto)">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" *ngIf="totalPaginas > 1">
+          <button 
+            class="page-nav" 
+            [disabled]="paginaActual === 1"
+            (click)="cambiarPagina(paginaActual - 1)">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+
+          <span class="page-info">
+            Página {{ paginaActual }} de {{ totalPaginas }}
+          </span>
+
+          <button 
+            class="page-nav" 
+            [disabled]="paginaActual === totalPaginas"
+            (click)="cambiarPagina(paginaActual + 1)">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModal">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h2 class="modal-title">
+          {{ esEdicion ? 'Editar Producto' : 'Agregar Nuevo Producto' }}
+        </h2>
+        <button class="btn-close" (click)="cerrarModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form class="modal-form">
+          <div class="form-group" *ngIf="esEdicion">
+            <label for="product-id">ID</label>
+            <input id="product-id" type="text" class="modal-input input-readonly" readonly
+              [value]="nuevoProducto.id_producto_venta" name="id" />
+          </div>
+
+          <div class="form-group">
+            <label for="product-name">Producto</label>
+            <input id="product-name" type="text" class="modal-input" [(ngModel)]="nuevoProducto.nombre_producto" name="nombre"/>
+          </div>
+          <div class="form-group">
+            <label for="product-category">Categoría</label>
+            <input id="product-category" type="text" class="modal-input" [(ngModel)]="nuevoProducto.categoria" name="categoria"/>
+          </div>
+          <div class="form-group">
+            <label for="product-quantity">Cantidad</label>
+            <input id="product-quantity" type="number" class="modal-input" 
+                  [(ngModel)]="nuevoProducto.cantidad" name="cantidad" min="0"/>
+          </div>
+          <div class="form-group">
+            <label for="product-min">Min. (Amarillo)</label>
+            <input id="product-min" type="number" class="modal-input" 
+                  [(ngModel)]="nuevoProducto.stock_minimo" name="stock_minimo" min="0"/>
+          </div>
+          <div class="form-group">
+            <label for="product-cost">Costo</label>
+            <div class="relative-input-container">
+              <span class="currency-symbol">$</span>
+              <input id="product-cost" type="number" class="modal-input has-currency" 
+                    [(ngModel)]="nuevoProducto.costo" name="costo" min="0"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="product-price">Precio</label>
+            <div class="relative-input-container">
+              <span class="currency-symbol">$</span>
+              <input id="product-price" type="number" class="modal-input has-currency" 
+                    [(ngModel)]="nuevoProducto.precio_venta" name="precio" min="0"/>
+            </div>
+          </div>
+          <div class="form-group col-span-2">
+            <label for="product-supplier">Proveedor</label>
+            <input id="product-supplier" type="text" class="modal-input" [(ngModel)]="nuevoProducto.proveedor" name="proveedor"/>
+          </div>
+          <div class="form-group col-span-2">
+            <label for="product-location">Ubicación</label>
+            <input id="product-location" type="text" class="modal-input" [(ngModel)]="nuevoProducto.ubicacion" name="ubicacion"/>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn-add-modal" (click)="guardarProducto()">
+          {{ esEdicion ? 'Guardar Cambios' : 'Agregar' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-overlay confirm-overlay" *ngIf="mostrarConfirmacion">
+    <div class="modal-content modal-sm confirm-box">
+      <div class="confirm-icon-wrapper">
+        <span class="material-symbols-outlined">warning</span>
+      </div>
+      <h3 class="confirm-title">¿Eliminar Producto?</h3>
+      <p class="confirm-message">
+        ¿Estás seguro de que deseas eliminar permanentemente:<br>
+        <span class="product-highlight">{{ productoAEliminar?.nombre_producto }}</span>?
+        <br><span class="confirm-subtext">Esta acción no se puede deshacer.</span>
+      </p>
+      <div class="confirm-actions">
+        <button class="btn-cancel-confirm" (click)="cancelarEliminacion()">Cancelar</button>
+        <button class="btn-delete-confirm" (click)="eliminarProducto()">Sí, Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+</div>

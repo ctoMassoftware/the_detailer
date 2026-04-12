@@ -1,0 +1,322 @@
+<div class="page-container">
+  <app-nav></app-nav>
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="title">Crear Nueva Orden</h1>
+    </div>
+    <div class="form-layout">
+
+      <section class="panel">
+        <h3 class="panel-title">Datos del Cliente y Orden</h3>
+        <div class="grid-form">
+          <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" [(ngModel)]="datosOrden.fecha" class="input-dark">
+          </div>
+          <div class="form-group">
+            <label>Hora</label>
+            <input type="time" [(ngModel)]="datosOrden.hora" class="input-dark">
+          </div>
+          <div class="form-group">
+            <label>Número de Orden</label>
+            <input type="text" value="Generado autom." readonly class="input-dark read-only">
+          </div>
+
+          <div class="form-group">
+            <label>Nombre del Cliente *</label>
+            <input type="text" 
+                   [(ngModel)]="datosOrden.nombre_cliente"
+                   (blur)="formatearNombreCliente()"
+                   placeholder="Ej: Juan Pérez" 
+                   class="input-dark"
+                   required>
+          </div>
+          
+          <div class="form-group">
+            <label>Celular *</label>
+            <input type="text" [(ngModel)]="datosOrden.telefono_cliente" placeholder="Ej: 3987654321" class="input-dark"
+              (keypress)="validarSoloNumeros($event)" inputmode="numeric" required>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3 class="panel-title">Información del Vehículo</h3>
+        <div class="grid-form">
+          <div class="form-group">
+            <label>Tipo de Vehículo *</label>
+            <select [(ngModel)]="datosOrden.tipoVehiculo" (change)="onTipoVehiculoChange()" class="input-dark" required>
+              <option value="" disabled selected hidden>Seleccione un tipo...</option>
+              <option value="moto">Moto</option>
+              <option value="automovil">Automóvil</option>
+              <option value="campero">Campero</option>
+              <option value="camioneta">Camioneta</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Marca *</label>
+            <input type="text" 
+                   [(ngModel)]="datosOrden.marca"
+                   (blur)="formatearMarca(); datosOrden.modelo = ''"
+                   list="marcasList" 
+                   placeholder="Ej: Chevrolet"
+                   class="input-dark" 
+                   [disabled]="!datosOrden.tipoVehiculo"
+                   required>
+            <datalist id="marcasList">
+              <option *ngFor="let marca of listaMarcas" [value]="marca"></option>
+            </datalist>
+          </div>
+          
+          <div class="form-group">
+            <label>Modelo *</label>
+            <input type="text" 
+                   [(ngModel)]="datosOrden.modelo"
+                   (blur)="formatearModelo()"
+                   list="modelosList" 
+                   placeholder="Ej: Spark GT"
+                   class="input-dark" 
+                   [disabled]="!datosOrden.marca"
+                   required>
+            <datalist id="modelosList">
+              <option *ngFor="let modelo of listaModelos" [value]="modelo"></option>
+            </datalist>
+          </div>
+
+          <div class="form-group">
+            <label>Placa *</label>
+            <input type="text" [(ngModel)]="datosOrden.placa" (input)="normalizarPlaca()"
+              placeholder="ABC123" class="input-dark" required maxlength="6">
+          </div>
+          <div class="form-group full-width">
+            <label>Notas / Observaciones</label>
+            <textarea [(ngModel)]="datosOrden.notas" placeholder="Ej: Vehículo con rayón en puerta derecha..."
+              class="input-dark" rows="3"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <h3 class="panel-title" style="border: none; margin: 0; padding: 0;">Detalles del Servicio</h3>
+          
+          <button class="btn-adicional" 
+                  *ngIf="['ADMIN', 'SUPER_ADMIN', 'ADMIN_SEDE'].includes(rolUsuario)"
+                  (click)="abrirModalAdicional()">
+            <span class="material-symbols-outlined" style="font-size: 1.2rem;">add_circle</span>
+            Agregar Adicional
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;" *ngIf="getAdicionales().length > 0">
+          <span class="adicional-chip" *ngFor="let ad of getAdicionales()">
+            {{ ad.nombre }} - ${{ ad.precio | number }}
+            <span class="material-symbols-outlined" (click)="eliminarAdicional(ad)" title="Quitar adicional">cancel</span>
+          </span>
+        </div>
+
+        <div class="table-container">
+          <h4 class="sub-title">Servicios Unitarios</h4>
+          <table class="dark-table">
+            <thead>
+              <tr>
+                <th class="text-left">Servicio</th>
+                <th [class.active-col]="datosOrden.tipoVehiculo === 'moto'">Moto</th>
+                <th [class.active-col]="datosOrden.tipoVehiculo === 'automovil'">Automóvil</th>
+                <th [class.active-col]="datosOrden.tipoVehiculo === 'campero'">Campero</th>
+                <th [class.active-col]="datosOrden.tipoVehiculo === 'camioneta'">Camioneta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let item of serviciosUnitarios">
+                <tr *ngIf="aplicaParaVehiculoActual(item)">
+                  <td>
+                    {{ item.nombre_servicio }}
+                    <span class="hint" *ngIf="item.descripcion">({{ item.descripcion }})</span>
+                  </td>
+
+                  <td>
+                    <label class="check-label" [class.disabled-label]="datosOrden.tipoVehiculo !== 'moto'">
+                      <input type="checkbox" [disabled]="datosOrden.tipoVehiculo !== 'moto'"
+                        [checked]="isItemChecked(item.id_servicio) && datosOrden.tipoVehiculo === 'moto'"
+                        (change)="seleccionarServicio($event, item, item.precio_moto)">
+                      ${{ item.precio_moto | number:'1.0-0' }}
+                    </label>
+                  </td>
+
+                  <td>
+                    <label class="check-label" [class.disabled-label]="datosOrden.tipoVehiculo !== 'automovil'">
+                      <input type="checkbox" [disabled]="datosOrden.tipoVehiculo !== 'automovil'"
+                        [checked]="isItemChecked(item.id_servicio) && datosOrden.tipoVehiculo === 'automovil'"
+                        (change)="seleccionarServicio($event, item, item.precio_automovil)">
+                      ${{ item.precio_automovil | number:'1.0-0' }}
+                    </label>
+                  </td>
+
+                  <td>
+                    <label class="check-label" [class.disabled-label]="datosOrden.tipoVehiculo !== 'campero'">
+                      <input type="checkbox" [disabled]="datosOrden.tipoVehiculo !== 'campero'"
+                        [checked]="isItemChecked(item.id_servicio) && datosOrden.tipoVehiculo === 'campero'"
+                        (change)="seleccionarServicio($event, item, item.precio_campero)">
+                      ${{ item.precio_campero | number:'1.0-0' }}
+                    </label>
+                  </td>
+
+                  <td>
+                    <label class="check-label" [class.disabled-label]="datosOrden.tipoVehiculo !== 'camioneta'">
+                      <input type="checkbox" [disabled]="datosOrden.tipoVehiculo !== 'camioneta'"
+                        [checked]="isItemChecked(item.id_servicio) && datosOrden.tipoVehiculo === 'camioneta'"
+                        (change)="seleccionarServicio($event, item, item.precio_camioneta)">
+                      ${{ item.precio_camioneta | number:'1.0-0' }}
+                    </label>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+
+          <h4 class="sub-title mt-4">Servicios en Combo</h4>
+          <table class="dark-table">
+            <thead>
+              <tr>
+                <th class="text-left">Combo</th>
+                <th [class.active-col]="datosOrden.tipoVehiculo === 'moto'">Moto</th>
+                <th [class.active-col]="datosOrden.tipoVehiculo === 'automovil'">Automóvil</th>
+                <th [class.active-col]="datosOrden.tipoVehiculo === 'campero'">Campero</th>
+                <th [class.active-col]="datosOrden.tipoVehiculo === 'camioneta'">Camioneta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let item of combos">
+                <tr *ngIf="aplicaParaVehiculoActual(item)">
+                  <td>
+                    {{ item.nombre_servicio }}
+                    <span class="hint" *ngIf="item.descripcion">({{ item.descripcion }})</span>
+                  </td>
+
+                  <td>
+                    <label class="check-label" [class.disabled-label]="datosOrden.tipoVehiculo !== 'moto'">
+                      <input type="checkbox" [disabled]="datosOrden.tipoVehiculo !== 'moto'"
+                        [checked]="isItemChecked(item.id_servicio) && datosOrden.tipoVehiculo === 'moto'"
+                        (change)="seleccionarServicio($event, item, item.precio_moto)">
+                      ${{ item.precio_moto | number:'1.0-0' }}
+                    </label>
+                  </td>
+
+                  <td>
+                    <label class="check-label" [class.disabled-label]="datosOrden.tipoVehiculo !== 'automovil'">
+                      <input type="checkbox" [disabled]="datosOrden.tipoVehiculo !== 'automovil'"
+                        [checked]="isItemChecked(item.id_servicio) && datosOrden.tipoVehiculo === 'automovil'"
+                        (change)="seleccionarServicio($event, item, item.precio_automovil)">
+                      ${{ item.precio_automovil | number:'1.0-0' }}
+                    </label>
+                  </td>
+
+                  <td>
+                    <label class="check-label" [class.disabled-label]="datosOrden.tipoVehiculo !== 'campero'">
+                      <input type="checkbox" [disabled]="datosOrden.tipoVehiculo !== 'campero'"
+                        [checked]="isItemChecked(item.id_servicio) && datosOrden.tipoVehiculo === 'campero'"
+                        (change)="seleccionarServicio($event, item, item.precio_campero)">
+                      ${{ item.precio_campero | number:'1.0-0' }}
+                    </label>
+                  </td>
+
+                  <td>
+                    <label class="check-label" [class.disabled-label]="datosOrden.tipoVehiculo !== 'camioneta'">
+                      <input type="checkbox" [disabled]="datosOrden.tipoVehiculo !== 'camioneta'"
+                        [checked]="isItemChecked(item.id_servicio) && datosOrden.tipoVehiculo === 'camioneta'"
+                        (change)="seleccionarServicio($event, item, item.precio_camioneta)">
+                      ${{ item.precio_camioneta | number:'1.0-0' }}
+                    </label>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3 class="panel-title">Pago</h3>
+        <div class="grid-form">
+          
+          <div class="form-group">
+            <label>Operario Asignado *</label>
+            <select [(ngModel)]="nombreTecnicoSeleccionado" class="input-dark" required>
+              <option value="" disabled selected hidden>Seleccione un técnico...</option>
+              <option *ngFor="let tech of tecnicos" [value]="tech.nombre">
+                {{ tech.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Método de Pago</label>
+            <select [(ngModel)]="datosOrden.metodo_pago" class="input-dark">
+              <option>Efectivo</option>
+              <option>Tarjeta</option>
+              <option>Transferencia</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Caja</label>
+            <input type="text" [(ngModel)]="datosOrden.caja" placeholder="Caja 1" class="input-dark">
+          </div>
+          <div class="form-group">
+            <label>Valor Total ($)</label>
+            <input type="text" [value]="valorTotalFormateado" readonly
+              class="input-dark read-only font-bold text-primary" style="font-size: 1.4rem;">
+          </div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button class="btn-create" (click)="guardarOrden()">
+          <span class="material-symbols-outlined">add_circle</span>
+          Crear Orden
+        </button>
+      </div>
+
+      <div class="modal-overlay" *ngIf="mostrarAlerta">
+        <div class="modal-content">
+          <div class="modal-icon">
+            <span class="material-symbols-outlined" *ngIf="tipoAlerta === 'success'">check_circle</span>
+            <span class="material-symbols-outlined" *ngIf="tipoAlerta === 'error'">error</span>
+          </div>
+          <h2 class="modal-title">{{ tipoAlerta === 'success' ? '¡Excelente!' : 'Atención' }}</h2>
+          <p class="modal-message">{{ mensajeAlerta }}</p>
+          <button class="btn-modal" (click)="cerrarAlerta()">Aceptar</button>
+        </div>
+      </div>
+
+      <div class="modal-overlay" *ngIf="mostrarModalAdicional">
+        <div class="modal-content" style="max-width: 400px; padding: 2.5rem;">
+          
+          <div class="modal-icon">
+            <span class="material-symbols-outlined" style="color: var(--primary);">playlist_add</span>
+          </div>
+          <h2 class="modal-title">Agregar Adicional</h2>
+          <p class="modal-message" style="margin-bottom: 1.5rem;">Añade un servicio extra a la orden actual</p>
+          
+          <div class="form-group" style="text-align: left; margin-bottom: 1.2rem;">
+            <label style="color: white;">¿Qué servicio extra se realizó?</label>
+            <input type="text" class="input-dark" placeholder="Ej: Brillada de farolas" [(ngModel)]="descAdicional">
+          </div>
+          
+          <div class="form-group" style="text-align: left; margin-bottom: 2rem;">
+            <label style="color: white;">Valor a cobrar ($)</label>
+            <input type="number" class="input-dark" placeholder="Ej: 30000" [(ngModel)]="valorAdicional">
+          </div>
+          
+          <div class="modal-actions" style="display: flex; gap: 1rem;">
+            <button class="btn-modal btn-secondary" (click)="cerrarModalAdicional()" style="flex: 1;">Cancelar</button>
+            <button class="btn-modal" (click)="confirmarAdicional()" style="flex: 1;">Aceptar</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

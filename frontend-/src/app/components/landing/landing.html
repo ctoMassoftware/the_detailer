@@ -1,0 +1,176 @@
+<div class="relative flex flex-col min-h-screen w-full overflow-x-hidden">
+      
+      <header class="home-header">
+            <div class="container header-inner">
+                
+                <div class="logo">
+                    <a routerLink="/home">
+                        <img src="assets/logo.jpeg" alt="The Detailer Logo">
+                    </a>
+                </div>
+
+                <div class="header-right">
+                    <nav class="nav-links" [class.active]="isMenuOpen">
+                        <a routerLink="/landing" fragment="nosotros">Nosotros</a>
+                        <a routerLink="/landing" fragment="contacto">Contacto</a>
+                    </nav>
+
+                    <button routerLink="/login" class="hero-btn-primary" style="min-width: 120px; height: 2.75rem; font-size: 0.875rem;">
+                        Ingresar
+                    </button>
+                </div>
+
+            </div>
+      </header>
+
+      <main class="flex flex-col flex-1">
+        
+        <section class="hero-section" id="inicio">
+          <div class="slides-wrapper">
+            <div *ngFor="let slide of slides; let i = index" 
+                class="slide-item" 
+                [class.active]="i === currentSlide">
+              
+              <div class="slide-bg" [style.background-image]="'url(' + slide.image + ')'"></div>
+              
+              <div class="slide-overlay"></div>
+
+              <div class="slide-content">
+                <span class="subtitle">{{ slide.subtitle }}</span>
+                <h2 class="main-title">
+                  {{ slide.title }} <span class="italic-highlight">{{ slide.highlight }}</span>
+                </h2>
+              </div>
+            </div>
+          </div>
+
+          <button class="nav-arrow prev" (click)="prevSlide()">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <button class="nav-arrow next" (click)="nextSlide()">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+
+          <div class="carousel-indicators">
+            <div *ngFor="let slide of slides; let i = index" 
+                class="indicator" 
+                [class.active]="i === currentSlide"
+                (click)="goToSlide(i)">
+            </div>
+          </div>
+        </section>
+
+        <section class="section-padding" id="nosotros">
+          
+          <div class="content-blocks">
+            
+            <div class="grid-2-cols">
+                <div class="text-col flex flex-col gap-6">
+                    <div class="section-label">
+                        <div class="line-decor"></div>
+                        <span class="label-text">Sobre Nosotros</span>
+                    </div>
+                    <h2 class="section-title">
+                        Control <span style="color: var(--primary)">de calidad</span> Experto en materia
+                    </h2>
+                    <p class="section-desc">
+                        En <span style="color: white; font-weight: 700;">The Detailer</span>, no solo lavamos autos; restauramos el orgullo de conducir. Nuestro equipo de artesanos certificados utiliza técnicas de vanguardia para devolverle el brillo original a tu vehículo.
+                    </p>
+                </div>
+                <div class="image-wrapper">
+                    <div class="border-decor"></div>
+                    <img src="assets/imgNiño.jpeg" alt="Sobre Nosotros" class="about-img" loading="lazy"/>
+                </div>
+            </div>
+
+            <div class="grid-2-cols alt-layout">
+                <div class="text-col flex flex-col gap-6">
+                    <div class="section-label">
+                        <div class="line-decor"></div>
+                        <span class="label-text">El Equipo</span>
+                    </div>
+                    <h2 class="section-title">
+                        Quiénes <span style="color: var(--primary)">Somos</span>
+                    </h2>
+                    <p class="section-desc">
+                        Especialistas en estética vehicular con más de 10 años de trayectoria y pasión por los motores de alta gama. Conocemos cada detalle que hace único a tu vehículo y lo tratamos como propio.
+                    </p>
+                </div>
+                <div class="image-wrapper">
+                    <div class="border-decor"></div>
+                    <img src="assets/img4.jpeg" alt="Quiénes Somos - The Detailer" class="about-img" loading="lazy"/>
+                </div>
+            </div>
+
+            <div class="grid-2-cols">
+                <div class="text-col flex flex-col gap-6">
+                    <div class="section-label">
+                        <div class="line-decor"></div>
+                        <span class="label-text">Nuestro Propósito</span>
+                    </div>
+                    <h2 class="section-title">
+                        Nuestra <span style="color: var(--primary)">Misión</span>
+                    </h2>
+                    <p class="section-desc">
+                        Brindar un servicio de detallado excepcional que supere las expectativas de los coleccionistas y clientes más exigentes, garantizando resultados impecables en cada entrega.
+                    </p>
+                </div>
+                <div class="image-wrapper">
+                    <div class="border-decor"></div>
+                    <img src="assets/theDetailer.jpg" alt="Nuestra Misión" class="about-img" loading="lazy"/>
+                </div>
+            </div>
+
+            <div class="grid-2-cols alt-layout">
+                <div class="text-col flex flex-col gap-6">
+                    <div class="section-label">
+                        <div class="line-decor"></div>
+                        <span class="label-text">Hacia el futuro</span>
+                    </div>
+                    <h2 class="section-title">
+                        Nuestra <span style="color: var(--primary)">Visión</span>
+                    </h2>
+                    <p class="section-desc">
+                        Ser el centro de detallado líder, reconocido por nuestra calidad implacable, precisión quirúrgica y la integración de tecnología de punta en el cuidado automotriz a nivel regional.
+                    </p>
+                </div>
+                <div class="image-wrapper">
+                    <div class="border-decor"></div>
+                    <img src="assets/img2.jpeg" alt="Nuestra Visión" class="about-img" loading="lazy"/>
+                </div>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="cta-section" id="contacto">
+          <div style="position: absolute; inset: 0; pointer-events: none;">
+            <div class="blur-circle blur-top"></div>
+            <div class="blur-circle blur-bottom"></div>
+          </div>
+
+          <div class="cta-content" >
+            <div style="max-width: 60rem; margin: 0 auto;">
+                <h2 class="section-title" style="color: white; margin-bottom: 2rem;">
+                    ¿Listo para que tu auto luzca como <span style="color: var(--primary); font-style: italic;">recién salido</span> de fábrica?
+                </h2>
+                <p style="color: rgba(255,255,255,0.7); font-size: 1.25rem; font-weight: 500; max-width: 800px; margin: 0 auto; line-height: 1.8;">
+                    Agenda tu cita hoy mismo y descubre por qué somos la elección número uno de los entusiastas del motor más exigentes.
+                </p>
+            </div>
+            <a href="https://wa.me/573127736569" target="_blank" style="text-decoration: none;">
+                <button class="cta-btn">
+                    <span>Contactar ahora</span>
+                    <span class="material-symbols-outlined">arrow_forward</span>
+                </button>
+            </a>
+          </div>
+        </section>
+
+      </main>
+
+      <div>
+        <app-footer></app-footer>
+      </div>
+
+</div>

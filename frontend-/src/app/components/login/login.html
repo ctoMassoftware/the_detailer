@@ -1,0 +1,93 @@
+<div class="main-bg">
+  <canvas #liquidCanvas class="liquid-canvas"></canvas>
+
+  <div class="login-container">
+
+    <div class="left">
+      <div class="overlay"></div>
+      <div class="left-content">
+        <div class="icon">
+          <svg
+            class="icon-svg"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            ></path>
+          </svg>
+        </div>
+
+        <h1 class="title">Bienvenido!</h1>
+        <div class="divider"></div>
+
+        <p class="description">
+         Inicia sesión como administrador para gestionar de manera eficiente los servicios y el funcionamiento del lavado de autos.
+        </p>
+
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="right-content">
+        <img class="logoEspacio" src="assets/logo.jpeg" alt="logo">
+        <h2 class="login-title">Inicia Sesión</h2>
+        <div class="login-divider"></div>
+
+        <div *ngIf="errorMessage" class="server-error">
+          {{ errorMessage }}
+        </div>
+
+        <form class="form" #loginForm="ngForm" (ngSubmit)="login(loginForm, $event)">
+
+          <div class="form-group">
+            <label class="label" for="username">Usuario (Correo)</label>
+            <input 
+              id="username" 
+              name="username" 
+              type="email"
+              [(ngModel)]="username" 
+              #usernameModel="ngModel"
+              required 
+              email 
+              placeholder="usuario@ejemplo.com" 
+              class="input" 
+              [class.input-error]="usernameModel.invalid && usernameModel.touched" 
+            />
+            
+            <div *ngIf="usernameModel.invalid && usernameModel.touched" class="error-text">
+              <small *ngIf="usernameModel.errors?.['required']">
+                El correo es obligatorio.
+              </small>
+              <small *ngIf="usernameModel.errors?.['email']">
+                Debes ingresar un correo válido (ejemplo: usuario@dominio.com).
+              </small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label" for="password">Contraseña</label>
+            <input id="password" name="password" type="password"
+              [(ngModel)]="password" #passwordModel="ngModel"
+              required minlength="4" placeholder="••••••••" class="input"
+              [class.input-error]="passwordModel.invalid && passwordModel.touched" />
+            
+            <div *ngIf="passwordModel.invalid && passwordModel.touched" class="error-text">
+              <small *ngIf="passwordModel.errors?.['required']">La contraseña es obligatoria.</small>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-login" [disabled]="loginForm.invalid">Ingresar</button>
+          <button type="button" class="btn-regresar" (click)="goBack()">Regresar</button>
+
+        </form>
+
+        
+      </div>
+    </div>
+  </div>
+</div>

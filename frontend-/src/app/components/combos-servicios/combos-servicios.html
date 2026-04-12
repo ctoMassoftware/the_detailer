@@ -1,0 +1,230 @@
+<div class="page-container">
+
+  <app-nav></app-nav>
+
+  @if (mostrarAlerta) {
+  <div class="alert-toast" [class.error]="tipoAlerta === 'error'">
+    <span class="material-symbols-outlined">
+      {{ tipoAlerta === 'error' ? 'error' : 'check_circle' }}
+    </span>
+    <div class="toast-content">
+      <span class="toast-title">{{ tipoAlerta === 'error' ? 'Error' : '¡Éxito!' }}</span>
+      <span class="toast-message">{{ mensajeAlerta }}</span>
+    </div>
+  </div>
+  }
+
+  <main class="main-content">
+    <div class="content-wrapper">
+
+      <div class="page-header">
+        <div class="header-text">
+          <h1 class="page-title">Gestión de Combos y Servicios</h1>
+          <p class="page-subtitle">Administra los paquetes de servicios y servicios individuales de tu car wash.</p>
+        </div>
+        
+        @if (role === 'SUPER_ADMIN') {
+            <button class="btn-add" (click)="abrirModal()">
+            <span class="material-symbols-outlined">add</span>
+            <span>Crear Combo/Servicio</span>
+            </button>
+        }
+      </div>
+
+      <div class="content-card">
+        <div class="search-bar">
+          <div class="search-input-wrapper">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" class="search-input" placeholder="Buscar por nombre " [(ngModel)]="filtroBusqueda"
+              (keyup)="aplicarFiltro()" />
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Descripción</th>
+                <th>Automóvil</th>
+                <th>Campero</th>
+                <th>Camioneta</th>
+                <th>Moto</th>
+                
+                @if (role === 'SUPER_ADMIN') {
+                    <th class="text-center">Acciones</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+
+              @for (item of itemsFiltrados; track item.id_servicio) {
+              <tr>
+                <td class="font-bold text-white">{{ item.nombre }}</td>
+                <td>
+                  <span class="badge" [class.badge-combo]="item.tipo === 'Combo' || item.tipo === 'COMBO'"
+                    [class.badge-service]="item.tipo === 'Servicio' || item.tipo === 'SERVICIO'">
+                    {{ item.tipo }}
+                  </span>
+                </td>
+                <td class="text-muted description-cell">{{ item.descripcion }}</td>
+                <td class="text-muted font-bold">$ {{ item.precioAuto | number }}</td>
+                <td class="text-muted">$ {{ item.precioCampero | number }}</td>
+                <td class="text-muted">$ {{ item.precioCamioneta | number }}</td>
+                <td class="text-muted">$ {{ item.precioMoto | number }}</td>
+                
+                @if (role === 'SUPER_ADMIN') {
+                    <td>
+                    <div class="action-buttons">
+                        <button class="btn-icon icon-edit" title="Editar" (click)="abrirModalEditar(item)">
+                        <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <button class="btn-icon icon-delete" title="Eliminar" (click)="eliminarItem(item)">
+                        <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </div>
+                    </td>
+                }
+              </tr>
+              } @empty {
+              <tr>
+                <td [colSpan]="role === 'SUPER_ADMIN' ? 8 : 7" class="text-center" style="padding: 2rem;">No se encontraron resultados</td>
+              </tr>
+              }
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  @if (mostrarModal) {
+  <div class="modal-overlay">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h2 class="modal-title">
+          {{ esEdicion ? 'Editar Combo/Servicio' : 'Crear Nuevo Servicio o Combo' }}
+        </h2>
+        @if (!esEdicion) {
+        <p class="modal-subtitle">Completa la información para agregar un nuevo ítem.</p>
+        }
+      </div>
+
+      <div class="modal-body">
+        <form (ngSubmit)="guardarItem()">
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="nombre">Nombre</label>
+              <input id="nombre" type="text" class="form-input" placeholder="Ej: Lavado Premium"
+                [(ngModel)]="nuevoItem.nombre" name="nombre" required />
+            </div>
+            <div class="form-group">
+              <label for="tipo">Tipo</label>
+              <select id="tipo" class="form-select" [(ngModel)]="nuevoItem.tipo" name="tipo" required>
+                <option value="Combo">Combo</option>
+                <option value="Servicio">Servicio</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group mt-4">
+            <label for="descripcion">Descripción</label>
+            <textarea id="descripcion" class="form-textarea" rows="3"
+              placeholder="Describe brevemente el servicio o combo..." [(ngModel)]="nuevoItem.descripcion"
+              name="descripcion"></textarea>
+          </div>
+
+          <div class="mt-4">
+            <p class="section-label">Precios por tipo de vehículo</p>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label for="aplica-auto" class="label-sm"
+                  style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                  <input id="aplica-auto" type="checkbox" [(ngModel)]="nuevoItem.aplicaAuto" name="aplicaAuto" />
+                  Aplica Automóvil
+                </label>
+                <input id="precio-automovil" type="number" class="form-input" min="0" placeholder="$0.00"
+                  [disabled]="!nuevoItem.aplicaAuto" [(ngModel)]="nuevoItem.precioAuto" name="precioAuto" />
+              </div>
+              <div class="form-group">
+                <label for="aplica-campero" class="label-sm"
+                  style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                  <input id="aplica-campero" type="checkbox" [(ngModel)]="nuevoItem.aplicaCampero"
+                    name="aplicaCampero" />
+                  Aplica Campero
+                </label>
+                <input id="precio-campero" type="number" class="form-input" min="0" placeholder="$0.00"
+                  [disabled]="!nuevoItem.aplicaCampero" [(ngModel)]="nuevoItem.precioCampero" name="precioCampero" />
+              </div>
+              <div class="form-group">
+                <label for="aplica-camioneta" class="label-sm"
+                  style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                  <input id="aplica-camioneta" type="checkbox" [(ngModel)]="nuevoItem.aplicaCamioneta"
+                    name="aplicaCamioneta" />
+                  Aplica Camioneta
+                </label>
+                <input id="precio-camioneta" type="number" class="form-input" min="0" placeholder="$0.00"
+                  [disabled]="!nuevoItem.aplicaCamioneta" [(ngModel)]="nuevoItem.precioCamioneta"
+                  name="precioCamioneta" />
+              </div>
+              <div class="form-group">
+                <label for="aplica-moto" class="label-sm"
+                  style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                  <input id="aplica-moto" type="checkbox" [(ngModel)]="nuevoItem.aplicaMoto" name="aplicaMoto" />
+                  Aplica Moto
+                </label>
+                <input id="precio-moto" type="number" class="form-input" min="0" placeholder="$0.00"
+                  [disabled]="!nuevoItem.aplicaMoto" [(ngModel)]="nuevoItem.precioMoto" name="precioMoto" />
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer-end">
+            <button type="button" class="btn-cancel-outline" (click)="cerrarModal()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-save-solid">
+              {{ esEdicion ? 'Guardar Cambios' : 'Crear' }}
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
+  }
+
+  @if (mostrarModalEliminar) {
+  <div class="modal-overlay">
+    <div class="modal-content modal-delete">
+      <div class="modal-body text-center mt-4">
+        <div class="delete-icon-container">
+          <span class="material-symbols-outlined icon-big-delete">delete_forever</span>
+        </div>
+
+        <h2 class="modal-title mt-4">¿Estás seguro?</h2>
+        <p class="modal-subtitle">
+          Estás a punto de eliminar <strong>{{ itemParaEliminar?.nombre }}</strong>.
+          Esta acción no se puede deshacer.
+        </p>
+
+        <div class="modal-footer-end mt-4">
+          <button type="button" class="btn-cancel-outline" (click)="cerrarModalEliminar()">
+            No, cancelar
+          </button>
+          <button type="button" class="btn-delete-confirm" (click)="confirmarEliminacion()">
+            Sí, eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+</div>
