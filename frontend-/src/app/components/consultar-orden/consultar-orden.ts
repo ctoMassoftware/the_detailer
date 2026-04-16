@@ -43,6 +43,8 @@ interface Orden {
   styleUrls: ['./consultar-orden.css']
 })
 export class ConsultarOrden implements OnInit {
+  // ...existing code...
+  metodoImpresionFacturaOrden: 'ANDROID' | 'WINDOWS' | null = null;
 
   private ordenService = inject(OrdenService);
   private operarioService = inject(OperarioService);
@@ -492,6 +494,7 @@ export class ConsultarOrden implements OnInit {
     this.mostrarFactura = true;
     this.mostrarModal = false;
     this.mostrarRifa = false;
+    this.metodoImpresionFacturaOrden = null;
     this.numeroBoletaRifa = '';
     this.cargarRifaActiva();
   }
@@ -524,18 +527,15 @@ export class ConsultarOrden implements OnInit {
           placa: this.ordenSeleccionada.vehiculoPlaca,
           total: this.ordenSeleccionada.valorTotal,
           metodoPago: this.ordenSeleccionada.metodoPago,
-          // Pasamos los datos del vuelto al ticket físico si es efectivo
           recibido: this.ordenSeleccionada.metodoPago === 'Efectivo' ? this.montoRecibido : null,
           cambio: this.ordenSeleccionada.metodoPago === 'Efectivo' ? this.cambioDevolver : null,
           numeroRifa: this.mostrarRifa ? this.numeroBoletaRifa : null,
-          servicios: this.ordenSeleccionada.serviciosDetallados.map((s: any) => ({
-            nombre: s.servicio || s.nombre,
-            cantidad: s.cantidad || 1,
-            precio: s.precio_unitario || s.precio || s.valor || 0,
-            subtotal: s.subtotal || ((s.cantidad || 1) * (s.precio_unitario || s.precio || 0))
-          }))
+          servicios: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
+          serviciosDetallados: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
+          servicioPrincipal: this.ordenSeleccionada.servicioPrincipal || (this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados[0].nombre : undefined)
         };
-        this.impresoraService.imprimirTicket(datosTicket, 'ORDEN');
+        const metodo: 'ANDROID' | 'WINDOWS' = this.metodoImpresionFacturaOrden || 'ANDROID';
+        this.impresoraService.imprimirTicket(datosTicket, 'ORDEN', metodo);
       } 
       else if (this.preferenciaRecibo === 'VIRTUAL' && !this.mostrarRifa) {
         if (!this.ordenSeleccionada.celular) {

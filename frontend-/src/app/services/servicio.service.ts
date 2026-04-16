@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class ServicioService {
-  private apiUrl = 'http://localhost:3000/api/servicios';
+  private apiUrl = 'http://192.168.20.11:3000/api/servicios';
   private http = inject(HttpClient);
 
   getServicios(): Observable<any[]> {

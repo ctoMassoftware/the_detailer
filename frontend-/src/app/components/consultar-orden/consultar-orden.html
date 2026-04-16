@@ -474,6 +474,20 @@
               <input type="radio" name="tipoReciboOrden" [(ngModel)]="preferenciaRecibo" value="FISICO" style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
               Físico (Impresora)
             </label>
+            <!-- Mostrar opciones de impresión solo si Físico está seleccionado -->
+            <div *ngIf="preferenciaRecibo === 'FISICO'" style="margin-top: 1rem; margin-left: 0.5rem;">
+              <label style="color: #fff; font-weight: 500; margin-bottom: 0.5rem; display: block;">¿Desde dónde desea imprimir?</label>
+              <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                  <input type="radio" name="metodoImpresionFacturaOrden" [(ngModel)]="metodoImpresionFacturaOrden" value="ANDROID" style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
+                  Android (RawBTl)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                  <input type="radio" name="metodoImpresionFacturaOrden" [(ngModel)]="metodoImpresionFacturaOrden" value="WINDOWS" style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
+                  Windows (USB/Red)
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 

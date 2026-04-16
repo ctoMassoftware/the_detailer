@@ -8,9 +8,14 @@
         <h1 class="page-title">Venta de Mostrador</h1>
       </header>
 
-      <button class="btn btn-primary" style="background-color: #ffaa00; margin-bottom: 20px; width: 100%; padding: 15px; font-size: 1.1rem; border:none; cursor:pointer;" (click)="probarImpresoraDirecto()">
-        🖨️ FORZAR PRUEBA DE IMPRESORA (BYPASS SIN BASE DE DATOS)
-      </button>
+      <div class="test-print-row">
+        <button class="btn btn-primary test-btn-rawbt" (click)="probarImpresoraDirecto()">
+          🖨️ FORZAR PRUEBA (ANDROID/RAWBT)
+        </button>
+        <button class="btn btn-primary test-btn-windows" (click)="probarImpresoraWindows()">
+          🖨️ FORZAR PRUEBA (WINDOWS/USB)
+        </button>
+      </div>
 
       <div class="pos-container">
         
@@ -49,30 +54,32 @@
         </div>
 
         <div class="pos-cart filter-card">
-          <h2 class="section-subtitle" style="margin-top: 0; display: flex; justify-content: space-between;">
-            Carrito
-            <span class="material-symbols-outlined" style="cursor: pointer; color: #9ca3af;" (click)="limpiarCarrito()" title="Vaciar Carrito">delete_sweep</span>
-          </h2>
-
+          <div class="cart-header-row">
+            <h2 class="section-subtitle cart-header">Carrito</h2>
+            <span class="material-symbols-outlined cart-clear-btn" (click)="limpiarCarrito()" title="Vaciar Carrito">delete_sweep</span>
+          </div>
           <div class="cart-items-container scrollable">
-            <div class="cart-item" *ngFor="let item of carrito; let i = index">
-              <div class="cart-item-details">
-                <span class="cart-item-name">{{ item.nombre_producto }}</span>
-                <span class="cart-item-price">$ {{ item.precio_venta | number }} c/u</span>
-              </div>
-              <div class="cart-item-controls">
-                <input type="number" class="form-input small-input text-center" [(ngModel)]="item.cantidad" 
-                       (change)="actualizarCantidad(i, item.cantidad)" min="1">
-                <span class="cart-item-subtotal">$ {{ item.subtotal | number }}</span>
-                <button class="btn-icon delete-icon" (click)="quitarDelCarrito(i)">
-                  <span class="material-symbols-outlined">close</span>
+            <div class="cart-item-modern" *ngFor="let item of carrito; let i = index">
+              <div class="cart-item-modern-main single-line">
+                <div class="cart-item-modern-info">
+                  <span class="cart-item-modern-name">{{ item.nombre_producto }}</span>
+                  <span class="cart-item-modern-variant">{{ item.categoria || 'General' }}</span>
+                </div>
+                <div class="cart-item-modern-price"><span class="currency-inline">$</span> <span>{{ item.precio_venta | number }}</span></div>
+                <div class="cart-item-modern-qty">
+                  <button class="qty-btn" (click)="actualizarCantidad(i, item.cantidad - 1)" [disabled]="item.cantidad <= 1">–</button>
+                  <span class="qty-value">{{ item.cantidad }}</span>
+                  <button class="qty-btn" (click)="actualizarCantidad(i, item.cantidad + 1)">+</button>
+                </div>
+                <div class="cart-item-modern-subtotal"><span class="currency-inline">$</span> <span>{{ item.subtotal | number }}</span></div>
+                <button class="cart-item-modern-delete" (click)="quitarDelCarrito(i)" title="Eliminar">
+                  <span class="material-symbols-outlined trash-icon">delete</span>
                 </button>
               </div>
             </div>
-            
-            <div *ngIf="carrito.length === 0" class="text-center text-muted" style="padding: 2rem;">
-              <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.5;">shopping_cart</span>
-              <p>El carrito está vacío</p>
+            <div *ngIf="carrito.length === 0" class="cart-empty-state cart-empty-center">
+              <span class="material-symbols-outlined cart-empty-icon">shopping_cart</span>
+              <p class="cart-empty-text">El carrito está vacío</p>
             </div>
           </div>
 
@@ -298,6 +305,19 @@
               <input type="radio" name="tipoReciboMostrador" [(ngModel)]="preferenciaRecibo" value="FISICO" style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
               Físico (Impresora)
             </label>
+          </div>
+          <div *ngIf="preferenciaRecibo === 'FISICO'" style="margin-top: 1rem;">
+            <label style="color: #fff; font-weight: 500; margin-bottom: 0.5rem; display: block;">¿Por qué método desea imprimir?</label>
+            <div style="display: flex; gap: 1.5rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="radio" name="metodoImpresion" [(ngModel)]="metodoImpresion" value="RAWBT" style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
+                Android (RawBT)
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="radio" name="metodoImpresion" [(ngModel)]="metodoImpresion" value="WINDOWS" style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
+                Windows/USB
+              </label>
+            </div>
           </div>
         </div>
 

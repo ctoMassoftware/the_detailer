@@ -21,7 +21,7 @@ export interface DashboardStats {
 })
 export class EstadisticasService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/estadisticas';
+  private apiUrl = 'http://192.168.20.11:3000/api/estadisticas';
 
   // 👈 Ahora acepta la sede como parámetro opcional
   getResumenDashboard(sede?: string): Observable<DashboardStats> {

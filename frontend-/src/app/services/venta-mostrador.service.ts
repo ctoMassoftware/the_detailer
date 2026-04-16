@@ -9,7 +9,7 @@ export class VentaMostradorService {
   
   // URL directa a tu backend local. 
   // (Si en el futuro subes esto a un servidor, solo cambias el localhost por tu dominio)
-  private apiUrl = 'http://localhost:3000/api/venta-mostrador';
+  private apiUrl = 'http://192.168.20.11:3000/api/venta-mostrador';
 
   constructor(private http: HttpClient) { }
 
