@@ -1,62 +1,244 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { Nav } from '../../shared/nav/nav';
-import { EstadisticasService, DashboardStats } from '../../services/estadisticas.service';
+import {
+  EstadisticasService,
+  DashboardStats,
+  VentaDiariaMes,
+  ReporteOperativo,
+  TipoExporte,
+  FormatoExporte
+} from '../../services/estadisticas.service';
 
 @Component({
   selector: 'app-graficas',
   standalone: true,
-  imports: [Nav, CommonModule],
+  imports: [Nav, CommonModule, FormsModule],
   templateUrl: './visualizar-graficas.html',
   styleUrl: './visualizar-graficas.css',
 })
 export class Graficas implements OnInit {
-  
+  @ViewChild('dashboardPdfTarget') dashboardPdfTarget?: ElementRef<HTMLElement>;
+  @ViewChild('comisionesPdfTarget') comisionesPdfTarget?: ElementRef<HTMLElement>;
+  descargandoPdfComisiones = false;
+
   private estadisticasService = inject(EstadisticasService);
-  private route = inject(ActivatedRoute);
 
   stats: DashboardStats = {
     ventas: { dia: 0, semana: 0, mes: 0 },
     top_servicios: []
   };
 
+  ventasDiariasMes: VentaDiariaMes[] = [];
+  reporteOperativo: ReporteOperativo = {
+    ventas: { total_ordenes: '0', total_ventas: '0' },
+    inventario: { total_insumos: '0', stock_total: '0', alertas_stock: '0' },
+    pagos: { total_pagos: '0', total_pagado: '0' }
+  };
+
+  formatoExporte: FormatoExporte = 'csv';
+  exportandoClave: string | null = null;
+  descargandoPdfGraficas = false;
+  errorCarga = '';
+
   loading = true;
-  sedeSeleccionada: string | null = null;
+
+  sedeUsuario: string | null = null;
 
   ngOnInit() {
-    // Leemos el parámetro de la URL (ej: ?sede=CENTENARIO)
-    this.route.queryParams.subscribe(params => {
-      this.sedeSeleccionada = params['sede'] || null;
-      this.cargarEstadisticas();
-    });
+    // Obtener sede del usuario logueado
+    const userStr = localStorage.getItem('user') || localStorage.getItem('usuario');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        this.sedeUsuario = user.sede || user.sede_actual || null;
+      } catch (e) {
+        this.sedeUsuario = null;
+      }
+    }
+    this.cargarDatos();
   }
 
-  cargarEstadisticas() {
+  cargarDatos() {
     this.loading = true;
-    // Enviamos la sede seleccionada al servicio
-    this.estadisticasService.getResumenDashboard(this.sedeSeleccionada || undefined).subscribe({
+    this.errorCarga = '';
+
+    // Pasar la sede del usuario a los métodos del servicio
+    this.estadisticasService.getResumenDashboard(this.sedeUsuario || undefined).subscribe({
       next: (data) => {
         this.stats = data;
-        this.loading = false;
       },
       error: (err) => {
         console.error('Error cargando estadísticas', err);
+        this.errorCarga = 'No se pudo cargar el dashboard de ventas.';
+      }
+    });
+
+    this.estadisticasService.getVentasDiariasMes(this.sedeUsuario || undefined).subscribe({
+      next: (data: VentaDiariaMes[]) => {
+        this.ventasDiariasMes = data || [];
+      },
+      error: (err: any) => {
+        console.error('Error cargando ventas diarias del mes', err);
+      }
+    });
+
+    this.estadisticasService.getReporteOperativo(this.sedeUsuario || undefined).subscribe({
+      next: (data: ReporteOperativo) => {
+        this.reporteOperativo = data;
+        this.loading = false;
+      },
+      error: (err: any) => {
+        console.error('Error cargando reporte operativo', err);
+        if (!this.errorCarga) {
+          this.errorCarga = 'No se pudieron cargar los reportes operativos.';
+        }
         this.loading = false;
       }
     });
   }
 
+  async descargarPdfComisiones() {
+    if (!this.comisionesPdfTarget?.nativeElement || this.descargandoPdfComisiones) {
+      return;
+    }
+    this.descargandoPdfComisiones = true;
+    try {
+      const comisionesElement = this.comisionesPdfTarget.nativeElement;
+      const canvas = await html2canvas(comisionesElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#1A1A1A'
+      });
+      const imageData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pageWidth - margin * 2;
+      const contentHeight = (canvas.height * contentWidth) / canvas.width;
+      let yOffset = 0;
+      let remainingHeight = contentHeight;
+      while (remainingHeight > 0) {
+        pdf.addImage(imageData, 'PNG', margin, margin - yOffset, contentWidth, contentHeight);
+        remainingHeight -= pageHeight - margin * 2;
+        yOffset += pageHeight - margin * 2;
+        if (remainingHeight > 0) {
+          pdf.addPage();
+        }
+      }
+      const datePart = new Date().toISOString().slice(0, 10);
+      pdf.save(`reporte-comisiones-${datePart}.pdf`);
+    } catch (error) {
+      console.error('Error generando PDF de comisiones', error);
+    } finally {
+      this.descargandoPdfComisiones = false;
+    }
+  }
+
+  exportar(tipo: TipoExporte) {
+    const formato = this.formatoExporte;
+    const clave = `${tipo}-${formato}`;
+    this.exportandoClave = clave;
+
+      this.estadisticasService.exportarReporte(tipo, formato).subscribe({
+        next: (blob: Blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          const extension = formato === 'excel' ? 'xlsx' : formato;
+          anchor.download = `reporte-${tipo}.${extension}`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          window.URL.revokeObjectURL(url);
+          this.exportandoClave = null;
+        },
+        error: (err: any) => {
+          console.error(`Error exportando reporte ${tipo} en formato ${formato}`, err);
+          this.exportandoClave = null;
+        }
+      });
+  }
+
+  async descargarPdfGraficas() {
+    if (!this.dashboardPdfTarget?.nativeElement || this.descargandoPdfGraficas) {
+      return;
+    }
+
+    this.descargandoPdfGraficas = true;
+    try {
+      const dashboardElement = this.dashboardPdfTarget.nativeElement;
+      const canvas = await html2canvas(dashboardElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#1A1A1A'
+      });
+
+      const imageData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pageWidth - margin * 2;
+      const contentHeight = (canvas.height * contentWidth) / canvas.width;
+
+      let yOffset = 0;
+      let remainingHeight = contentHeight;
+
+      while (remainingHeight > 0) {
+        pdf.addImage(imageData, 'PNG', margin, margin - yOffset, contentWidth, contentHeight);
+        remainingHeight -= pageHeight - margin * 2;
+        yOffset += pageHeight - margin * 2;
+
+        if (remainingHeight > 0) {
+          pdf.addPage();
+        }
+      }
+
+      const datePart = new Date().toISOString().slice(0, 10);
+      pdf.save(`graficas-dashboard-${datePart}.pdf`);
+    } catch (error) {
+      console.error('Error generando PDF de gráficas', error);
+    } finally {
+      this.descargandoPdfGraficas = false;
+    }
+  }
+
+  parseAmount(value?: string | number): number {
+    return Number(value || 0);
+  }
+
+  maxVentaDiaria(): number {
+    if (!this.ventasDiariasMes.length) return 1;
+    return Math.max(...this.ventasDiariasMes.map((v) => this.parseAmount(v.total)), 1);
+  }
+
+  getPorcentajeVentaDia(total: number | string): string {
+    const max = this.maxVentaDiaria();
+    const actual = this.parseAmount(total);
+    return `${Math.max(8, Math.round((actual / max) * 100))}%`;
+  }
+
+
   getPorcentajeBarra(valorActual: string): string {
-    if (!this.stats.top_servicios || this.stats.top_servicios.length === 0) return '0%';
+    if (!this.stats.top_servicios.length) return '0%';
     
     const maxVenta = Math.max(...this.stats.top_servicios.map(item => Number(item.total_vendido)));
     
     const actual = Number(valorActual);
-    
-    // Evitamos errores matemáticos si no hay ventas (división por cero)
-    if (maxVenta === 0) return '0%';
-    
     const porcentaje = (actual / maxVenta) * 100;
     
     return `${porcentaje}%`;

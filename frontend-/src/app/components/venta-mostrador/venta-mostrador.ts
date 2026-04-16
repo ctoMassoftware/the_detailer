@@ -1,3 +1,4 @@
+// (No declarar la función aquí, solo dentro de la clase)
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +16,26 @@ import { ImpresoraService } from '../../services/impresora.service';
   styleUrl: './venta-mostrador.css',
 })
 export class VentaMostrador implements OnInit {
+      // Permitir solo una selección, pero si el usuario selecciona ambas, ambas quedan activas
+      onPreferenciaReciboChange(tipo: string, event: any) {
+        if (event.target.checked) {
+          // Si selecciona una y la otra ya está, permite ambas
+          if (!this.preferenciaRecibo.includes(tipo)) {
+            this.preferenciaRecibo.push(tipo);
+          }
+        } else {
+          // Si desmarca, elimina solo esa
+          this.preferenciaRecibo = this.preferenciaRecibo.filter(t => t !== tipo);
+        }
+        // Si el usuario selecciona una, la otra se desmarca automáticamente (solo si no quiere ambas)
+        if (this.preferenciaRecibo.length === 2) return;
+        if (tipo === 'VIRTUAL' && event.target.checked) {
+          this.preferenciaRecibo = ['VIRTUAL'];
+        } else if (tipo === 'FISICO' && event.target.checked) {
+          this.preferenciaRecibo = ['FISICO'];
+        }
+      }
+    // Permite que ambos checkboxes puedan estar desmarcados. Validación solo al confirmar.
   // ...existing code...
 
   probarImpresoraWindows() {
@@ -103,7 +124,7 @@ export class VentaMostrador implements OnInit {
   mostrarRifa: boolean = false;
   facturaActual: any = {};
   
-  preferenciaRecibo: 'VIRTUAL' | 'FISICO' = 'VIRTUAL';
+  preferenciaRecibo: string[] = ['VIRTUAL'];
 
   numeroBoletaRifa: string = '';
   datosRifaActiva: any = {
@@ -226,6 +247,7 @@ export class VentaMostrador implements OnInit {
   }
 
   abrirFactura() {
+      this.preferenciaRecibo = ['VIRTUAL'];
     if (this.carrito.length === 0) {
       this.mostrarMensaje('El carrito está vacío.', 'error');
       return;
@@ -250,7 +272,6 @@ export class VentaMostrador implements OnInit {
       }))
     };
 
-    this.preferenciaRecibo = 'VIRTUAL';
     this.mostrarFactura = true;
     this.mostrarRifa = false;
     this.numeroBoletaRifa = '';
@@ -317,10 +338,15 @@ export class VentaMostrador implements OnInit {
   }
 
 
+  // Solo se permite impresión física por Windows/USB (cambiar a 'RAWBT' para Android cuando se requiera)
   metodoImpresion: 'WINDOWS' | 'RAWBT' = 'WINDOWS';
 
   confirmarFacturaYVenta() {
-    if (this.preferenciaRecibo === 'VIRTUAL' && !this.facturaActual.celular && this.facturaActual.celular !== 'No registrado') {
+    if (!this.preferenciaRecibo || this.preferenciaRecibo.length === 0) {
+      this.mostrarMensaje('Debe seleccionar al menos una opción de recibo (Virtual o Físico).', 'error');
+      return;
+    }
+    if (this.preferenciaRecibo.includes('VIRTUAL') && !this.facturaActual.celular && this.facturaActual.celular !== 'No registrado') {
       this.mostrarMensaje('Para el recibo virtual es obligatorio el número de WhatsApp.', 'error');
       return;
     }
@@ -380,7 +406,7 @@ export class VentaMostrador implements OnInit {
   }
 
   private procesarImpresion(idVenta: number, nombreFormateado: string) {
-    if (this.preferenciaRecibo === 'FISICO') {
+    if (this.preferenciaRecibo.includes('FISICO')) {
       const datosTicket = {
         numero: idVenta,
         cliente: nombreFormateado,
@@ -403,6 +429,7 @@ export class VentaMostrador implements OnInit {
         this.probarImpresoraWindowsConDatos(datosTicket);
       }
     }
+    // Si en preferencias está VIRTUAL, aquí podrías agregar lógica para WhatsApp si aplica
   }
 
   probarImpresoraDirectoConDatos(datosTicket: any) {

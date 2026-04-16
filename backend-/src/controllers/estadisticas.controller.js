@@ -1,163 +1,62 @@
+export const getReporteOperativo = async (req, res) => {
+    // Mock de datos, reemplaza con lógica real si lo necesitas
+    res.json({
+        ventas: { total_ordenes: '10', total_ventas: '500000' },
+        inventario: { total_insumos: '20', stock_total: '100', alertas_stock: '2' },
+        pagos: { total_pagos: '5', total_pagado: '200000' }
+    });
+};
 import { pool } from '../config/db.js';
+import ExcelJS from 'exceljs';
+import PDFDocument from 'pdfkit';
 
 export const getResumenDashboard = async (req, res) => {
-    const { rol, sede: sedeUsuario } = req.user; 
-    const { fecha, sede: sedeFiltroQuery } = req.query; 
-
-    const fechaFiltro = fecha || new Date().toISOString().split('T')[0];
-
+    const { sede } = req.query;
     try {
         const client = await pool.connect();
         try {
-            const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
-            
-            // Variables dinámicas para los filtros SQL
-            let queryParamsSede = [];
-            let filtroSedeUsuarios = '';
-            let filtroSedeOrden = '';
-            let filtroSedeMostrador = '';
-            let queryParamsStats = [];
-
-            if (!esAdminGlobal) {
-                queryParamsSede = [sedeUsuario];
-                filtroSedeUsuarios = 'AND sede = $1';
-                filtroSedeOrden = 'AND o.sede = $2'; // $1 será la fecha
-                filtroSedeMostrador = 'AND v.sede = $2'; 
-                queryParamsStats = [sedeUsuario];
-            } else if (esAdminGlobal && sedeFiltroQuery) {
-                queryParamsSede = [sedeFiltroQuery];
-                filtroSedeUsuarios = 'AND sede = $1';
-                filtroSedeOrden = 'AND o.sede = $2'; 
-                filtroSedeMostrador = 'AND v.sede = $2'; 
-                queryParamsStats = [sedeFiltroQuery];
-            }
-
-            // 1. OBTENER SEDES Y SUS OPERARIOS (Punto de partida corregido)
-            // Extraemos las sedes válidas directamente de los usuarios, así nunca faltan
-            const sedesQuery = `
+            let ventasQuery = `
                 SELECT 
-                    sede as sede_nombre,
-                    COUNT(CASE WHEN LOWER(rol) = 'operario' AND estado_operario = true THEN 1 END) as operarios_activos
-                FROM public.usuarios
-                WHERE sede IS NOT NULL AND sede != 'GLOBAL'
-                ${filtroSedeUsuarios}
-                GROUP BY sede
-            `;
-            const sedesResult = await client.query(sedesQuery, queryParamsSede);
-
-            // Parámetros para las consultas de fecha (con o sin filtro de sede)
-            const paramsHome = esAdminGlobal && !sedeFiltroQuery ? [fechaFiltro] : [fechaFiltro, queryParamsSede[0]];
-
-            // 2. Métricas de Sede (Lavados de hoy)
-            const metricasSedesQuery = `
-                SELECT 
-                    o.sede as sede_nombre,
-                    COUNT(DISTINCT o.id_orden) as total_servicios,
-                    COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado) * 0.60, 0) as comision_lavadero
+                    COALESCE(SUM(CASE WHEN o.fecha = CURRENT_DATE THEN d.cantidad * d.precio_servicio_aplicado ELSE 0 END), 0) as ventas_dia,
+                    COALESCE(SUM(CASE WHEN o.fecha >= date_trunc('week', CURRENT_DATE) THEN d.cantidad * d.precio_servicio_aplicado ELSE 0 END), 0) as ventas_semana,
+                    COALESCE(SUM(CASE WHEN o.fecha >= date_trunc('month', CURRENT_DATE) THEN d.cantidad * d.precio_servicio_aplicado ELSE 0 END), 0) as ventas_mes
                 FROM public.orden o
-                LEFT JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden
-                WHERE DATE(o.fecha) = $1 
-                  AND o.estado != 'ANULADA'
-                  AND o.sede IS NOT NULL 
-                  AND o.sede != 'GLOBAL'
-                ${filtroSedeOrden}
-                GROUP BY o.sede
+                JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden
+                WHERE o.estado != 'ANULADA'
             `;
-            const metricasResult = await client.query(metricasSedesQuery, paramsHome);
-
-            // 3. GANANCIA NETA de Mostrador de hoy
-            const mostradorQuery = `
-                SELECT 
-                    v.sede as sede_nombre, 
-                    COALESCE(SUM(d.cantidad_vendida * (d.precio_unitario - COALESCE(i.costo, 0))), 0) as ventas_mostrador
-                FROM public.venta_mostrador v
-                JOIN public.detalle_venta_mostrador d ON v.id_venta = d.id_venta
-                JOIN public.inventario_venta i ON d.id_producto_venta = i.id_producto_venta
-                WHERE v.fecha = $1 
-                  AND v.sede IS NOT NULL 
-                  AND v.sede != 'GLOBAL'
-                ${filtroSedeMostrador}
-                GROUP BY v.sede
-            `;
-            const mostradorResult = await client.query(mostradorQuery, paramsHome);
-
-            // CONSOLIDAR DATOS: Partimos de todas las sedes encontradas
-            const sedesUnicas = new Set([
-                ...sedesResult.rows.map(r => r.sede_nombre),
-                ...metricasResult.rows.map(r => r.sede_nombre),
-                ...mostradorResult.rows.map(r => r.sede_nombre)
-            ]);
-
-            const metricasMapeadas = Array.from(sedesUnicas).map(sede_nombre => {
-                // Buscamos los datos de cada sección, si no existen en los lavados de hoy, rellenamos con 0
-                const datosSede = sedesResult.rows.find(r => r.sede_nombre === sede_nombre) || { operarios_activos: 0 };
-                const datosLavado = metricasResult.rows.find(r => r.sede_nombre === sede_nombre) || {
-                    total_servicios: 0,
-                    comision_lavadero: 0
-                };
-                const datosMostrador = mostradorResult.rows.find(m => m.sede_nombre === sede_nombre) || {
-                    ventas_mostrador: 0
-                };
-
-                const ops = parseInt(datosSede.operarios_activos);
-                const comision = parseFloat(datosLavado.comision_lavadero);
-                const gananciaMostrador = parseFloat(datosMostrador.ventas_mostrador); 
-
-                return {
-                    sede_nombre: sede_nombre,
-                    total_servicios: parseInt(datosLavado.total_servicios),
-                    operarios_activos: ops,
-                    comision_lavadero: comision,
-                    ventas_mostrador: gananciaMostrador,
-                    ganancia_total_dia: comision + gananciaMostrador
-                };
-            });
-
-            // 4. Ventas Financieras Generales
-            let filtroGeneralesOrden = '';
-            if (!esAdminGlobal) {
-                filtroGeneralesOrden = 'AND o.sede = $1';
-            } else if (esAdminGlobal && sedeFiltroQuery) {
-                filtroGeneralesOrden = 'AND o.sede = $1';
+            let params = [];
+            if (sede) {
+                ventasQuery += ' AND o.sede = $1';
+                params.push(sede);
             }
+            const ventasResult = await client.query(ventasQuery, params);
 
-            const ventasQuery = `
-                SELECT 
-                    COALESCE(SUM(CASE WHEN DATE(o.fecha) = CURRENT_DATE THEN d.cantidad * d.precio_servicio_aplicado ELSE 0 END), 0) as dia,
-                    COALESCE(SUM(CASE WHEN o.fecha >= date_trunc('week', CURRENT_DATE) THEN d.cantidad * d.precio_servicio_aplicado ELSE 0 END), 0) as semana,
-                    COALESCE(SUM(CASE WHEN o.fecha >= date_trunc('month', CURRENT_DATE) THEN d.cantidad * d.precio_servicio_aplicado ELSE 0 END), 0) as mes
-                FROM public.orden o
-                LEFT JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden
-                WHERE o.estado != 'ANULADA' ${filtroGeneralesOrden}
-            `;
-            const ventasResult = await client.query(ventasQuery, queryParamsStats);
-
-            // 5. Top Servicios
-            const topServiciosQuery = `
+            let topServiciosQuery = `
                 SELECT 
                     s.nombre_servicio,
                     s.tipo,
                     SUM(d.cantidad) as total_vendido,
                     SUM(d.cantidad * d.precio_servicio_aplicado) as total_ingresos
                 FROM public.detalle_orden_venta d
-                JOIN public.orden o ON d.id_orden = o.id_orden
                 JOIN public.servicio s ON d.id_servicio = s.id_servicio
-                WHERE o.estado != 'ANULADA' ${filtroGeneralesOrden}
-                GROUP BY s.id_servicio, s.nombre_servicio, s.tipo
-                ORDER BY total_vendido DESC
-                LIMIT 5
+                JOIN public.orden o ON d.id_orden = o.id_orden
+                WHERE o.fecha >= date_trunc('month', CURRENT_DATE)
             `;
-            const topResult = await client.query(topServiciosQuery, queryParamsStats);
+            let params2 = [];
+            if (sede) {
+                topServiciosQuery += ' AND o.sede = $1';
+                params2.push(sede);
+            }
+            topServiciosQuery += ` GROUP BY s.nombre_servicio, s.tipo ORDER BY total_vendido DESC LIMIT 5`;
+            const topServiciosResult = await client.query(topServiciosQuery, params2);
 
             res.json({
-                fecha_consultada: fechaFiltro,
-                metricas_sedes: metricasMapeadas,
                 ventas: {
-                    dia: parseFloat(ventasResult.rows[0].dia),
-                    semana: parseFloat(ventasResult.rows[0].semana),
-                    mes: parseFloat(ventasResult.rows[0].mes)
+                    dia: parseFloat(ventasResult.rows[0].ventas_dia),
+                    semana: parseFloat(ventasResult.rows[0].ventas_semana),
+                    mes: parseFloat(ventasResult.rows[0].ventas_mes)
                 },
-                top_servicios: topResult.rows
+                top_servicios: topServiciosResult.rows
             });
 
         } finally {
@@ -170,37 +69,163 @@ export const getResumenDashboard = async (req, res) => {
 };
 
 export const getVentasDiariasMes = async (req, res) => {
-    const { rol, sede: sedeUsuario } = req.user;
-    const { sede: sedeFiltroQuery } = req.query; 
-    
-    const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
-    
-    let sqlSedeFiltro = '';
-    let queryParams = [];
-
-    if (!esAdminGlobal) {
-        sqlSedeFiltro = 'AND o.sede = $1';
-        queryParams = [sedeUsuario];
-    } else if (esAdminGlobal && sedeFiltroQuery) {
-        sqlSedeFiltro = 'AND o.sede = $1';
-        queryParams = [sedeFiltroQuery];
-    }
-
+    const { sede } = req.query;
     try {
-        const query = `
+        let query = `
             SELECT 
                 to_char(o.fecha, 'YYYY-MM-DD') as fecha,
                 SUM(d.cantidad * d.precio_servicio_aplicado) as total
             FROM public.orden o
             JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden
-            WHERE o.fecha >= date_trunc('month', CURRENT_DATE) AND o.estado != 'ANULADA' ${sqlSedeFiltro}
-            GROUP BY o.fecha
-            ORDER BY o.fecha ASC
+            WHERE o.fecha >= date_trunc('month', CURRENT_DATE)
         `;
-        const result = await pool.query(query, queryParams);
+        let params = [];
+        if (sede) {
+            query += ' AND o.sede = $1';
+            params.push(sede);
+        }
+        query += ' GROUP BY o.fecha ORDER BY o.fecha ASC';
+        const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error obteniendo gráfica de ventas' });
+    }
+};
+
+// Utilidad para convertir datos a CSV
+function toCSV(data) {
+    if (!data || !data.length) return '';
+    const keys = Object.keys(data[0]);
+    const header = keys.join(',');
+    const rows = data.map(row => keys.map(k => '"' + (row[k] ?? '') + '"').join(','));
+    return [header, ...rows].join('\n');
+}
+
+// Controlador para exportar reportes
+export const exportarReporte = async (req, res) => {
+    const { tipo, formato } = req.query;
+    let query = '';
+    let join = '';
+    let filename = `${tipo}_reporte.${formato}`;
+    let data = [];
+    try {
+        switch (tipo) {
+            case 'ventas': {
+                const { sede } = req.query;
+                query = `SELECT o.id_orden, o.fecha, o.estado, d.cantidad, d.precio_servicio_aplicado, s.nombre_servicio FROM public.orden o JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden JOIN public.servicio s ON d.id_servicio = s.id_servicio`;
+                if (sede) {
+                    query += ` WHERE o.sede = $1`;
+                    query += ` ORDER BY o.fecha DESC LIMIT 100`;
+                    data = (await pool.query(query, [sede])).rows;
+                } else {
+                    query += ` ORDER BY o.fecha DESC LIMIT 100`;
+                    data = (await pool.query(query)).rows;
+                }
+                break;
+            }
+            case 'inventario':
+                query = `SELECT id_producto, nombre_producto, proveedor, categoria, ubicacion, costo, cantidad, stock_minimo FROM public.inventario_producto ORDER BY nombre_producto ASC`;
+                break;
+            case 'pagos':
+                // Incluye nombre del operario
+                query = `SELECT p.id_pago, u.nombre AS nombre_operario, p.monto, p.metodo_pago, p.fecha_pago, p.observacion FROM public.pago_operario p JOIN public.usuarios u ON p.id_operario = u.id_user ORDER BY p.fecha_pago DESC LIMIT 100`;
+                break;
+            case 'comisiones': {
+                const { sede } = req.query;
+                query = `SELECT c.id_comision, c.id_orden, u.nombre AS nombre_operario, c.porcentaje_aplicado, c.monto_comision, c.estado, c.created_at FROM public.comision_orden_operario c JOIN public.usuarios u ON c.id_operario = u.id_user`;
+                if (sede) {
+                    query += ` WHERE c.sede = $1`;
+                    query += ` ORDER BY c.created_at DESC LIMIT 100`;
+                    data = (await pool.query(query, [sede])).rows;
+                } else {
+                    query += ` ORDER BY c.created_at DESC LIMIT 100`;
+                    data = (await pool.query(query)).rows;
+                }
+                break;
+            }
+            default:
+                return res.status(400).json({ error: 'Tipo de reporte no soportado' });
+        }
+        const result = await pool.query(query);
+        data = result.rows;
+        if (formato === 'csv') {
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            return res.send(toCSV(data));
+        } else if (formato === 'excel' || formato === 'xlsx') {
+            // Exportación real a Excel usando exceljs
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Reporte');
+            if (data.length > 0) {
+                worksheet.columns = Object.keys(data[0]).map(key => ({ header: key, key }));
+                data.forEach(row => worksheet.addRow(row));
+            }
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${tipo}_reporte.xlsx"`);
+            await workbook.xlsx.write(res);
+            res.end();
+            return;
+        } else if (formato === 'pdf') {
+            // PDF con estilos avanzados
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${tipo}_reporte.pdf"`);
+            const doc = new PDFDocument({ margin: 30, size: 'A4' });
+            doc.pipe(res);
+            const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+            // Cabecera negra
+            doc.rect(doc.page.margins.left, doc.y, pageWidth, 40).fill('#181B20');
+            doc.fillColor('white').font('Helvetica-Bold').fontSize(24).text(`Reporte ${tipo.toUpperCase()}`, doc.page.margins.left + 10, doc.y - 35, { continued: false });
+            doc.fontSize(10).fillColor('white').text(`Generado: ${new Date().toLocaleString()}`, { align: 'left' });
+            doc.moveDown(0.5);
+            // Línea roja
+            doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.margins.left + pageWidth, doc.y).lineWidth(4).stroke('#F71C1C');
+            doc.moveDown(1);
+            if (data.length > 0) {
+                const keys = Object.keys(data[0]);
+                const colWidths = Array(keys.length).fill(Math.floor(pageWidth / keys.length));
+                let tableY = doc.y + 10;
+                // Encabezado rojo
+                doc.rect(doc.page.margins.left, tableY, pageWidth, 22).fill('#F71C1C');
+                doc.fillColor('white').font('Helvetica-Bold').fontSize(11);
+                let x = doc.page.margins.left;
+                keys.forEach((k, i) => {
+                    doc.text(k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), x + 4, tableY + 5, { width: colWidths[i] - 8, align: 'center', continued: false });
+                    x += colWidths[i];
+                });
+                // Filas de datos
+                let rowY = tableY + 22;
+                data.forEach((row, idx) => {
+                    // Fondo alterno
+                    if (idx % 2 === 0) {
+                        doc.rect(doc.page.margins.left, rowY, pageWidth, 20).fill('#232733');
+                    } else {
+                        doc.rect(doc.page.margins.left, rowY, pageWidth, 20).fill('#181B20');
+                    }
+                    x = doc.page.margins.left;
+                    doc.fillColor('white').font('Helvetica').fontSize(10);
+                    keys.forEach((k, i) => {
+                        doc.text(String(row[k] ?? ''), x + 4, rowY + 5, { width: colWidths[i] - 8, align: 'center', continued: false });
+                        x += colWidths[i];
+                    });
+                    rowY += 20;
+                    // Salto de página si es necesario
+                    if (rowY > doc.page.height - doc.page.margins.bottom - 30) {
+                        doc.addPage();
+                        rowY = doc.y;
+                    }
+                });
+            } else {
+                doc.moveDown(2);
+                doc.font('Helvetica').fontSize(12).fillColor('black').text('No hay datos para mostrar.');
+            }
+            doc.end();
+            return;
+        } else {
+            return res.status(400).json({ error: 'Formato no soportado' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error exportando reporte' });
     }
 };
