@@ -21,20 +21,20 @@ export class Home implements OnInit {
   role: string | null = null;
   sede: string | null = null;
   
-  // Variable para el input de fecha
-  fechaSeleccionada: string = ''; 
+  // Variables para el rango de fechas
+  fechaDesde: string = '';
+  fechaHasta: string = '';
   dashboardData: any = null;
 
   ngOnInit(): void {
     this.role = this.authService.getRole();
     this.sede = this.authService.getSede();
-    
     // Establecemos la fecha de hoy por defecto al entrar
     const hoy = new Date();
-    // Ajuste de zona horaria para Colombia (evita que marque un día antes por la noche)
     hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset());
-    this.fechaSeleccionada = hoy.toISOString().split('T')[0]; 
-    
+    const hoyStr = hoy.toISOString().split('T')[0];
+    this.fechaDesde = hoyStr;
+    this.fechaHasta = hoyStr;
     this.cargarResumenDia();
   }
 
@@ -44,8 +44,10 @@ export class Home implements OnInit {
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    // Enviamos la fecha seleccionada en la URL
-    const url = `http://localhost:3000/api/estadisticas/dashboard?fecha=${this.fechaSeleccionada}`;
+    // Enviamos el rango de fechas en la URL
+    let url = `http://localhost:3000/api/estadisticas/dashboard?`;
+    if (this.fechaDesde) url += `fecha_desde=${this.fechaDesde}&`;
+    if (this.fechaHasta) url += `fecha_hasta=${this.fechaHasta}`;
 
     this.http.get(url, { headers }).subscribe({
       next: (data) => {

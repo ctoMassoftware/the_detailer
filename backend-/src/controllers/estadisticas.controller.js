@@ -29,32 +29,33 @@ export const getResumenDashboard = async (req, res) => {
                     ) s
                 `);
                 const sedes = sedesResult.rows.map(r => r.sede);
-                // Fecha seleccionada (por defecto hoy)
-                let fecha = req.query.fecha || new Date().toISOString().split('T')[0];
+                // Filtro de rango de fechas
+                let fechaDesde = req.query.fecha_desde || new Date().toISOString().split('T')[0];
+                let fechaHasta = req.query.fecha_hasta || fechaDesde;
                 for (const sedeNombre of sedes) {
-                    // Total servicios (órdenes finalizadas del día)
+                    // Total servicios (órdenes finalizadas en el rango)
                     const totalServiciosRes = await client.query(
-                        `SELECT COUNT(*) FROM public.orden WHERE sede = $1 AND fecha = $2 AND estado != 'ANULADA'`,
-                        [sedeNombre, fecha]
+                        `SELECT COUNT(*) FROM public.orden WHERE sede = $1 AND fecha >= $2 AND fecha <= $3 AND estado != 'ANULADA'`,
+                        [sedeNombre, fechaDesde, fechaHasta]
                     );
                     // Operarios activos en la sede
                     const operariosActivosRes = await client.query(
                         `SELECT COUNT(*) FROM public.usuarios WHERE sede = $1 AND estado_operario = TRUE AND rol = 'OPERARIO'`,
                         [sedeNombre]
                     );
-                    // Comisión lavadero (60% de ventas del día en servicios)
+                    // Comisión lavadero (60% de ventas en servicios en el rango)
                     const comisionRes = await client.query(
-                        `SELECT COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado),0) as total FROM public.orden o JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden WHERE o.sede = $1 AND o.fecha = $2 AND o.estado != 'ANULADA'`,
-                        [sedeNombre, fecha]
+                        `SELECT COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado),0) as total FROM public.orden o JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden WHERE o.sede = $1 AND o.fecha >= $2 AND o.fecha <= $3 AND o.estado != 'ANULADA'`,
+                        [sedeNombre, fechaDesde, fechaHasta]
                     );
                     const comision_lavadero = Math.round(Number(comisionRes.rows[0].total || 0) * 0.6);
-                    // Ventas mostrador del día
+                    // Ventas mostrador en el rango
                     const ventasMostradorRes = await client.query(
-                        `SELECT COALESCE(SUM(total),0) as total FROM public.venta_mostrador WHERE sede = $1 AND fecha = $2`,
-                        [sedeNombre, fecha]
+                        `SELECT COALESCE(SUM(total),0) as total FROM public.venta_mostrador WHERE sede = $1 AND fecha >= $2 AND fecha <= $3`,
+                        [sedeNombre, fechaDesde, fechaHasta]
                     );
                     const ventas_mostrador = Math.round(Number(ventasMostradorRes.rows[0].total || 0));
-                    // Ganancia total del día
+                    // Ganancia total del rango
                     const ganancia_total_dia = comision_lavadero + ventas_mostrador;
                     metricas_sedes.push({
                         sede_nombre: sedeNombre,
