@@ -1,4 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import html2canvas from 'html2canvas';
@@ -48,6 +49,10 @@ export class Graficas implements OnInit {
 
   sedeUsuario: string | null = null;
   rolUsuario: string | null = null;
+  sedeSeleccionada: string | null = null;
+  sedesDisponibles: string[] = ['CENTENARIO', 'GALAN'];
+
+  constructor(private route: ActivatedRoute) {}
 
   ngOnInit() {
     // Obtener sede y rol del usuario logueado
@@ -62,16 +67,34 @@ export class Graficas implements OnInit {
         this.rolUsuario = null;
       }
     }
-    this.cargarDatos();
+
+    // Leer sede desde queryParams si viene de home
+    this.route.queryParams.subscribe(params => {
+      const sedeParam = params['sede'];
+      if (sedeParam && this.sedesDisponibles.includes(sedeParam)) {
+        this.sedeSeleccionada = sedeParam;
+      } else if (this.rolUsuario === 'SUPER_ADMIN') {
+        this.sedeSeleccionada = this.sedesDisponibles[0];
+      } else {
+        this.sedeSeleccionada = this.sedeUsuario;
+      }
+      this.cargarDatos();
+    });
   }
 
   cargarDatos() {
     this.loading = true;
     this.errorCarga = '';
 
-    // Solo enviar sede si el usuario NO es admin global
-    const esAdminGlobal = this.rolUsuario === 'ADMIN' || this.rolUsuario === 'SUPER_ADMIN';
-    const sedeParam = !esAdminGlobal ? this.sedeUsuario || undefined : undefined;
+    // Si es SUPER_ADMIN, usar la sede seleccionada
+    let sedeParam: string | undefined = undefined;
+    if (this.rolUsuario === 'SUPER_ADMIN') {
+      sedeParam = this.sedeSeleccionada || undefined;
+    } else if (this.rolUsuario === 'ADMIN') {
+      sedeParam = undefined; // Puede ver todas
+    } else {
+      sedeParam = this.sedeUsuario || undefined;
+    }
 
     this.estadisticasService.getResumenDashboard(sedeParam).subscribe({
       next: (data) => {
@@ -114,14 +137,20 @@ export class Graficas implements OnInit {
     this.descargandoPdfComisiones = true;
     try {
       const comisionesElement = this.comisionesPdfTarget.nativeElement;
+      // Ajustar el tamaño del canvas para capturar todo el contenido
+      const originalWidth = comisionesElement.scrollWidth;
+      const originalHeight = comisionesElement.scrollHeight;
       const canvas = await html2canvas(comisionesElement, {
+        width: originalWidth,
+        height: originalHeight,
         scale: 2,
         useCORS: true,
         backgroundColor: '#1A1A1A'
       });
       const imageData = canvas.toDataURL('image/png');
+      // Siempre usar orientación horizontal (landscape)
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'landscape', // NO CAMBIAR A portrait
         unit: 'mm',
         format: 'a4'
       });
@@ -131,12 +160,32 @@ export class Graficas implements OnInit {
       const contentWidth = pageWidth - margin * 2;
       const contentHeight = (canvas.height * contentWidth) / canvas.width;
       let yOffset = 0;
-      let remainingHeight = contentHeight;
-      while (remainingHeight > 0) {
-        pdf.addImage(imageData, 'PNG', margin, margin - yOffset, contentWidth, contentHeight);
-        remainingHeight -= pageHeight - margin * 2;
-        yOffset += pageHeight - margin * 2;
-        if (remainingHeight > 0) {
+      let pageCanvas = document.createElement('canvas');
+      let pageCtx = pageCanvas.getContext('2d');
+      const pagePxHeight = Math.floor((pageHeight - margin * 2) * (canvas.width / contentWidth));
+      let renderedHeight = 0;
+      while (renderedHeight < canvas.height) {
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = Math.min(pagePxHeight, canvas.height - renderedHeight);
+        if (pageCtx) {
+          pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+          pageCtx.drawImage(
+            canvas,
+            0,
+            renderedHeight,
+            canvas.width,
+            pageCanvas.height,
+            0,
+            0,
+            canvas.width,
+            pageCanvas.height
+          );
+        }
+        const pageImageData = pageCanvas.toDataURL('image/png');
+        const pageDrawHeight = (pageCanvas.height * contentWidth) / canvas.width;
+        pdf.addImage(pageImageData, 'PNG', margin, margin, contentWidth, pageDrawHeight);
+        renderedHeight += pagePxHeight;
+        if (renderedHeight < canvas.height) {
           pdf.addPage();
         }
       }
@@ -182,15 +231,21 @@ export class Graficas implements OnInit {
     this.descargandoPdfGraficas = true;
     try {
       const dashboardElement = this.dashboardPdfTarget.nativeElement;
+      // Ajustar el tamaño del canvas para capturar todo el contenido
+      const originalWidth = dashboardElement.scrollWidth;
+      const originalHeight = dashboardElement.scrollHeight;
       const canvas = await html2canvas(dashboardElement, {
+        width: originalWidth,
+        height: originalHeight,
         scale: 2,
         useCORS: true,
         backgroundColor: '#1A1A1A'
       });
 
       const imageData = canvas.toDataURL('image/png');
+      // Siempre usar orientación horizontal (landscape)
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'landscape', // NO CAMBIAR A portrait
         unit: 'mm',
         format: 'a4'
       });
@@ -200,16 +255,32 @@ export class Graficas implements OnInit {
       const margin = 10;
       const contentWidth = pageWidth - margin * 2;
       const contentHeight = (canvas.height * contentWidth) / canvas.width;
-
-      let yOffset = 0;
-      let remainingHeight = contentHeight;
-
-      while (remainingHeight > 0) {
-        pdf.addImage(imageData, 'PNG', margin, margin - yOffset, contentWidth, contentHeight);
-        remainingHeight -= pageHeight - margin * 2;
-        yOffset += pageHeight - margin * 2;
-
-        if (remainingHeight > 0) {
+      let pageCanvas = document.createElement('canvas');
+      let pageCtx = pageCanvas.getContext('2d');
+      const pagePxHeight = Math.floor((pageHeight - margin * 2) * (canvas.width / contentWidth));
+      let renderedHeight = 0;
+      while (renderedHeight < canvas.height) {
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = Math.min(pagePxHeight, canvas.height - renderedHeight);
+        if (pageCtx) {
+          pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+          pageCtx.drawImage(
+            canvas,
+            0,
+            renderedHeight,
+            canvas.width,
+            pageCanvas.height,
+            0,
+            0,
+            canvas.width,
+            pageCanvas.height
+          );
+        }
+        const pageImageData = pageCanvas.toDataURL('image/png');
+        const pageDrawHeight = (pageCanvas.height * contentWidth) / canvas.width;
+        pdf.addImage(pageImageData, 'PNG', margin, margin, contentWidth, pageDrawHeight);
+        renderedHeight += pagePxHeight;
+        if (renderedHeight < canvas.height) {
           pdf.addPage();
         }
       }

@@ -10,10 +10,18 @@
           <h1 class="page-title">Visualizar Gráficas</h1>
           <p class="page-subtitle">Análisis de ventas y rendimiento de servicios.</p>
         </div>
-        <div class="header-actions">
-          <button class="btn-download-pdf" (click)="descargarPdfGraficas()" [disabled]="loading || descargandoPdfGraficas">
-            {{ descargandoPdfGraficas ? 'Generando PDF...' : 'Descargar PDF de gráficas' }}
-          </button>
+        <!-- Selector de sede para SUPER_ADMIN -->
+        <div *ngIf="rolUsuario === 'SUPER_ADMIN'" class="sede-selector" style="margin-top: 1rem; ">
+          <label for="sede-select" style="color: white; font-weight: 600; margin-right: 0.5rem;">Sede:</label>
+          <select id="sede-select" [(ngModel)]="sedeSeleccionada" (change)="cargarDatos()" style="padding: 0.4rem 1rem; border-radius: 0.5rem; margin-right: 1rem; border: 1px solid #fd0100; background: #181818; color: white;">
+            <option *ngFor="let sede of sedesDisponibles" [value]="sede">{{ sede }}</option>
+          </select>
+          
+          
+            <button class="btn-download-pdf" (click)="descargarPdfGraficas()" [disabled]="loading || descargandoPdfGraficas">
+              {{ descargandoPdfGraficas ? 'Generando PDF...' : 'Exportar Gráficas' }}
+            </button>
+         
         </div>
       </header>
 

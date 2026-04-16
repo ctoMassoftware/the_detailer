@@ -175,6 +175,7 @@ export const exportarReporte = async (req, res) => {
     let join = '';
     let filename = `${tipo}_reporte.${formato}`;
     let data = [];
+    let headers = null;
     try {
         switch (tipo) {
             case 'ventas': {
@@ -194,13 +195,60 @@ export const exportarReporte = async (req, res) => {
                 data = (await pool.query(query, params)).rows;
                 break;
             }
-            case 'inventario':
-                query = `SELECT id_producto, nombre_producto, proveedor, categoria, ubicacion, costo, cantidad, stock_minimo FROM public.inventario_producto ORDER BY nombre_producto ASC`;
+            case 'inventario': {
+                const { sede } = req.query;
+                const { rol, sede: sedeUsuario } = req.user;
+                const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
+                query = `SELECT id_producto, nombre_producto, proveedor, categoria, ubicacion, costo, cantidad, stock_minimo, sede FROM public.inventario_producto`;
+                let params = [];
+                if (!esAdminGlobal) {
+                    query += ` WHERE sede = $1`;
+                    params.push(sedeUsuario);
+                } else if (sede) {
+                    query += ` WHERE sede = $1`;
+                    params.push(sede);
+                }
+                query += ` ORDER BY nombre_producto ASC`;
+                data = (await pool.query(query, params)).rows;
+                headers = [
+                    { label: 'ID', property: 'id_producto', width: 35 },
+                    { label: 'Producto', property: 'nombre_producto', width: 110 },
+                    { label: 'Proveedor', property: 'proveedor', width: 80 },
+                    { label: 'Categoría', property: 'categoria', width: 65 },
+                    { label: 'Ubicación', property: 'ubicacion', width: 80 },
+                    { label: 'Costo', property: 'costo', width: 65, format: v => v ? `$${Number(v).toLocaleString('es-CO')}` : '' },
+                    { label: 'Cantidad', property: 'cantidad', width: 55 },
+                    { label: 'Stock Mínimo', property: 'stock_minimo', width: 65 },
+                    { label: 'Sede', property: 'sede', width: 80 }
+                ];
                 break;
-            case 'pagos':
-                // Incluye nombre del operario
-                query = `SELECT p.id_pago, u.nombre AS nombre_operario, p.monto, p.metodo_pago, p.fecha_pago, p.observacion FROM public.pago_operario p JOIN public.usuarios u ON p.id_operario = u.id_user ORDER BY p.fecha_pago DESC LIMIT 100`;
+            }
+            case 'pagos': {
+                const { sede } = req.query;
+                const { rol, sede: sedeUsuario } = req.user;
+                const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
+                query = `SELECT p.id_pago, u.nombre AS nombre_operario, p.monto, p.metodo_pago, p.fecha_pago, p.observacion, p.sede FROM public.pago_operario p JOIN public.usuarios u ON p.id_operario = u.id_user`;
+                let params = [];
+                if (!esAdminGlobal) {
+                    query += ` WHERE p.sede = $1`;
+                    params.push(sedeUsuario);
+                } else if (sede) {
+                    query += ` WHERE p.sede = $1`;
+                    params.push(sede);
+                }
+                query += ` ORDER BY p.fecha_pago DESC LIMIT 100`;
+                data = (await pool.query(query, params)).rows;
+                headers = [
+                    { label: 'ID Pago', property: 'id_pago', width: 50 },
+                    { label: 'Operario', property: 'nombre_operario', width: 110 },
+                    { label: 'Monto', property: 'monto', width: 70, format: v => v ? `$${Number(v).toLocaleString('es-CO')}` : '' },
+                    { label: 'Método de Pago', property: 'metodo_pago', width: 90 },
+                    { label: 'Fecha de Pago', property: 'fecha_pago', width: 90 },
+                    { label: 'Observación', property: 'observacion', width: 140 },
+                    { label: 'Sede', property: 'sede', width: 80 }
+                ];
                 break;
+            }
             case 'comisiones': {
                 const { sede } = req.query;
                 const { rol, sede: sedeUsuario } = req.user;
@@ -221,8 +269,7 @@ export const exportarReporte = async (req, res) => {
             default:
                 return res.status(400).json({ error: 'Tipo de reporte no soportado' });
         }
-        const result = await pool.query(query);
-        data = result.rows;
+        // No volver a ejecutar la consulta, ya se hizo arriba y data contiene los datos correctos
         if (formato === 'csv') {
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -232,7 +279,9 @@ export const exportarReporte = async (req, res) => {
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Reporte');
             if (data.length > 0) {
-                worksheet.columns = Object.keys(data[0]).map(key => ({ header: key, key }));
+                worksheet.columns = headers
+                    ? headers.map(h => ({ header: h.label, key: h.property }))
+                    : Object.keys(data[0]).map(key => ({ header: key, key }));
                 data.forEach(row => worksheet.addRow(row));
             }
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -244,46 +293,97 @@ export const exportarReporte = async (req, res) => {
             // PDF con estilos avanzados
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="${tipo}_reporte.pdf"`);
-            const doc = new PDFDocument({ margin: 30, size: 'A4' });
+            // Cambia la orientación a landscape (horizontal)
+            const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
             doc.pipe(res);
             const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-            // Cabecera negra
-            doc.rect(doc.page.margins.left, doc.y, pageWidth, 40).fill('#181B20');
-            doc.fillColor('white').font('Helvetica-Bold').fontSize(24).text(`Reporte ${tipo.toUpperCase()}`, doc.page.margins.left + 10, doc.y - 35, { continued: false });
-            doc.fontSize(10).fillColor('white').text(`Generado: ${new Date().toLocaleString()}`, { align: 'left' });
+            // Cabecera negra (más alta y con saltos de línea automáticos)
+            const headerHeight = 60;
+            const headerY = doc.y;
+            doc.rect(doc.page.margins.left, headerY, pageWidth, headerHeight).fill('#181B20');
+            doc.fillColor('white').font('Helvetica-Bold').fontSize(24);
+            const title = `Reporte ${tipo.toUpperCase()}`;
+            doc.text(title, doc.page.margins.left + 10, headerY + 10, {
+                width: pageWidth - 20,
+                align: 'left',
+                continued: false
+            });
+            doc.fontSize(10).fillColor('white');
+            const fechaTexto = `Generado: ${new Date().toLocaleString()}`;
+            doc.text(fechaTexto, doc.page.margins.left + 10, headerY + 38, {
+                width: pageWidth - 20,
+                align: 'left',
+                continued: false
+            });
+            doc.y = headerY + headerHeight;
             doc.moveDown(0.5);
             // Línea roja
             doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.margins.left + pageWidth, doc.y).lineWidth(4).stroke('#F71C1C');
             doc.moveDown(1);
             if (data.length > 0) {
-                const keys = Object.keys(data[0]);
-                const colWidths = Array(keys.length).fill(Math.floor(pageWidth / keys.length));
+                // Usar headers si están definidos, si no usar las keys del primer objeto
+                let cols = headers || Object.keys(data[0]).map(k => ({ label: k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), property: k }));
+                // Validar que todas las propiedades de headers existan en los datos
+                cols = cols.filter(h => data[0].hasOwnProperty(h.property));
+                // Calcular anchos proporcionales
+                const totalWidth = cols.reduce((acc, h) => acc + (h.width || 1), 0);
+                const colWidths = cols.map(h => h.width ? Math.floor((h.width / totalWidth) * pageWidth) : Math.floor(pageWidth / cols.length));
                 let tableY = doc.y + 10;
                 // Encabezado rojo
                 doc.rect(doc.page.margins.left, tableY, pageWidth, 22).fill('#F71C1C');
                 doc.fillColor('white').font('Helvetica-Bold').fontSize(11);
                 let x = doc.page.margins.left;
-                keys.forEach((k, i) => {
-                    doc.text(k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), x + 4, tableY + 5, { width: colWidths[i] - 8, align: 'center', continued: false });
+                cols.forEach((h, i) => {
+                    doc.text(h.label, x + 4, tableY + 5, { width: colWidths[i] - 8, align: 'center', continued: false });
                     x += colWidths[i];
                 });
                 // Filas de datos
                 let rowY = tableY + 22;
                 data.forEach((row, idx) => {
-                    // Fondo alterno
+                    doc.font('Helvetica').fontSize(10);
+                    const cellHeights = cols.map((h, i) => {
+                        const text = String(row[h.property] ?? '');
+                        return doc.heightOfString(text, { width: colWidths[i] - 8, align: 'center' });
+                    });
+                    const maxCellHeight = Math.max(...cellHeights, 20);
                     if (idx % 2 === 0) {
-                        doc.rect(doc.page.margins.left, rowY, pageWidth, 20).fill('#232733');
+                        doc.rect(doc.page.margins.left, rowY, pageWidth, maxCellHeight + 8).fill('#232733');
                     } else {
-                        doc.rect(doc.page.margins.left, rowY, pageWidth, 20).fill('#181B20');
+                        doc.rect(doc.page.margins.left, rowY, pageWidth, maxCellHeight + 8).fill('#181B20');
                     }
                     x = doc.page.margins.left;
                     doc.fillColor('white').font('Helvetica').fontSize(10);
-                    keys.forEach((k, i) => {
-                        doc.text(String(row[k] ?? ''), x + 4, rowY + 5, { width: colWidths[i] - 8, align: 'center', continued: false });
+                    cols.forEach((h, i) => {
+                        let text = String(row[h.property] ?? '');
+                        // Formato especial para la columna Fecha
+                        if (h.property.toLowerCase().includes('fecha')) {
+                            const date = new Date(text);
+                            if (!isNaN(date.getTime())) {
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const year = date.getFullYear();
+                                let hours = date.getHours();
+                                const minutes = String(date.getMinutes()).padStart(2, '0');
+                                const ampm = hours >= 12 ? 'PM' : 'AM';
+                                hours = hours % 12;
+                                hours = hours ? hours : 12;
+                                text = `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+                            }
+                        }
+                        // Formato especial para columnas de costo/valor/monto/precio
+                        const costoKeys = ['costo', 'precio', 'valor', 'monto', 'total', 'total_ventas', 'total_pagado', 'monto_comision', 'precio_servicio_aplicado'];
+                        if (costoKeys.some(ck => h.property.toLowerCase().includes(ck))) {
+                            const num = Number(text.replace(/[^\d.-]/g, ''));
+                            if (!isNaN(num)) {
+                                text = `$${num.toLocaleString('es-CO')}`;
+                            }
+                        }
+                        const cellHeight = doc.heightOfString(text, { width: colWidths[i] - 8, align: 'center' });
+                        const yOffset = rowY + 5 + ((maxCellHeight - cellHeight) / 2);
+                        doc.text(text, x + 4, yOffset, { width: colWidths[i] - 8, align: 'center', continued: false });
                         x += colWidths[i];
                     });
-                    rowY += 20;
-                    // Salto de página si es necesario
+                    rowY += maxCellHeight + 8;
                     if (rowY > doc.page.height - doc.page.margins.bottom - 30) {
                         doc.addPage();
                         rowY = doc.y;
