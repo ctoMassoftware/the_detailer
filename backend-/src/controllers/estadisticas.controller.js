@@ -12,9 +12,62 @@ import PDFDocument from 'pdfkit';
 
 export const getResumenDashboard = async (req, res) => {
     const { sede } = req.query;
+    const { rol, sede: sedeUsuario } = req.user;
+    const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
     try {
         const client = await pool.connect();
         try {
+            // Si es SUPER_ADMIN, armar metricas_sedes para todas las sedes
+            let metricas_sedes = [];
+            if (esAdminGlobal) {
+                // Obtener lista de sedes distintas en órdenes y ventas mostrador
+                const sedesResult = await client.query(`
+                    SELECT DISTINCT sede FROM (
+                        SELECT sede FROM public.orden WHERE sede IS NOT NULL
+                        UNION
+                        SELECT sede FROM public.venta_mostrador WHERE sede IS NOT NULL
+                    ) s
+                `);
+                const sedes = sedesResult.rows.map(r => r.sede);
+                // Fecha seleccionada (por defecto hoy)
+                let fecha = req.query.fecha || new Date().toISOString().split('T')[0];
+                for (const sedeNombre of sedes) {
+                    // Total servicios (órdenes finalizadas del día)
+                    const totalServiciosRes = await client.query(
+                        `SELECT COUNT(*) FROM public.orden WHERE sede = $1 AND fecha = $2 AND estado != 'ANULADA'`,
+                        [sedeNombre, fecha]
+                    );
+                    // Operarios activos en la sede
+                    const operariosActivosRes = await client.query(
+                        `SELECT COUNT(*) FROM public.usuarios WHERE sede = $1 AND estado_operario = TRUE AND rol = 'OPERARIO'`,
+                        [sedeNombre]
+                    );
+                    // Comisión lavadero (60% de ventas del día en servicios)
+                    const comisionRes = await client.query(
+                        `SELECT COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado),0) as total FROM public.orden o JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden WHERE o.sede = $1 AND o.fecha = $2 AND o.estado != 'ANULADA'`,
+                        [sedeNombre, fecha]
+                    );
+                    const comision_lavadero = Math.round(Number(comisionRes.rows[0].total || 0) * 0.6);
+                    // Ventas mostrador del día
+                    const ventasMostradorRes = await client.query(
+                        `SELECT COALESCE(SUM(total),0) as total FROM public.venta_mostrador WHERE sede = $1 AND fecha = $2`,
+                        [sedeNombre, fecha]
+                    );
+                    const ventas_mostrador = Math.round(Number(ventasMostradorRes.rows[0].total || 0));
+                    // Ganancia total del día
+                    const ganancia_total_dia = comision_lavadero + ventas_mostrador;
+                    metricas_sedes.push({
+                        sede_nombre: sedeNombre,
+                        total_servicios: Number(totalServiciosRes.rows[0].count),
+                        operarios_activos: Number(operariosActivosRes.rows[0].count),
+                        comision_lavadero,
+                        ventas_mostrador,
+                        ganancia_total_dia
+                    });
+                }
+            }
+
+            // Lógica original para ventas y top_servicios (puede quedarse igual)
             let ventasQuery = `
                 SELECT 
                     COALESCE(SUM(CASE WHEN o.fecha = CURRENT_DATE THEN d.cantidad * d.precio_servicio_aplicado ELSE 0 END), 0) as ventas_dia,
@@ -25,7 +78,10 @@ export const getResumenDashboard = async (req, res) => {
                 WHERE o.estado != 'ANULADA'
             `;
             let params = [];
-            if (sede) {
+            if (!esAdminGlobal) {
+                ventasQuery += ' AND o.sede = $1';
+                params.push(sedeUsuario);
+            } else if (sede) {
                 ventasQuery += ' AND o.sede = $1';
                 params.push(sede);
             }
@@ -43,7 +99,10 @@ export const getResumenDashboard = async (req, res) => {
                 WHERE o.fecha >= date_trunc('month', CURRENT_DATE)
             `;
             let params2 = [];
-            if (sede) {
+            if (!esAdminGlobal) {
+                topServiciosQuery += ' AND o.sede = $1';
+                params2.push(sedeUsuario);
+            } else if (sede) {
                 topServiciosQuery += ' AND o.sede = $1';
                 params2.push(sede);
             }
@@ -56,7 +115,8 @@ export const getResumenDashboard = async (req, res) => {
                     semana: parseFloat(ventasResult.rows[0].ventas_semana),
                     mes: parseFloat(ventasResult.rows[0].ventas_mes)
                 },
-                top_servicios: topServiciosResult.rows
+                top_servicios: topServiciosResult.rows,
+                metricas_sedes: metricas_sedes.length > 0 ? metricas_sedes : undefined
             });
 
         } finally {
@@ -70,6 +130,8 @@ export const getResumenDashboard = async (req, res) => {
 
 export const getVentasDiariasMes = async (req, res) => {
     const { sede } = req.query;
+    const { rol, sede: sedeUsuario } = req.user;
+    const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
     try {
         let query = `
             SELECT 
@@ -80,7 +142,10 @@ export const getVentasDiariasMes = async (req, res) => {
             WHERE o.fecha >= date_trunc('month', CURRENT_DATE)
         `;
         let params = [];
-        if (sede) {
+        if (!esAdminGlobal) {
+            query += ' AND o.sede = $1';
+            params.push(sedeUsuario);
+        } else if (sede) {
             query += ' AND o.sede = $1';
             params.push(sede);
         }
@@ -113,15 +178,19 @@ export const exportarReporte = async (req, res) => {
         switch (tipo) {
             case 'ventas': {
                 const { sede } = req.query;
+                const { rol, sede: sedeUsuario } = req.user;
+                const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
                 query = `SELECT o.id_orden, o.fecha, o.estado, d.cantidad, d.precio_servicio_aplicado, s.nombre_servicio FROM public.orden o JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden JOIN public.servicio s ON d.id_servicio = s.id_servicio`;
-                if (sede) {
+                let params = [];
+                if (!esAdminGlobal) {
                     query += ` WHERE o.sede = $1`;
-                    query += ` ORDER BY o.fecha DESC LIMIT 100`;
-                    data = (await pool.query(query, [sede])).rows;
-                } else {
-                    query += ` ORDER BY o.fecha DESC LIMIT 100`;
-                    data = (await pool.query(query)).rows;
+                    params.push(sedeUsuario);
+                } else if (sede) {
+                    query += ` WHERE o.sede = $1`;
+                    params.push(sede);
                 }
+                query += ` ORDER BY o.fecha DESC LIMIT 100`;
+                data = (await pool.query(query, params)).rows;
                 break;
             }
             case 'inventario':
@@ -133,15 +202,19 @@ export const exportarReporte = async (req, res) => {
                 break;
             case 'comisiones': {
                 const { sede } = req.query;
+                const { rol, sede: sedeUsuario } = req.user;
+                const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
                 query = `SELECT c.id_comision, c.id_orden, u.nombre AS nombre_operario, c.porcentaje_aplicado, c.monto_comision, c.estado, c.created_at FROM public.comision_orden_operario c JOIN public.usuarios u ON c.id_operario = u.id_user`;
-                if (sede) {
+                let params = [];
+                if (!esAdminGlobal) {
                     query += ` WHERE c.sede = $1`;
-                    query += ` ORDER BY c.created_at DESC LIMIT 100`;
-                    data = (await pool.query(query, [sede])).rows;
-                } else {
-                    query += ` ORDER BY c.created_at DESC LIMIT 100`;
-                    data = (await pool.query(query)).rows;
+                    params.push(sedeUsuario);
+                } else if (sede) {
+                    query += ` WHERE c.sede = $1`;
+                    params.push(sede);
                 }
+                query += ` ORDER BY c.created_at DESC LIMIT 100`;
+                data = (await pool.query(query, params)).rows;
                 break;
             }
             default:

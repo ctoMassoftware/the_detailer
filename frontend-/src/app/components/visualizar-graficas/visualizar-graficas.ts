@@ -47,16 +47,19 @@ export class Graficas implements OnInit {
   loading = true;
 
   sedeUsuario: string | null = null;
+  rolUsuario: string | null = null;
 
   ngOnInit() {
-    // Obtener sede del usuario logueado
+    // Obtener sede y rol del usuario logueado
     const userStr = localStorage.getItem('user') || localStorage.getItem('usuario');
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
         this.sedeUsuario = user.sede || user.sede_actual || null;
+        this.rolUsuario = user.rol || null;
       } catch (e) {
         this.sedeUsuario = null;
+        this.rolUsuario = null;
       }
     }
     this.cargarDatos();
@@ -66,8 +69,11 @@ export class Graficas implements OnInit {
     this.loading = true;
     this.errorCarga = '';
 
-    // Pasar la sede del usuario a los métodos del servicio
-    this.estadisticasService.getResumenDashboard(this.sedeUsuario || undefined).subscribe({
+    // Solo enviar sede si el usuario NO es admin global
+    const esAdminGlobal = this.rolUsuario === 'ADMIN' || this.rolUsuario === 'SUPER_ADMIN';
+    const sedeParam = !esAdminGlobal ? this.sedeUsuario || undefined : undefined;
+
+    this.estadisticasService.getResumenDashboard(sedeParam).subscribe({
       next: (data) => {
         this.stats = data;
       },
@@ -77,7 +83,7 @@ export class Graficas implements OnInit {
       }
     });
 
-    this.estadisticasService.getVentasDiariasMes(this.sedeUsuario || undefined).subscribe({
+    this.estadisticasService.getVentasDiariasMes(sedeParam).subscribe({
       next: (data: VentaDiariaMes[]) => {
         this.ventasDiariasMes = data || [];
       },
@@ -86,7 +92,7 @@ export class Graficas implements OnInit {
       }
     });
 
-    this.estadisticasService.getReporteOperativo(this.sedeUsuario || undefined).subscribe({
+    this.estadisticasService.getReporteOperativo(sedeParam).subscribe({
       next: (data: ReporteOperativo) => {
         this.reporteOperativo = data;
         this.loading = false;
