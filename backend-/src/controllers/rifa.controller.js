@@ -1,3 +1,46 @@
+// Elegir y guardar ganador manualmente de una rifa
+export const elegirGanador = async (req, res) => {
+  const { id_evento, id_boleta } = req.body;
+  try {
+    // Verificar si ya hay ganador para esta rifa
+    const existe = await pool.query('SELECT 1 FROM rifa_ganador WHERE id_evento_rifa = $1', [id_evento]);
+    if (existe.rows.length > 0) {
+      return res.status(400).json({ error: 'Ya existe un ganador para esta rifa.' });
+    }
+    // Buscar la boleta seleccionada
+    const boletaRes = await pool.query('SELECT * FROM rifa WHERE id_boleta = $1 AND id_evento_rifa = $2', [id_boleta, id_evento]);
+    if (boletaRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Boleta no encontrada para esta rifa.' });
+    }
+    const ganador = boletaRes.rows[0];
+    // Guardar en rifa_ganador
+    await pool.query(
+      `INSERT INTO rifa_ganador (id_evento_rifa, id_boleta, nombre_ganador, telefono_ganador, placa_vehiculo, numero_boleta)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id_evento, ganador.id_boleta, ganador.nombre, ganador.telefono, ganador.placa_vehiculo, ganador.numero_boleta]
+    );
+    res.json({ message: 'Ganador registrado', ganador });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al elegir ganador' });
+  }
+};
+
+// Consultar historial de ganadores
+export const historialGanadores = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT g.*, e.fecha_sorteo, e.descripcion_premios, e.encargado
+       FROM rifa_ganador g
+       JOIN evento_rifa e ON g.id_evento_rifa = e.id_evento
+       ORDER BY g.fecha_ganador DESC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al consultar historial de ganadores' });
+  }
+};
 import { pool } from '../config/db.js';
 import { enviarNotificacionOrdenTerminada } from '../services/whatsapp.service.js';
 
