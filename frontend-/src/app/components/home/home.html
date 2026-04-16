@@ -67,21 +67,17 @@
                 flex-wrap: wrap;
               "
             >
-              <label style="color: white; font-weight: bold; font-size: 1.1rem"
-                >Filtrar Fecha:</label
-              >
+              <label style="color: white; font-weight: bold; font-size: 1.1rem">Desde:</label>
               <input
                 type="date"
-                [(ngModel)]="fechaSeleccionada"
-                style="
-                  padding: 0.5rem 1rem;
-                  border-radius: var(--radius);
-                  border: 2px solid var(--primary-color);
-                  background: #1a1a1a;
-                  color: white;
-                  outline: none;
-                  font-size: 1rem;
-                "
+                [(ngModel)]="fechaDesde"
+                style="padding: 0.5rem 1rem; border-radius: var(--radius); border: 2px solid var(--primary-color); background: #1a1a1a; color: white; outline: none; font-size: 1rem;"
+              />
+              <label style="color: white; font-weight: bold; font-size: 1.1rem">Hasta:</label>
+              <input
+                type="date"
+                [(ngModel)]="fechaHasta"
+                style="padding: 0.5rem 1rem; border-radius: var(--radius); border: 2px solid var(--primary-color); background: #1a1a1a; color: white; outline: none; font-size: 1rem;"
               />
               <button
                 class="btn-primary"
@@ -96,17 +92,14 @@
             @if (dashboardData && dashboardData.metricas_sedes?.length > 0) {
               <div
                 class="grid-cards"
-                style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem"
+                style="grid-template-columns: repeat(2, 1fr); gap: 2rem; display: grid;"
               >
                 @for (metrica of dashboardData.metricas_sedes; track metrica.sede_nombre) {
                   <div
                     class="card"
-                    style="
-                      border: 1px solid var(--primary-color);
-                      background: rgba(30, 30, 30, 0.8);
-                    "
+                    style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8); height: auto; width: 100%;"
                   >
-                    <div class="card-body" style="padding: 1.5rem; text-align: left; display: flex; flex-direction: column; gap: 0.8rem;">
+                    <div class="card-body" style="padding: 1.5rem; text-align: left; display: flex; flex-direction: column; gap: 0.8rem; height: 100%;">
                       <h3
                         style="
                           font-size: 1.5rem;
@@ -181,161 +174,58 @@
 
           <h2 class="section-title" id="servicios">Administración Multisede</h2>
 
-          <div class="grid-cards">
+          <!-- Primera fila: Inventario e Inventario Productos -->
+          <div class="grid-cards" style="margin-bottom: 2rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
             <div class="card">
               <img src="assets/imgInventario.jpg" alt="Inventario" class="card-img" />
               <div class="card-body" style="display: flex; flex-direction: column">
                 <h2 class="card-title">Inventario</h2>
                 <p class="card-text flex-grow">Gestione materiales y herramientas por sede.</p>
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto">
-                  <a
-                    class="btn-primary"
-                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
-                    routerLink="/inventario"
-                    [queryParams]="{ sede: 'CENTENARIO' }"
-                    >S. Centenario</a
-                  >
-                  <a
-                    class="btn-primary"
-                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
-                    routerLink="/inventario"
-                    [queryParams]="{ sede: 'GALAN' }"
-                    >S. Galán</a
-                  >
+                  <a class="btn-primary" style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem" routerLink="/inventario" [queryParams]="{ sede: 'CENTENARIO' }">S. Centenario</a>
+                  <a class="btn-primary" style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem" routerLink="/inventario" [queryParams]="{ sede: 'GALAN' }">S. Galán</a>
                 </div>
               </div>
             </div>
-
             <div class="card">
               <img src="assets/Inventario2.jpg" alt="Inventario Productos" class="card-img" />
               <div class="card-body" style="display: flex; flex-direction: column">
                 <h2 class="card-title">Inventario Productos</h2>
                 <p class="card-text flex-grow">Control de productos de aseo y lavado por sede.</p>
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto">
-                  <a
-                    class="btn-primary"
-                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
-                    routerLink="/inventario2"
-                    [queryParams]="{ sede: 'CENTENARIO' }"
-                    >S. Centenario</a
-                  >
-                  <a
-                    class="btn-primary"
-                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
-                    routerLink="/inventario2"
-                    [queryParams]="{ sede: 'GALAN' }"
-                    >S. Galán</a
-                  >
+                  <a class="btn-primary" style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem" routerLink="/inventario2" [queryParams]="{ sede: 'CENTENARIO' }">S. Centenario</a>
+                  <a class="btn-primary" style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem" routerLink="/inventario2" [queryParams]="{ sede: 'GALAN' }">S. Galán</a>
                 </div>
               </div>
             </div>
-
-            <div
-              class="card"
-              style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8)"
-            >
-              <div
-                class="card-body"
-                style="
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: center;
-                  height: 100%;
-                  text-align: center;
-                "
-              >
-                <span
-                  class="material-icons-outlined"
-                  style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem"
-                  >bar_chart</span
-                >
+          </div>
+          <!-- Segunda fila: Gráficas, Combos y Servicios, Gestionar Rifa -->
+          <div class="grid-cards" style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+            <div class="card" style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8); height: 400px;">
+              <div class="card-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <span class="material-icons-outlined" style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem">bar_chart</span>
                 <h2 class="card-title">Gráficas</h2>
                 <p class="card-text flex-grow">Analice el rendimiento y métricas de cada sede.</p>
-                <div
-                  style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; width: 100%"
-                >
-                  <a
-                    class="btn-primary"
-                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
-                    routerLink="/visualizar-graficas"
-                    [queryParams]="{ sede: 'CENTENARIO' }"
-                    >S. Centenario</a
-                  >
-                  <a
-                    class="btn-primary"
-                    style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem"
-                    routerLink="/visualizar-graficas"
-                    [queryParams]="{ sede: 'GALAN' }"
-                    >S. Galán</a
-                  >
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; width: 100%">
+                  <a class="btn-primary" style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem" routerLink="/visualizar-graficas" [queryParams]="{ sede: 'CENTENARIO' }">S. Centenario</a>
+                  <a class="btn-primary" style="flex: 1; text-align: center; padding: 0.6rem; font-size: 0.9rem" routerLink="/visualizar-graficas" [queryParams]="{ sede: 'GALAN' }">S. Galán</a>
                 </div>
               </div>
             </div>
-
-            <div
-              class="card"
-              style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8)"
-            >
-              <div
-                class="card-body"
-                style="
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: center;
-                  height: 100%;
-                  text-align: center;
-                "
-              >
-                <span
-                  class="material-icons-outlined"
-                  style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem"
-                  >local_activity</span
-                >
-                <h2 class="card-title">Gestionar Rifa</h2>
-                <p class="card-text flex-grow">
-                  Modifica la información global de las rifas compartidas.
-                </p>
-                <a
-                  class="btn-primary full-width"
-                  style="margin-top: auto; text-align: center"
-                  routerLink="/boleta-mensajes"
-                >
-                  Modificar <span class="material-icons-outlined btn-icon">edit</span>
-                </a>
-              </div>
-            </div>
-
-            <div
-              class="card"
-              style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8)"
-            >
-              <div
-                class="card-body"
-                style="
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: center;
-                  height: 100%;
-                  text-align: center;
-                "
-              >
-                <span
-                  class="material-icons-outlined"
-                  style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem"
-                  >auto_awesome_motion</span
-                >
+            <div class="card" style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8); height: 400px;">
+              <div class="card-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <span class="material-icons-outlined" style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem">auto_awesome_motion</span>
                 <h2 class="card-title">Combos y Servicios</h2>
                 <p class="card-text flex-grow">Paquetes y ofertas especiales globales.</p>
-                <a
-                  class="btn-primary full-width"
-                  style="margin-top: auto; text-align: center"
-                  routerLink="/combos-servicios"
-                >
-                  Ver Combos <span class="material-icons-outlined btn-icon">arrow_forward</span>
-                </a>
+                <a class="btn-primary full-width" style="margin-top: auto; text-align: center" routerLink="/combos-servicios">Ver Combos <span class="material-icons-outlined btn-icon">arrow_forward</span></a>
+              </div>
+            </div>
+            <div class="card" style="border: 1px solid var(--primary-color); background: rgba(30, 30, 30, 0.8); height: 400px;">
+              <div class="card-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <span class="material-icons-outlined" style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem">local_activity</span>
+                <h2 class="card-title">Gestionar Rifa</h2>
+                <p class="card-text flex-grow">Modifica la información global de las rifas compartidas.</p>
+                <a class="btn-primary full-width" style="margin-top: auto; text-align: center" routerLink="/boleta-mensajes">Modificar <span class="material-icons-outlined btn-icon">edit</span></a>
               </div>
             </div>
           </div>

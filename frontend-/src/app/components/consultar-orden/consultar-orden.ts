@@ -1,3 +1,5 @@
+
+// Importaciones correctas
 import { Component, OnInit, inject } from '@angular/core';
 import { Nav } from '../../shared/nav/nav';
 import { CommonModule } from '@angular/common';
@@ -43,6 +45,30 @@ interface Orden {
   styleUrls: ['./consultar-orden.css']
 })
 export class ConsultarOrden implements OnInit {
+      // Permitir solo una selección, pero si el usuario selecciona ambas, ambas quedan activas
+      onPreferenciaReciboChange(tipo: string, event: any) {
+        if (event.target.checked) {
+          // Si selecciona una y la otra ya está, permite ambas
+          if (!this.preferenciaRecibo.includes(tipo)) {
+            this.preferenciaRecibo.push(tipo);
+          }
+        } else {
+          // Si desmarca, elimina solo esa
+          this.preferenciaRecibo = this.preferenciaRecibo.filter(t => t !== tipo);
+        }
+        // Si el usuario selecciona una, la otra se desmarca automáticamente (solo si no quiere ambas)
+        if (this.preferenciaRecibo.length === 2) return;
+        if (tipo === 'VIRTUAL' && event.target.checked) {
+          this.preferenciaRecibo = ['VIRTUAL'];
+        } else if (tipo === 'FISICO' && event.target.checked) {
+          this.preferenciaRecibo = ['FISICO'];
+        }
+      }
+    // Permite que ambos checkboxes puedan estar desmarcados. Validación solo al confirmar.
+  // ...existing code...
+  // Solo se permite impresión física por Windows/USB (cambiar a 'ANDROID' para Android cuando se requiera)
+  // Solo se permite impresión física por Windows/USB (cambiar a 'RAWBT' para Android cuando se requiera)
+  metodoImpresionFacturaOrden: 'WINDOWS' | 'RAWBT' = 'WINDOWS';
 
   private ordenService = inject(OrdenService);
   private operarioService = inject(OperarioService);
@@ -62,7 +88,7 @@ export class ConsultarOrden implements OnInit {
   mostrarRifa: boolean = false;
   modoEdicion: boolean = false;
 
-  preferenciaRecibo: 'VIRTUAL' | 'FISICO' = 'VIRTUAL';
+  preferenciaRecibo: string[] = ['VIRTUAL'];
 
   // VARIABLES CALCULADORA
   montoRecibido: number | null = null;
@@ -487,11 +513,11 @@ export class ConsultarOrden implements OnInit {
 
   abrirFactura(orden: Orden) {
     this.ordenSeleccionada = { ...orden };
-    this.preferenciaRecibo = 'VIRTUAL'; 
     this.montoRecibido = null; // Reiniciar calculadora
     this.mostrarFactura = true;
     this.mostrarModal = false;
     this.mostrarRifa = false;
+    this.metodoImpresionFacturaOrden = 'WINDOWS';
     this.numeroBoletaRifa = '';
     this.cargarRifaActiva();
   }
@@ -503,6 +529,10 @@ export class ConsultarOrden implements OnInit {
   }
 
   enviarFactura() {
+    if (!this.preferenciaRecibo || this.preferenciaRecibo.length === 0) {
+      Swal.fire('Atención', 'Debe seleccionar al menos una opción de recibo (Virtual o Físico).', 'warning');
+      return;
+    }
     if (this.mostrarRifa && (!this.numeroBoletaRifa || this.numeroBoletaRifa.length !== 3 || isNaN(Number(this.numeroBoletaRifa)))) {
       Swal.fire('Atención', 'El número de boleta debe ser de 3 dígitos numéricos', 'warning');
       return;
@@ -517,27 +547,24 @@ export class ConsultarOrden implements OnInit {
     };
 
     const procesarImpresionOWhatsapp = () => {
-      if (this.preferenciaRecibo === 'FISICO') {
+      if (this.preferenciaRecibo.includes('FISICO')) {
         const datosTicket = {
           numero: this.ordenSeleccionada.numero,
           cliente: this.ordenSeleccionada.cliente,
           placa: this.ordenSeleccionada.vehiculoPlaca,
           total: this.ordenSeleccionada.valorTotal,
           metodoPago: this.ordenSeleccionada.metodoPago,
-          // Pasamos los datos del vuelto al ticket físico si es efectivo
           recibido: this.ordenSeleccionada.metodoPago === 'Efectivo' ? this.montoRecibido : null,
           cambio: this.ordenSeleccionada.metodoPago === 'Efectivo' ? this.cambioDevolver : null,
           numeroRifa: this.mostrarRifa ? this.numeroBoletaRifa : null,
-          servicios: this.ordenSeleccionada.serviciosDetallados.map((s: any) => ({
-            nombre: s.servicio || s.nombre,
-            cantidad: s.cantidad || 1,
-            precio: s.precio_unitario || s.precio || s.valor || 0,
-            subtotal: s.subtotal || ((s.cantidad || 1) * (s.precio_unitario || s.precio || 0))
-          }))
+          servicios: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
+          serviciosDetallados: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
+          servicioPrincipal: this.ordenSeleccionada.servicioPrincipal || (this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados[0].nombre : undefined)
         };
-        this.impresoraService.imprimirTicket(datosTicket, 'ORDEN');
-      } 
-      else if (this.preferenciaRecibo === 'VIRTUAL' && !this.mostrarRifa) {
+        // Solo se permite impresión por Windows, RAWBT no es válido para el servicio actual
+        this.impresoraService.imprimirTicket(datosTicket, 'ORDEN', 'WINDOWS');
+      }
+      if (this.preferenciaRecibo.includes('VIRTUAL') && !this.mostrarRifa) {
         if (!this.ordenSeleccionada.celular) {
           Swal.fire('Atención', 'El cliente no tiene número de celular para enviar el WhatsApp.', 'warning');
           return;

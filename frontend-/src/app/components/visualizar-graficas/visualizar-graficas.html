@@ -10,15 +10,53 @@
           <h1 class="page-title">Visualizar Gráficas</h1>
           <p class="page-subtitle">Análisis de ventas y rendimiento de servicios.</p>
         </div>
+        <!-- Selector de sede para SUPER_ADMIN -->
+        <div *ngIf="rolUsuario === 'SUPER_ADMIN'" class="sede-selector" style="margin-top: 1rem; ">
+          <label for="sede-select" style="color: white; font-weight: 600; margin-right: 0.5rem;">Sede:</label>
+          <select id="sede-select" [(ngModel)]="sedeSeleccionada" (change)="cargarDatos()" style="padding: 0.4rem 1rem; border-radius: 0.5rem; margin-right: 1rem; border: 1px solid #fd0100; background: #181818; color: white;">
+            <option *ngFor="let sede of sedesDisponibles" [value]="sede">{{ sede }}</option>
+          </select>
+          
+          
+            <button class="btn-download-pdf" (click)="descargarPdfGraficas()" [disabled]="loading || descargandoPdfGraficas">
+              {{ descargandoPdfGraficas ? 'Generando PDF...' : 'Exportar Gráficas' }}
+            </button>
+         
+        </div>
       </header>
 
-      <div *ngIf="loading" style="color: white; margin-bottom: 20px;">
+      <div *ngIf="loading" class="loading-state">
         Cargando datos...
       </div>
 
-      <div class="dashboard-grid" *ngIf="!loading">
-        
-        <div class="stat-card">
+      <div *ngIf="errorCarga" class="error-banner">
+        {{ errorCarga }}
+      </div>
+
+      <section class="section-shell" *ngIf="!loading" #dashboardPdfTarget>
+        <header class="section-header">
+          <div>
+            <h2 class="section-title">Dashboard de gráficas</h2>
+            <p class="section-subtitle">Vista ejecutiva de comportamiento diario, semanal y mensual.</p>
+          </div>
+          <div class="mini-kpi-strip">
+            <div class="mini-kpi">
+              <span>Hoy</span>
+              <strong>{{ stats.ventas.dia | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+            </div>
+            <div class="mini-kpi">
+              <span>Semana</span>
+              <strong>{{ stats.ventas.semana | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+            </div>
+            <div class="mini-kpi">
+              <span>Mes</span>
+              <strong>{{ stats.ventas.mes | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+            </div>
+          </div>
+        </header>
+
+        <div class="dashboard-grid">
+          <div class="stat-card">
           <div class="card-header">
             <p class="card-label">Ventas del día</p>
             <p class="card-value">{{ stats.ventas.dia | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
@@ -45,7 +83,7 @@
           </div>
         </div>
 
-        <div class="stat-card">
+          <div class="stat-card">
           <div class="card-header">
             <p class="card-label">Ventas de la semana</p>
             <p class="card-value">{{ stats.ventas.semana | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
@@ -69,7 +107,7 @@
           </div>
         </div>
 
-        <div class="stat-card">
+          <div class="stat-card">
           <div class="card-header">
             <p class="card-label">Ventas del mes</p>
             <p class="card-value">{{ stats.ventas.mes | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
@@ -89,7 +127,7 @@
           </div>
         </div>
 
-        <div class="stat-card">
+          <div class="stat-card">
           <div class="card-header">
             <p class="card-label">Lo más vendido del mes</p>
             <p class="card-value truncate">
@@ -105,21 +143,123 @@
             <div class="bar-row" *ngFor="let item of stats.top_servicios">
               <p class="bar-row-label">
                 {{ item.nombre_servicio }} 
-                <span style="font-weight: 400; opacity: 0.7">({{ item.total_vendido }})</span>
+                <span class="bar-row-qty">({{ item.total_vendido }})</span>
               </p>
               <div class="progress-track">
                 <div class="progress-fill" [style.width]="getPorcentajeBarra(item.total_vendido)"></div>
               </div>
             </div>
 
-            <div *ngIf="stats.top_servicios.length === 0" style="color: gray; text-align: center; padding: 20px;">
+            <div *ngIf="stats.top_servicios.length === 0" class="chart-empty-state">
                 No hay ventas registradas este mes.
             </div>
 
           </div>
         </div>
+        </div>
+      </section>
 
-      </div>
+      <section class="reports-section section-shell" *ngIf="!loading">
+        <header class="reports-header">
+          <h2>Centro de reportes</h2>
+          <p>Control de ventas, inventario, pagos a operarios y exportación en múltiples formatos.</p>
+        </header>
+
+        <div class="reports-grid">
+          <article class="report-card">
+            <h3>Reporte de ventas</h3>
+            <p class="report-desc">Generación de ventas acumuladas y detalle diario del mes.</p>
+            <div class="report-kpi-row">
+              <div>
+                <span>Total órdenes</span>
+                <strong>{{ reporteOperativo.ventas.total_ordenes }}</strong>
+              </div>
+              <div>
+                <span>Total ventas</span>
+                <strong>{{ parseAmount(reporteOperativo.ventas.total_ventas) | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+              </div>
+            </div>
+            <div class="daily-sales-list">
+              <div *ngFor="let ventaDia of ventasDiariasMes" class="daily-row">
+                <span>{{ ventaDia.fecha }}</span>
+                <div class="daily-bar-track">
+                  <div class="daily-bar-fill" [style.width]="getPorcentajeVentaDia(ventaDia.total)"></div>
+                </div>
+                <span>{{ parseAmount(ventaDia.total) | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+              </div>
+              <div *ngIf="ventasDiariasMes.length === 0" class="muted-empty">Sin ventas registradas en el mes actual.</div>
+            </div>
+          </article>
+
+          <article class="report-card">
+            <h3>Reporte de inventario</h3>
+            <p class="report-desc">Estado actual de insumos y alertas de stock mínimo.</p>
+            <div class="report-kpi-stack">
+              <div>
+                <span>Insumos registrados</span>
+                <strong>{{ reporteOperativo.inventario.total_insumos }}</strong>
+              </div>
+              <div>
+                <span>Stock total</span>
+                <strong>{{ reporteOperativo.inventario.stock_total }}</strong>
+              </div>
+              <div>
+                <span>Alertas de stock</span>
+                <strong [class.text-danger]="parseAmount(reporteOperativo.inventario.alertas_stock) > 0">
+                  {{ reporteOperativo.inventario.alertas_stock }}
+                </strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="report-card" #comisionesPdfTarget>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h3>Reporte de comisiones / pagos</h3>
+                <p class="report-desc">Verificación de pagos realizados a operarios.</p>
+              </div>
+
+            </div>
+            <div class="report-kpi-stack">
+              <div>
+                <span>Pagos registrados</span>
+                <strong>{{ reporteOperativo.pagos.total_pagos }}</strong>
+              </div>
+              <div>
+                <span>Total pagado</span>
+                <strong>{{ parseAmount(reporteOperativo.pagos.total_pagado) | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="report-card">
+            <h3>Exportar reportes</h3>
+            <p class="report-desc">Descarga reportes en formato CSV, Excel o PDF.</p>
+            <div class="export-format-row">
+              <label for="formato-exporte">Formato</label>
+              <select id="formato-exporte" class="export-format-select" [(ngModel)]="formatoExporte">
+                <option value="csv">CSV</option>
+                <option value="excel">Excel (.xlsx)</option>
+                <option value="pdf">PDF</option>
+              </select>
+            </div>
+            <div class="export-grid">
+              <button class="btn-export" (click)="exportar('ventas')" [disabled]="exportandoClave !== null">
+                {{ exportandoClave === 'ventas-' + formatoExporte ? 'Exportando...' : 'Exportar ventas' }}
+              </button>
+              <button class="btn-export" (click)="exportar('inventario')" [disabled]="exportandoClave !== null">
+                {{ exportandoClave === 'inventario-' + formatoExporte ? 'Exportando...' : 'Exportar inventario' }}
+              </button>
+              <button class="btn-export" (click)="exportar('comisiones')" [disabled]="exportandoClave !== null">
+                {{ exportandoClave === 'comisiones-' + formatoExporte ? 'Exportando...' : 'Exportar comisiones' }}
+              </button>
+              <button class="btn-export" (click)="exportar('pagos')" [disabled]="exportandoClave !== null">
+                {{ exportandoClave === 'pagos-' + formatoExporte ? 'Exportando...' : 'Exportar pagos' }}
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
     </div>
   </main>
 </div>

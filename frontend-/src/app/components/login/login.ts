@@ -69,6 +69,7 @@ export class Login implements AfterViewInit, OnDestroy {
   username: string = '';
   password: string = '';
   errorMessage: string = '';
+  showPassword: boolean = false;
   
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -171,6 +172,10 @@ export class Login implements AfterViewInit, OnDestroy {
 
   goBack() {
     this.router.navigate(['/']);
+  }
+
+  toggleShowPassword() {
+    this.showPassword = !this.showPassword;
   }
 
 }

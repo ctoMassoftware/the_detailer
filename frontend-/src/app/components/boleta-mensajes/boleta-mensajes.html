@@ -1,3 +1,56 @@
+<!-- Modal Historial de Ganadores -->
+<div class="modal-overlay" *ngIf="mostrarModalGanadores">
+  <div class="modal-content-large">
+    <div class="modal-top-line"></div>
+    <div class="modal-header">
+      <div class="header-left">
+        <div class="header-icon-box">
+          <span class="material-symbols-outlined">military_tech</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <h2 class="header-title">Historial de Ganadores</h2>
+        </div>
+      </div>
+      <button class="btn-close-modal" (click)="cerrarModalGanadores()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body scrollable-body">
+      <div *ngIf="historialGanadores.length === 0" class="empty-state">
+        No hay ganadores registrados.
+      </div>
+      <div *ngIf="historialGanadores.length > 0">
+        <div class="table-wrapper">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Rifa</th>
+                <th>Fecha Sorteo</th>
+                <th>Premio</th>
+                <th>Ganador</th>
+                <th>Teléfono</th>
+                <th>Placa</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ganador of historialGanadores">
+                <td>{{ ganador.descripcion_premios || ganador.premio || '-' }}</td>
+                <td>{{ ganador.fecha_sorteo ? (ganador.fecha_sorteo | date:'yyyy-MM-dd') : '-' }}</td>
+                <td>{{ ganador.descripcion_premios || ganador.premio || '-' }}</td>
+                <td>{{ ganador.nombre_ganador || '-' }}</td>
+                <td>{{ ganador.telefono_ganador || '-' }}</td>
+                <td>{{ ganador.placa_vehiculo || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" (click)="cerrarModalGanadores()">Cerrar</button>
+    </div>
+  </div>
+</div>
 <div class="background-pattern"></div>
 
 <div class="layout-wrapper">
@@ -88,6 +141,10 @@
               [(ngModel)]="busquedaBoleta">
           </div>
 
+          <button class="btn-create" style="margin-right: 0.5rem;" (click)="verHistorialGanadores()">
+            <span class="material-symbols-outlined">military_tech</span>
+            Ver historial de ganadores
+          </button>
           <button class="btn-create" (click)="abrirModalCrear()">
             <span class="material-symbols-outlined">add</span>
             Nueva Rifa
@@ -282,6 +339,7 @@
                   <th>Nombre Cliente</th>
                   <th>Teléfono</th>
                   <th>Placa</th>
+                  <th style="text-align: center;">Elegir Ganador</th>
                 </tr>
               </thead>
               <tbody>
@@ -290,6 +348,12 @@
                   <td>{{ boleta.nombre }}</td>
                   <td>{{ boleta.telefono }}</td>
                   <td>{{ boleta.placa_vehiculo }}</td>
+                  <td style="text-align: center;">
+                    <button *ngIf="!ganadorRifaActual" class="btn-icon-action green" title="Elegir como ganador" (click)="elegirGanadorManual(boleta, { id_evento: boleta.id_evento_rifa })">
+                      <span class="material-symbols-outlined">military_tech</span>
+                    </button>
+                    <span *ngIf="ganadorRifaActual && ganadorRifaActual.id_boleta === boleta.id_boleta" class="status-badge status-active">Ganador</span>
+                  </td>
                 </tr>
                 <tr *ngIf="boletasFiltradas.length === 0">
                   <td colspan="4" class="empty-state">

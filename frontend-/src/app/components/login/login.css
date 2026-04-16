@@ -1,3 +1,31 @@
+/* Mostrar el botón del ojo solo en hover, focus o cuando el input tiene texto */
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+.eye-toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  height: 22px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.password-input-wrapper:hover .eye-toggle-btn,
+.password-input:focus ~ .eye-toggle-btn,
+.eye-toggle-btn:focus,
+.eye-toggle-btn:hover {
+  opacity: 1;
+  pointer-events: auto;
+}
 * {
   margin: 0;
   padding: 0;

@@ -1,3 +1,4 @@
+// (No declarar la función aquí, solo dentro de la clase)
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +16,90 @@ import { ImpresoraService } from '../../services/impresora.service';
   styleUrl: './venta-mostrador.css',
 })
 export class VentaMostrador implements OnInit {
+      // Permitir solo una selección, pero si el usuario selecciona ambas, ambas quedan activas
+      onPreferenciaReciboChange(tipo: string, event: any) {
+        if (event.target.checked) {
+          // Si selecciona una y la otra ya está, permite ambas
+          if (!this.preferenciaRecibo.includes(tipo)) {
+            this.preferenciaRecibo.push(tipo);
+          }
+        } else {
+          // Si desmarca, elimina solo esa
+          this.preferenciaRecibo = this.preferenciaRecibo.filter(t => t !== tipo);
+        }
+        // Si el usuario selecciona una, la otra se desmarca automáticamente (solo si no quiere ambas)
+        if (this.preferenciaRecibo.length === 2) return;
+        if (tipo === 'VIRTUAL' && event.target.checked) {
+          this.preferenciaRecibo = ['VIRTUAL'];
+        } else if (tipo === 'FISICO' && event.target.checked) {
+          this.preferenciaRecibo = ['FISICO'];
+        }
+      }
+    // Permite que ambos checkboxes puedan estar desmarcados. Validación solo al confirmar.
+  // ...existing code...
+
+  probarImpresoraWindows() {
+    const datosTicket = {
+      numero: '9999',
+      cliente: 'Héctor (Prueba Windows)',
+      placa: 'AWS-2026',
+      total: 25000,
+      metodoPago: 'Efectivo',
+      numeroRifa: '777',
+      servicios: [
+        { nombre: 'Lavado VIP Prueba', cantidad: 1, precio: 25000, subtotal: 25000 }
+      ]
+    };
+    const fecha = new Date().toLocaleString("es-CO");
+    let ticket = '';
+    ticket += `================================\n`;
+    ticket += `          THE DETAILER\n`;
+    ticket += `        Wash & Detailing\n`;
+    ticket += `================================\n\n`;
+    ticket += `Ticket #: ${datosTicket?.numero || '0000'}\n`;
+    ticket += `Fecha: ${fecha}\n`;
+    ticket += `Cliente: ${datosTicket?.cliente || 'Cliente General'}\n`;
+    if (datosTicket?.placa) {
+      ticket += `Vehiculo: ${datosTicket.placa}\n`;
+    }
+    ticket += `\n`;
+    ticket += `CANT | PRODUCTO/SERVICIO   | SUBTOTAL\n`;
+    ticket += `--------------------------------\n`;
+    if (datosTicket?.servicios && datosTicket.servicios.length > 0) {
+      datosTicket.servicios.forEach((item: any) => {
+        const nombreCorto = (item.nombre || '').substring(0, 15).padEnd(15, ' ');
+        const cant = (item.cantidad || 1).toString().padEnd(4, ' ');
+        const subtotal = item.subtotal || (item.cantidad * item.precio) || 0;
+        ticket += `${cant} | ${nombreCorto} | $${subtotal}\n`;
+      });
+    } else {
+      const nombreCorto = (datosTicket?.servicios?.[0]?.nombre || 'Servicio').substring(0, 15).padEnd(15, ' ');
+      ticket += `1    | ${nombreCorto} | $${datosTicket?.total || 0}\n`;
+    }
+    ticket += `--------------------------------\n`;
+    ticket += `TOTAL A PAGAR:      $${datosTicket?.total || 0}\n`;
+    ticket += `Metodo de Pago:     ${datosTicket?.metodoPago || 'Efectivo'}\n\n`;
+    if (datosTicket?.numeroRifa) {
+      ticket += `--------------------------------\n`;
+      ticket += `       *** BOLETA DE RIFA ***\n`;
+      ticket += `          Numero: ${datosTicket.numeroRifa}\n`;
+      ticket += `        Guarde este recibo!\n`;
+      ticket += `--------------------------------\n\n`;
+    }
+    ticket += `================================\n`;
+    ticket += `      Gracias por su compra!\n`;
+    ticket += `     * No responsable de IVA *\n`;
+    ticket += `================================\n\n\n`;
+    // Abrir ventana de impresión
+    const printWindow = window.open('', '', 'width=350,height=600');
+    if (printWindow) {
+      printWindow.document.write('<pre style="font-size:14px;">' + ticket + '</pre>');
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      this.mostrarMensaje('Abriendo ticket de prueba para impresión en Windows...', 'success');
+    }
+  }
   
   private ventaMostradorService = inject(VentaMostradorService);
   private inventarioService = inject(InventarioVentaService);
@@ -39,7 +124,7 @@ export class VentaMostrador implements OnInit {
   mostrarRifa: boolean = false;
   facturaActual: any = {};
   
-  preferenciaRecibo: 'VIRTUAL' | 'FISICO' = 'VIRTUAL';
+  preferenciaRecibo: string[] = ['VIRTUAL'];
 
   numeroBoletaRifa: string = '';
   datosRifaActiva: any = {
@@ -162,6 +247,7 @@ export class VentaMostrador implements OnInit {
   }
 
   abrirFactura() {
+      this.preferenciaRecibo = ['VIRTUAL'];
     if (this.carrito.length === 0) {
       this.mostrarMensaje('El carrito está vacío.', 'error');
       return;
@@ -186,7 +272,6 @@ export class VentaMostrador implements OnInit {
       }))
     };
 
-    this.preferenciaRecibo = 'VIRTUAL';
     this.mostrarFactura = true;
     this.mostrarRifa = false;
     this.numeroBoletaRifa = '';
@@ -252,10 +337,18 @@ export class VentaMostrador implements OnInit {
     this.numeroBoletaRifa = item.valor;
   }
 
+
+  // Solo se permite impresión física por Windows/USB (cambiar a 'RAWBT' para Android cuando se requiera)
+  metodoImpresion: 'WINDOWS' | 'RAWBT' = 'WINDOWS';
+
   confirmarFacturaYVenta() {
-    if (this.preferenciaRecibo === 'VIRTUAL' && !this.facturaActual.celular && this.facturaActual.celular !== 'No registrado') {
-        this.mostrarMensaje('Para el recibo virtual es obligatorio el número de WhatsApp.', 'error');
-        return;
+    if (!this.preferenciaRecibo || this.preferenciaRecibo.length === 0) {
+      this.mostrarMensaje('Debe seleccionar al menos una opción de recibo (Virtual o Físico).', 'error');
+      return;
+    }
+    if (this.preferenciaRecibo.includes('VIRTUAL') && !this.facturaActual.celular && this.facturaActual.celular !== 'No registrado') {
+      this.mostrarMensaje('Para el recibo virtual es obligatorio el número de WhatsApp.', 'error');
+      return;
     }
 
     if (this.mostrarRifa) {
@@ -266,37 +359,14 @@ export class VentaMostrador implements OnInit {
     }
 
     const nombreFormateado = this.capitalizarTexto(this.facturaActual.cliente);
-    
+
     const payloadVenta = {
       cliente_nombre: nombreFormateado,
       telefono_cliente: this.facturaActual.celular === 'No registrado' ? '' : this.facturaActual.celular,
       metodo_pago: this.facturaActual.metodoPago,
       total: this.facturaActual.valorTotal,
       productos: this.carrito,
-      preferencia_recibo: this.preferenciaRecibo 
-    };
-
-    const procesarImpresion = (idVenta: number) => {
-      if (this.preferenciaRecibo === 'FISICO') {
-        const datosTicket = {
-          numero: idVenta,
-          cliente: nombreFormateado,
-          placa: 'N/A', 
-          total: this.facturaActual.valorTotal,
-          metodoPago: this.facturaActual.metodoPago,
-          // Pasamos el cambio al ticket si aplica
-          recibido: this.facturaActual.metodoPago === 'Efectivo' ? this.facturaActual.montoRecibido : null,
-          cambio: this.facturaActual.metodoPago === 'Efectivo' ? this.facturaActual.cambio : null,
-          numeroRifa: this.mostrarRifa ? this.numeroBoletaRifa : null,
-          servicios: this.carrito.map(c => ({
-            nombre: c.nombre_producto,
-            cantidad: c.cantidad,
-            precio: c.precio_venta,
-            subtotal: c.subtotal
-          }))
-        };
-        this.impresoraService.imprimirTicket(datosTicket, 'MOSTRADOR');
-      }
+      preferencia_recibo: this.preferenciaRecibo
     };
 
     this.ventaMostradorService.registrarVenta(payloadVenta).subscribe({
@@ -308,12 +378,12 @@ export class VentaMostrador implements OnInit {
             telefono: payloadVenta.telefono_cliente,
             placa_vehiculo: 'N/A',
             total_pagar: this.facturaActual.valorTotal,
-            preferencia_recibo: this.preferenciaRecibo 
+            preferencia_recibo: this.preferenciaRecibo
           };
 
           this.rifaService.registrarBoleta(boletaData).subscribe({
             next: () => {
-              procesarImpresion(res.id_venta);
+              this.procesarImpresion(res.id_venta, nombreFormateado);
               this.finalizarProcesoExito(`¡Venta y Rifa #${this.numeroBoletaRifa} registradas con éxito!`);
             },
             error: (err: any) => {
@@ -324,7 +394,7 @@ export class VentaMostrador implements OnInit {
             }
           });
         } else {
-          procesarImpresion(res.id_venta);
+          this.procesarImpresion(res.id_venta, nombreFormateado);
           this.finalizarProcesoExito('¡Venta registrada con éxito!');
         }
       },
@@ -334,6 +404,100 @@ export class VentaMostrador implements OnInit {
       }
     });
   }
+
+  private procesarImpresion(idVenta: number, nombreFormateado: string) {
+    if (this.preferenciaRecibo.includes('FISICO')) {
+      const datosTicket = {
+        numero: idVenta,
+        cliente: nombreFormateado,
+        placa: 'N/A',
+        total: this.facturaActual.valorTotal,
+        metodoPago: this.facturaActual.metodoPago,
+        recibido: this.facturaActual.metodoPago === 'Efectivo' ? this.facturaActual.montoRecibido : null,
+        cambio: this.facturaActual.metodoPago === 'Efectivo' ? this.facturaActual.cambio : null,
+        numeroRifa: this.mostrarRifa ? this.numeroBoletaRifa : null,
+        servicios: this.carrito.map(c => ({
+          nombre: c.nombre_producto,
+          cantidad: c.cantidad,
+          precio: c.precio_venta,
+          subtotal: c.subtotal
+        }))
+      };
+      if (this.metodoImpresion === 'RAWBT') {
+        this.probarImpresoraDirectoConDatos(datosTicket);
+      } else {
+        this.probarImpresoraWindowsConDatos(datosTicket);
+      }
+    }
+    // Si en preferencias está VIRTUAL, aquí podrías agregar lógica para WhatsApp si aplica
+  }
+
+  probarImpresoraDirectoConDatos(datosTicket: any) {
+    this.impresoraService.imprimirTicket(datosTicket, 'MOSTRADOR');
+    this.mostrarMensaje('Enviando ticket a RawBT...', 'success');
+  }
+
+  probarImpresoraWindowsConDatos(datosTicket: any) {
+    const fecha = new Date().toLocaleString("es-CO");
+    let ticket = '';
+    // Encabezado para 58mm (32 caracteres)
+    ticket += `================================\n`;
+    ticket += `        THE DETAILER\n`;
+    ticket += `     Wash & Detailing\n`;
+    ticket += `================================\n`;
+    ticket += `Ticket: ${String(datosTicket?.numero || '0000').padEnd(6)}\n`;
+    ticket += `Fecha: ${fecha}\n`;
+    ticket += `Cliente: ${(datosTicket?.cliente || 'Cliente General').substring(0,20)}\n`;
+    if (datosTicket?.placa) {
+      ticket += `Placa: ${datosTicket.placa}\n`;
+    }
+    ticket += `--------------------------------\n`;
+    ticket += `C  Producto         Subt\n`;
+    ticket += `--------------------------------\n`;
+    if (datosTicket?.servicios && datosTicket.servicios.length > 0) {
+      datosTicket.servicios.forEach((item: any) => {
+        const nombreCorto = (item.nombre || '').substring(0, 13).padEnd(13, ' ');
+        const cant = (item.cantidad || 1).toString().padStart(2, ' ');
+        const subtotal = (item.subtotal || (item.cantidad * item.precio) || 0).toString().padStart(6, ' ');
+        ticket += `${cant} ${nombreCorto} ${subtotal}\n`;
+      });
+    } else {
+      const nombreCorto = (datosTicket?.servicios?.[0]?.nombre || 'Servicio').substring(0, 13).padEnd(13, ' ');
+      ticket += ` 1 ${nombreCorto} ${(datosTicket?.total || 0).toString().padStart(6, ' ')}\n`;
+    }
+    ticket += `--------------------------------\n`;
+    ticket += `TOTAL:        $${(datosTicket?.total || 0).toString().padStart(7, ' ')}\n`;
+    ticket += `Pago: ${datosTicket?.metodoPago || 'Efectivo'}\n`;
+    if (datosTicket?.recibido !== null && datosTicket?.recibido !== undefined) {
+      ticket += `Recibido: $${(datosTicket.recibido).toString().padStart(7, ' ')}\n`;
+    }
+    if (datosTicket?.cambio !== null && datosTicket?.cambio !== undefined) {
+      ticket += `Cambio:   $${(datosTicket.cambio).toString().padStart(7, ' ')}\n`;
+    }
+    if (datosTicket?.numeroRifa) {
+      ticket += `--------------------------------\n`;
+      ticket += `  *** BOLETA DE RIFA ***\n`;
+      ticket += `  Numero: ${datosTicket.numeroRifa}\n`;
+      ticket += `  Guarde este recibo!\n`;
+      ticket += `--------------------------------\n`;
+    }
+    ticket += `================================\n`;
+    ticket += `Gracias por su compra!\n`;
+    ticket += `* No responsable de IVA *\n`;
+    ticket += `================================\n\n`;
+    // Abrir ventana de impresión con tamaño de letra pequeño y ancho 58mm
+    const printWindow = window.open('', '', 'width=220,height=700');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(`<pre style='font-size:12px; font-family:monospace; margin:0; padding:0;'>${ticket}</pre>`);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      this.mostrarMensaje('Abriendo ticket de prueba para impresión en Windows...', 'success');
+    }
+  }
+
+
 
   finalizarProcesoExito(mensajeDeseado: string) {
     this.cerrarFactura();

@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class MensajeService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/mensajes';
+  private apiUrl = 'http://192.168.20.11:3000/api/mensajes';
 
   getMensajes(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl);

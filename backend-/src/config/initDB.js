@@ -141,6 +141,18 @@ export const initDB = async () => {
             precio_unitario NUMERIC(12, 2) NOT NULL,
             subtotal NUMERIC(12, 2) NOT NULL
         );
+        
+            -- 12. GANADORES DE RIFA
+            CREATE TABLE IF NOT EXISTS rifa_ganador (
+                id SERIAL PRIMARY KEY,
+                id_evento_rifa INTEGER REFERENCES evento_rifa(id_evento) ON DELETE CASCADE,
+                id_boleta INTEGER REFERENCES rifa(id_boleta) ON DELETE SET NULL,
+                fecha_ganador TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                nombre_ganador VARCHAR(150),
+                telefono_ganador VARCHAR(50),
+                placa_vehiculo VARCHAR(20),
+                numero_boleta VARCHAR(10)
+            );
     `;
 
     try {
@@ -160,6 +172,8 @@ export const initDB = async () => {
             "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sede VARCHAR(50) DEFAULT 'GALAN'",
             "ALTER TABLE inventario_producto ADD COLUMN IF NOT EXISTS sede VARCHAR(50)",
             "ALTER TABLE inventario_venta ADD COLUMN IF NOT EXISTS sede VARCHAR(50)",
+            // NUEVO: Asegura que la columna sede exista en orden
+            "ALTER TABLE orden ADD COLUMN IF NOT EXISTS sede VARCHAR(50)",
 
             "ALTER TABLE inventario_producto ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 5",
             "ALTER TABLE inventario_venta ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 5"

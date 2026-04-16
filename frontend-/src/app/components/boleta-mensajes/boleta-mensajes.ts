@@ -14,6 +14,28 @@ import Swal from 'sweetalert2';
   styleUrls: ['./boleta-mensajes.css']
 })
 export class BoletaMensajes implements OnInit {
+    ganadorRifaActual: any = null;
+  historialGanadores: any[] = [];
+  mostrarModalGanadores: boolean = false;
+
+
+  verHistorialGanadores() {
+    this.rifaService.historialGanadores().subscribe({
+      next: (data: any[]) => {
+        this.historialGanadores = data;
+        this.mostrarModalGanadores = true;
+      },
+      error: (err: any) => {
+        console.error(err);
+        Swal.fire('Error', 'No se pudo cargar el historial de ganadores', 'error');
+      }
+    });
+  }
+
+  cerrarModalGanadores() {
+    this.mostrarModalGanadores = false;
+    this.historialGanadores = [];
+  }
   private mensajeService: MensajeService = inject(MensajeService);
   private rifaService = inject(RifaService);
 
@@ -239,16 +261,43 @@ export class BoletaMensajes implements OnInit {
     this.boletasDeRifaSeleccionada = [];
     this.filtroBoleta = '';
     this.filtroBoletaNombre = '';
+    this.ganadorRifaActual = null;
 
-
-    this.rifaService.getBoletasPorEvento(rifa.id_evento).subscribe({
-      next: (data: any[]) => {
-        this.boletasDeRifaSeleccionada = data;
-        this.cargandoBoletas = false;
+    // Consultar si ya hay ganador para esta rifa
+    this.rifaService.historialGanadores().subscribe({
+      next: (historial: any[]) => {
+        const ganador = historial.find(g => g.id_evento_rifa === rifa.id_evento);
+        if (ganador) {
+          this.ganadorRifaActual = ganador;
+        }
+      },
+      complete: () => {
+        this.rifaService.getBoletasPorEvento(rifa.id_evento).subscribe({
+          next: (data: any[]) => {
+            this.boletasDeRifaSeleccionada = data;
+            this.cargandoBoletas = false;
+          },
+          error: (err: any) => {
+            console.error('Error cargando boletas', err);
+            this.cargandoBoletas = false;
+          }
+        });
+      }
+    });
+  }
+  elegirGanadorManual(boleta: any, rifa: any) {
+    if (this.ganadorRifaActual) {
+      this.mostrarExito('Ya existe un ganador para esta rifa.');
+      return;
+    }
+    this.rifaService.elegirGanador(rifa.id_evento, boleta.id_boleta).subscribe({
+      next: (resp: any) => {
+        this.mostrarExito('¡Ganador registrado!');
+        this.ganadorRifaActual = resp.ganador;
       },
       error: (err: any) => {
-        console.error('Error cargando boletas', err);
-        this.cargandoBoletas = false;
+        console.error(err);
+        this.mostrarExito(err.error?.error || 'No se pudo registrar el ganador');
       }
     });
   }
@@ -268,4 +317,5 @@ export class BoletaMensajes implements OnInit {
       this.mostrarAlerta = false;
     }, 3000);
   }
+
 }
