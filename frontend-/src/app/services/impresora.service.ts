@@ -7,7 +7,7 @@ export class ImpresoraService {
 
   constructor() {}
 
-  imprimirTicket(datosTicket: any, tipo: 'ORDEN' | 'MOSTRADOR', metodo: 'ANDROID' | 'WINDOWS' = 'ANDROID') {
+  imprimirTicket(datosTicket: any, tipo: 'ORDEN' | 'MOSTRADOR', metodo: 'ANDROID' | 'WINDOWS' | 'RAWBT' = 'ANDROID') {
     const fecha = new Date().toLocaleString("es-CO");
     let ticket = '';
     // --- ENCABEZADO EMPRESA ---
@@ -70,7 +70,7 @@ export class ImpresoraService {
     ticket += `* No responsable de IVA *\n`;
     ticket += `================================\n\n`;
 
-    if (metodo === 'ANDROID') {
+    if (metodo === 'ANDROID' || metodo === 'RAWBT') {
       // RawBT (Android)
       const ticketCodificado = encodeURI(ticket);
       const intentUrl = `intent:${ticketCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;

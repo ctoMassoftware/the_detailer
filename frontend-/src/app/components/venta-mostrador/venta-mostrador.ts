@@ -339,7 +339,7 @@ export class VentaMostrador implements OnInit {
 
 
   // Solo se permite impresión física por Windows/USB (cambiar a 'RAWBT' para Android cuando se requiera)
-  metodoImpresion: 'WINDOWS' | 'RAWBT' = 'WINDOWS';
+  metodoImpresion: 'WINDOWS' | 'RAWBT' = 'RAWBT';
 
   confirmarFacturaYVenta() {
     if (!this.preferenciaRecibo || this.preferenciaRecibo.length === 0) {
