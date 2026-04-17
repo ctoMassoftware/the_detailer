@@ -407,14 +407,15 @@ export class VentaMostrador implements OnInit {
 
   private procesarImpresion(idVenta: number, nombreFormateado: string) {
     if (this.preferenciaRecibo.includes('FISICO')) {
+      // Usar el mismo formato de datos que la prueba RawBT
       const datosTicket = {
         numero: idVenta,
         cliente: nombreFormateado,
         placa: 'N/A',
         total: this.facturaActual.valorTotal,
         metodoPago: this.facturaActual.metodoPago,
-        recibido: this.facturaActual.metodoPago === 'Efectivo' ? this.facturaActual.montoRecibido : null,
-        cambio: this.facturaActual.metodoPago === 'Efectivo' ? this.facturaActual.cambio : null,
+        recibido: this.facturaActual.metodoPago === 'Efectivo' ? this.facturaActual.montoRecibido : undefined,
+        cambio: this.facturaActual.metodoPago === 'Efectivo' ? this.facturaActual.cambio : undefined,
         numeroRifa: this.mostrarRifa ? this.numeroBoletaRifa : null,
         servicios: this.carrito.map(c => ({
           nombre: c.nombre_producto,
@@ -423,11 +424,11 @@ export class VentaMostrador implements OnInit {
           subtotal: c.subtotal
         }))
       };
-      if (this.metodoImpresion === 'RAWBT') {
-        this.probarImpresoraDirectoConDatos(datosTicket);
-      } else {
-        this.probarImpresoraWindowsConDatos(datosTicket);
-      }
+      this.impresoraService.imprimirTicket(datosTicket, 'MOSTRADOR', this.metodoImpresion);
+      this.mostrarMensaje(
+        this.metodoImpresion === 'RAWBT' ? 'Enviando ticket a RawBT...' : 'Abriendo ticket de impresión en Windows...',
+        'success'
+      );
     }
     // Si en preferencias está VIRTUAL, aquí podrías agregar lógica para WhatsApp si aplica
   }
@@ -437,64 +438,10 @@ export class VentaMostrador implements OnInit {
     this.mostrarMensaje('Enviando ticket a RawBT...', 'success');
   }
 
+  // El método de impresión Windows ahora usa siempre el servicio impresora.service.ts
   probarImpresoraWindowsConDatos(datosTicket: any) {
-    const fecha = new Date().toLocaleString("es-CO");
-    let ticket = '';
-    // Encabezado para 58mm (32 caracteres)
-    ticket += `================================\n`;
-    ticket += `        THE DETAILER\n`;
-    ticket += `     Wash & Detailing\n`;
-    ticket += `================================\n`;
-    ticket += `Ticket: ${String(datosTicket?.numero || '0000').padEnd(6)}\n`;
-    ticket += `Fecha: ${fecha}\n`;
-    ticket += `Cliente: ${(datosTicket?.cliente || 'Cliente General').substring(0,20)}\n`;
-    if (datosTicket?.placa) {
-      ticket += `Placa: ${datosTicket.placa}\n`;
-    }
-    ticket += `--------------------------------\n`;
-    ticket += `C  Producto         Subt\n`;
-    ticket += `--------------------------------\n`;
-    if (datosTicket?.servicios && datosTicket.servicios.length > 0) {
-      datosTicket.servicios.forEach((item: any) => {
-        const nombreCorto = (item.nombre || '').substring(0, 13).padEnd(13, ' ');
-        const cant = (item.cantidad || 1).toString().padStart(2, ' ');
-        const subtotal = (item.subtotal || (item.cantidad * item.precio) || 0).toString().padStart(6, ' ');
-        ticket += `${cant} ${nombreCorto} ${subtotal}\n`;
-      });
-    } else {
-      const nombreCorto = (datosTicket?.servicios?.[0]?.nombre || 'Servicio').substring(0, 13).padEnd(13, ' ');
-      ticket += ` 1 ${nombreCorto} ${(datosTicket?.total || 0).toString().padStart(6, ' ')}\n`;
-    }
-    ticket += `--------------------------------\n`;
-    ticket += `TOTAL:        $${(datosTicket?.total || 0).toString().padStart(7, ' ')}\n`;
-    ticket += `Pago: ${datosTicket?.metodoPago || 'Efectivo'}\n`;
-    if (datosTicket?.recibido !== null && datosTicket?.recibido !== undefined) {
-      ticket += `Recibido: $${(datosTicket.recibido).toString().padStart(7, ' ')}\n`;
-    }
-    if (datosTicket?.cambio !== null && datosTicket?.cambio !== undefined) {
-      ticket += `Cambio:   $${(datosTicket.cambio).toString().padStart(7, ' ')}\n`;
-    }
-    if (datosTicket?.numeroRifa) {
-      ticket += `--------------------------------\n`;
-      ticket += `  *** BOLETA DE RIFA ***\n`;
-      ticket += `  Numero: ${datosTicket.numeroRifa}\n`;
-      ticket += `  Guarde este recibo!\n`;
-      ticket += `--------------------------------\n`;
-    }
-    ticket += `================================\n`;
-    ticket += `Gracias por su compra!\n`;
-    ticket += `* No responsable de IVA *\n`;
-    ticket += `================================\n\n`;
-    // Abrir ventana de impresión con tamaño de letra pequeño y ancho 58mm
-    const printWindow = window.open('', '', 'width=220,height=700');
-    if (printWindow) {
-      printWindow.document.open();
-      printWindow.document.write(`<pre style='font-size:12px; font-family:monospace; margin:0; padding:0;'>${ticket}</pre>`);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      this.mostrarMensaje('Abriendo ticket de prueba para impresión en Windows...', 'success');
-    }
+    this.impresoraService.imprimirTicket(datosTicket, 'MOSTRADOR', 'WINDOWS');
+    this.mostrarMensaje('Abriendo ticket de impresión en Windows...', 'success');
   }
 
 
