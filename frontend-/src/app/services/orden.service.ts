@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class OrdenService {
-  private apiUrl = 'http://192.168.20.11:3000/api/ordenes';
+  private apiUrl = 'https://thedetailer.up.railway.app/api/ordenes';
   private http = inject(HttpClient);
 
   // 👈 Modificado para atrapar la sede y mandarla en la URL

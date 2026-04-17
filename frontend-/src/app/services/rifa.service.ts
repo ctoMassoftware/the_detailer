@@ -15,7 +15,7 @@ export class RifaService {
       return this.http.get<any[]>(`${this.apiUrl}/historial-ganadores`);
     }
   private http = inject(HttpClient);
-  private apiUrl = 'http://192.168.20.11:3000/api/rifas';
+  private apiUrl = 'https://thedetailer.up.railway.app/api/rifas';
 
   crearRifa(datos: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/crear`, datos);
