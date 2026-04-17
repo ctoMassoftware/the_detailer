@@ -27,7 +27,7 @@ const app = express();
 // 3. MIDDLEWARES
 const allowedOrigins = [
     'https://thedetailer-produccion.netlify.app',
-    'http://localhost:4200'
+    'http://localhost:4200',
 ];
 app.use(cors({
     origin: function (origin, callback) {
