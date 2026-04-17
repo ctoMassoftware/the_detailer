@@ -68,7 +68,7 @@ export class ConsultarOrden implements OnInit {
   // ...existing code...
   // Solo se permite impresión física por Windows/USB (cambiar a 'ANDROID' para Android cuando se requiera)
   // Solo se permite impresión física por Windows/USB (cambiar a 'RAWBT' para Android cuando se requiera)
-  metodoImpresionFacturaOrden: 'WINDOWS' | 'RAWBT' = 'WINDOWS';
+  metodoImpresionFacturaOrden: 'WINDOWS' | 'RAWBT' = 'RAWBT';
 
   private ordenService = inject(OrdenService);
   private operarioService = inject(OperarioService);
@@ -561,8 +561,8 @@ export class ConsultarOrden implements OnInit {
           serviciosDetallados: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
           servicioPrincipal: this.ordenSeleccionada.servicioPrincipal || (this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados[0].nombre : undefined)
         };
-        // Solo se permite impresión por Windows, RAWBT no es válido para el servicio actual
-        this.impresoraService.imprimirTicket(datosTicket, 'ORDEN', 'WINDOWS');
+        // Impresión por RawBT (Android)
+        this.impresoraService.imprimirTicket(datosTicket, 'ORDEN', 'RAWBT');
       }
       if (this.preferenciaRecibo.includes('VIRTUAL') && !this.mostrarRifa) {
         if (!this.ordenSeleccionada.celular) {
