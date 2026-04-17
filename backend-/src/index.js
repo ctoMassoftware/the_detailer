@@ -25,9 +25,20 @@ dotenv.config();
 const app = express();
 
 // 3. MIDDLEWARES
+const allowedOrigins = [
+    'https://thedetailer-produccion.netlify.app',
+    'http://localhost:4200'
+];
 app.use(cors({
-  origin: '*',
-  optionsSuccessStatus: 200
+    origin: function (origin, callback) {
+        // Permitir peticiones sin origin (como Postman) o si está en la lista
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
+    optionsSuccessStatus: 200
 }));
 app.use(express.json());
 
