@@ -17,7 +17,6 @@ export class ImpresoraService {
     ticket += `* No responsable de IVA *\n`;
     ticket += `================================\n`;
     ticket += `NIT 100002212-9\n`;
-    ticket += `REGIMEN RESPONSABLE DEL IVA\n`;
     // Dirección según sede
     const sede = this.authService.getSede?.() || '';
     let direccion = '';
