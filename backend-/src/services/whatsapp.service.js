@@ -14,27 +14,29 @@ export const enviarNotificacionInicioServicio = async (nombre, telefono, placa) 
             numeroDestino = '57' + numeroDestino;
         }
 
-        const mensaje = `
-👋 Hola *${nombre}*, 
-
-🧼 Recibimos tu vehículo con placa *${placa}* en *The Detailer*. 
-
-⏳ Nuestro equipo ya comenzó a trabajar para dejarlo impecable. 
-Te avisaremos por este medio en cuanto esté listo. 
-
-¡Gracias por tu confianza! 🙌
-`;
-
+        // Usar plantilla de WhatsApp (template message)
         const response = await client.messages.create({
-            body: mensaje,
             from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`
+            to: `whatsapp:+${numeroDestino}`,
+            template: {
+                name: 'recepcion_orden', // nombre exacto de la plantilla en Twilio
+                languageCode: 'es',
+                components: [
+                    {
+                        type: 'body',
+                        parameters: [
+                            { type: 'text', text: nombre }, // {{1}} Nombre
+                            { type: 'text', text: placa }   // {{2}} Placa
+                        ]
+                    }
+                ]
+            }
         });
 
-        console.log('Mensaje de WhatsApp (inicio) enviado:', response.sid);
+        console.log('Mensaje de WhatsApp (inicio, plantilla) enviado:', response.sid);
         return true;
     } catch (error) {
-        console.error('Error enviando WhatsApp (inicio):', error);
+        console.error('Error enviando WhatsApp (inicio, plantilla):', error);
         return false;
     }
 };
