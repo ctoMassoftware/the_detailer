@@ -28,7 +28,10 @@ const app = express();
 const allowedOrigins = [
     'https://thedetailer-produccion.netlify.app',
     'http://localhost:4200',
+    'https://www.the-detailer.co',
+    'https://the-detailer.co'
 ];
+
 app.use(cors({
     origin: function (origin, callback) {
         // Permitir peticiones sin origin (como Postman) o si está en la lista
