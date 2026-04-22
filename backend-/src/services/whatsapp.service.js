@@ -14,23 +14,15 @@ export const enviarNotificacionInicioServicio = async (nombre, telefono, placa) 
             numeroDestino = '57' + numeroDestino;
         }
 
-        // Usar plantilla de WhatsApp (template message)
+        // Enviar mensaje usando plantilla de WhatsApp (template message)
         const response = await client.messages.create({
             from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`,
-            template: {
-                name: 'recepcion_orden', // nombre exacto de la plantilla en Twilio
-                languageCode: 'es',
-                components: [
-                    {
-                        type: 'body',
-                        parameters: [
-                            { type: 'text', text: nombre }, // {{1}} Nombre
-                            { type: 'text', text: placa }   // {{2}} Placa
-                        ]
-                    }
-                ]
-            }
+            to: `whatsapp:+57${numeroDestino}`,
+            contentSid: 'HXc139efa91ee8a99b680683115fe01c47', // SID de la plantilla
+            contentVariables: JSON.stringify({
+                '1': nombre,
+                '2': placa
+            })
         });
 
         console.log('Mensaje de WhatsApp (inicio, plantilla) enviado:', response.sid);
