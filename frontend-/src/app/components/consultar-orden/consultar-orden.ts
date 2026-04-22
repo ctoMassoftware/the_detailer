@@ -320,9 +320,17 @@ export class ConsultarOrden implements OnInit {
             vehiculoModelo: o.modelo_vehiculo,
             vehiculoPlaca: o.placa_vehiculo,
             vehiculoTipo: o.tipo_vehiculo,
-            serviciosDetallados: o.lista_servicios || [],
-            servicioPrincipal: (o.lista_servicios && o.lista_servicios.length > 0 && o.lista_servicios[0].servicio)
-              ? o.lista_servicios[0].servicio
+            serviciosDetallados: (o.lista_servicios || []).map((s: any) => ({
+              ...s,
+              // Asegura que siempre haya un campo 'precio' correcto
+              precio: s.precio !== undefined ? s.precio
+                : (s.valor !== undefined ? s.valor
+                : (s.precio_unitario !== undefined ? s.precio_unitario : 0)),
+              cantidad: s.cantidad || 1,
+              nombre: s.nombre || s.servicio || s.descripcion || 'Servicio'
+            })),
+            servicioPrincipal: (o.lista_servicios && o.lista_servicios.length > 0 && (o.lista_servicios[0].servicio || o.lista_servicios[0].nombre))
+              ? (o.lista_servicios[0].servicio || o.lista_servicios[0].nombre)
               : 'Sin servicios',
             operario: o.nombre_operario ? o.nombre_operario : 'Sin asignar',
             id_operario: o.id_user_encargado ? Number(o.id_user_encargado) : null,
