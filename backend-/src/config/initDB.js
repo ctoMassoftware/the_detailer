@@ -106,7 +106,7 @@ export const initDB = async () => {
             id_rifa INTEGER REFERENCES evento_rifa(id_evento),
             notas TEXT,
             fecha DATE DEFAULT CURRENT_DATE,
-            hora TIME DEFAULT CURRENT_TIME,
+            hora TIME DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::time,
             sede VARCHAR(50)
         );
 
@@ -129,7 +129,7 @@ export const initDB = async () => {
             sede VARCHAR(50) NOT NULL,
             id_user_vendedor INTEGER REFERENCES usuarios(id_user),
             fecha DATE DEFAULT CURRENT_DATE,
-            hora TIME DEFAULT CURRENT_TIME
+            hora TIME DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::time
         );
 
         -- 11. DETALLE DE VENTA DE MOSTRADOR
@@ -142,17 +142,17 @@ export const initDB = async () => {
             subtotal NUMERIC(12, 2) NOT NULL
         );
         
-            -- 12. GANADORES DE RIFA
-            CREATE TABLE IF NOT EXISTS rifa_ganador (
-                id SERIAL PRIMARY KEY,
-                id_evento_rifa INTEGER REFERENCES evento_rifa(id_evento) ON DELETE CASCADE,
-                id_boleta INTEGER REFERENCES rifa(id_boleta) ON DELETE SET NULL,
-                fecha_ganador TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                nombre_ganador VARCHAR(150),
-                telefono_ganador VARCHAR(50),
-                placa_vehiculo VARCHAR(20),
-                numero_boleta VARCHAR(10)
-            );
+        -- 12. GANADORES DE RIFA
+        CREATE TABLE IF NOT EXISTS rifa_ganador (
+            id SERIAL PRIMARY KEY,
+            id_evento_rifa INTEGER REFERENCES evento_rifa(id_evento) ON DELETE CASCADE,
+            id_boleta INTEGER REFERENCES rifa(id_boleta) ON DELETE SET NULL,
+            fecha_ganador TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            nombre_ganador VARCHAR(150),
+            telefono_ganador VARCHAR(50),
+            placa_vehiculo VARCHAR(20),
+            numero_boleta VARCHAR(10)
+        );
     `;
 
     try {
@@ -176,7 +176,12 @@ export const initDB = async () => {
             "ALTER TABLE orden ADD COLUMN IF NOT EXISTS sede VARCHAR(50)",
 
             "ALTER TABLE inventario_producto ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 5",
-            "ALTER TABLE inventario_venta ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 5"
+            "ALTER TABLE inventario_venta ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 5",
+
+            // ✅ FIX ZONA HORARIA: Cambia el DEFAULT de hora a hora de Bogotá (UTC-5)
+            // Esto corrige que Railway (UTC) guardaba la hora 5 horas adelantada
+            `ALTER TABLE orden ALTER COLUMN hora SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::time`,
+            `ALTER TABLE venta_mostrador ALTER COLUMN hora SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::time`,
         ];
         
         for (const sql of migraciones) {
@@ -186,7 +191,7 @@ export const initDB = async () => {
                 console.log("Nota migración:", e.message);
             }
         }
-        console.log("✅ Columnas de servicio, sedes y semaforización verificadas.");
+        console.log("✅ Columnas de servicio, sedes, semaforización y zona horaria verificadas.");
 
         // LIMPIEZA DE DATOS PARA EL DASHBOARD
         // Convierte los nulos y 'GLOBAL' a 'GALAN' en las tablas principales
