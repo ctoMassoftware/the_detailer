@@ -17,7 +17,7 @@ export const enviarNotificacionInicioServicio = async (nombre, telefono, placa) 
         // Enviar mensaje usando plantilla de WhatsApp (template message)
         const response = await client.messages.create({
             from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`,
+            to: `whatsapp:+57${numeroDestino}`,
             contentSid: 'HXc139efa91ee8a99b680683115fe01c47', // SID de la plantilla
             contentVariables: JSON.stringify({
                 '1': nombre,
