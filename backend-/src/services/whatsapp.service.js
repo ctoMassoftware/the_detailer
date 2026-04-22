@@ -8,28 +8,50 @@ const client = twilio(accountSid, authToken);
 
 // 1. Notificación Inicio Servicio
 export const enviarNotificacionInicioServicio = async (nombre, telefono, placa) => {
+    let numeroDestino = telefono.replace(/\D/g, '');
+    if (!numeroDestino.startsWith('57')) {
+        numeroDestino = '57' + numeroDestino;
+    }
     try {
-        let numeroDestino = telefono.replace(/\D/g, '');
-        if (!numeroDestino.startsWith('57')) {
-            numeroDestino = '57' + numeroDestino;
-        }
-
-        // Enviar mensaje usando plantilla de WhatsApp (template message)
+        // 1. Intentar con contentSid/contentVariables (API nueva)
         const response = await client.messages.create({
             from: fromNumber,
-            to: `whatsapp:+57${numeroDestino}`,
-            contentSid: 'HXc139efa91ee8a99b680683115fe01c47', // SID de la plantilla
+            to: `whatsapp:+${numeroDestino}`,
+            contentSid: 'HXc139efa91ee8a99b680683115fe01c47',
             contentVariables: JSON.stringify({
                 '1': nombre,
                 '2': placa
             })
         });
-
-        console.log('Mensaje de WhatsApp (inicio, plantilla) enviado:', response.sid);
+        console.log('Mensaje de WhatsApp (inicio, plantilla, contentSid) enviado:', response.sid);
         return true;
     } catch (error) {
-        console.error('Error enviando WhatsApp (inicio, plantilla):', error);
-        return false;
+        console.error('Error enviando WhatsApp (inicio, contentSid):', error?.message || error, error);
+        // 2. Si falla, intentar con template (API clásica)
+        try {
+            const response2 = await client.messages.create({
+                from: fromNumber,
+                to: `whatsapp:+${numeroDestino}`,
+                template: {
+                    name: 'recepcion_orden',
+                    languageCode: 'es',
+                    components: [
+                        {
+                            type: 'body',
+                            parameters: [
+                                { type: 'text', text: nombre },
+                                { type: 'text', text: placa }
+                            ]
+                        }
+                    ]
+                }
+            });
+            console.log('Mensaje de WhatsApp (inicio, plantilla, template) enviado:', response2.sid);
+            return true;
+        } catch (error2) {
+            console.error('Error enviando WhatsApp (inicio, template):', error2?.message || error2, error2);
+            return false;
+        }
     }
 };
 
