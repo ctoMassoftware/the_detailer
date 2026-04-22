@@ -1,3 +1,106 @@
+// Notificación: Orden lista SIN rifa (usa plantilla)
+export const enviarNotificacionOrdenListaSinRifa = async (nombre, telefono, placa, totalPagar) => {
+    let numeroDestino = telefono.replace(/\D/g, '');
+    if (!numeroDestino.startsWith('57')) {
+        numeroDestino = '57' + numeroDestino;
+    }
+    try {
+        // Intenta con contentSid/contentVariables (API nueva)
+        const response = await client.messages.create({
+            from: fromNumber,
+            to: `whatsapp:+${numeroDestino}`,
+            contentSid: 'HX42d11753ef517ec4fabd1b30db4bcabd', // SID real de la plantilla "orden_lista_sin_rifa"
+            contentVariables: JSON.stringify({
+                '1': nombre,
+                '2': placa,
+                '3': totalPagar
+            })
+        });
+        console.log('Mensaje de WhatsApp (orden lista sin rifa, contentSid) enviado:', response.sid);
+        return true;
+    } catch (error) {
+        console.error('Error enviando WhatsApp (orden lista sin rifa, contentSid):', error?.message || error, error);
+        // Si falla, intenta con template (API clásica)
+        try {
+            const response2 = await client.messages.create({
+                from: fromNumber,
+                to: `whatsapp:+${numeroDestino}`,
+                template: {
+                    name: 'orden_lista_sin_rifa', // nombre exacto de la plantilla
+                    languageCode: 'es',
+                    components: [
+                        {
+                            type: 'body',
+                            parameters: [
+                                { type: 'text', text: nombre },
+                                { type: 'text', text: placa },
+                                { type: 'text', text: totalPagar }
+                            ]
+                        }
+                    ]
+                }
+            });
+            console.log('Mensaje de WhatsApp (orden lista sin rifa, template) enviado:', response2.sid);
+            return true;
+        } catch (error2) {
+            console.error('Error enviando WhatsApp (orden lista sin rifa, template):', error2?.message || error2, error2);
+            return false;
+        }
+    }
+};
+
+// Notificación: Orden lista CON rifa (usa plantilla)
+export const enviarNotificacionOrdenListaConRifa = async (nombre, telefono, placa, totalPagar, numeroBoleta) => {
+    let numeroDestino = telefono.replace(/\D/g, '');
+    if (!numeroDestino.startsWith('57')) {
+        numeroDestino = '57' + numeroDestino;
+    }
+    try {
+        // Intenta con contentSid/contentVariables (API nueva)
+        const response = await client.messages.create({
+            from: fromNumber,
+            to: `whatsapp:+${numeroDestino}`,
+            contentSid: 'HXc8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8', // REEMPLAZA por el SID real de la plantilla "orden_lista_con_rifa"
+            contentVariables: JSON.stringify({
+                '1': nombre,
+                '2': placa,
+                '3': totalPagar,
+                '4': numeroBoleta
+            })
+        });
+        console.log('Mensaje de WhatsApp (orden lista con rifa, contentSid) enviado:', response.sid);
+        return true;
+    } catch (error) {
+        console.error('Error enviando WhatsApp (orden lista con rifa, contentSid):', error?.message || error, error);
+        // Si falla, intenta con template (API clásica)
+        try {
+            const response2 = await client.messages.create({
+                from: fromNumber,
+                to: `whatsapp:+${numeroDestino}`,
+                template: {
+                    name: 'orden_lista_con_rifa', // nombre exacto de la plantilla
+                    languageCode: 'es',
+                    components: [
+                        {
+                            type: 'body',
+                            parameters: [
+                                { type: 'text', text: nombre },
+                                { type: 'text', text: placa },
+                                { type: 'text', text: totalPagar },
+                                { type: 'text', text: numeroBoleta }
+                            ]
+                        }
+                    ]
+                }
+            });
+            console.log('Mensaje de WhatsApp (orden lista con rifa, template) enviado:', response2.sid);
+            return true;
+        } catch (error2) {
+            console.error('Error enviando WhatsApp (orden lista con rifa, template):', error2?.message || error2, error2);
+            return false;
+        }
+    }
+};
 import twilio from 'twilio';
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
