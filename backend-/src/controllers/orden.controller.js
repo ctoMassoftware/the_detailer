@@ -6,33 +6,22 @@ import {
   enviarNotificacionModificacion
 } from "../services/whatsapp.service.js";
 
-// ✅ Convierte cualquier formato de hora a "HH:mm" en zona horaria Bogotá
-// Soporta: "HH:mm", "HH:mm:ss", ISO UTC ("2025-04-22T19:30:00Z"), y strings de pg (TIME)
-function toBogotaTimeString(hora) {
+// ✅ Limpia la hora recibida del frontend a formato "HH:mm"
+// El frontend ya manda la hora en Bogotá (hora local del navegador), NO hay que convertir
+function limpiarHora(hora) {
   if (!hora) return null;
 
-  // Si ya viene como "HH:mm" o "HH:mm:ss" (string puro de PostgreSQL TIME)
+  // Si viene como "HH:mm" o "HH:mm:ss" → simplemente recortamos a "HH:mm"
   if (/^\d{2}:\d{2}(:\d{2})?$/.test(hora)) {
-    // Viene de pg como hora UTC, convertimos asumiendo que es UTC
-    return DateTime.fromISO(`1970-01-01T${hora}`, { zone: 'utc' })
-      .setZone('America/Bogota')
-      .toFormat('HH:mm');
+    return hora.substring(0, 5);
   }
 
-  // Si viene como ISO UTC: '2025-04-22T19:30:00Z' (desde el frontend)
-  return DateTime.fromISO(hora, { zone: 'utc' })
-    .setZone('America/Bogota')
-    .toFormat('HH:mm');
-}
+  // Si viene como ISO: "2025-04-22T14:30:00" (sin Z = hora local) → extraemos solo HH:mm
+  if (hora.includes('T')) {
+    return hora.split('T')[1].substring(0, 5);
+  }
 
-// ✅ Convierte la hora que devuelve PostgreSQL (TIME en UTC) a hora Bogotá
-function pgTimeToBogoata(horaStr) {
-  if (!horaStr) return null;
-  // pg devuelve TIME como "19:30:00" (UTC), lo convertimos a Bogotá
-  const clean = String(horaStr).slice(0, 8); // asegura "HH:mm:ss"
-  return DateTime.fromISO(`1970-01-01T${clean}`, { zone: 'utc' })
-    .setZone('America/Bogota')
-    .toFormat('HH:mm');
+  return null;
 }
 
 export const createOrden = async (req, res) => {
@@ -44,77 +33,65 @@ export const createOrden = async (req, res) => {
     correo_cliente,
     telefono_cliente,
     direccion_cliente,
-
     placa_vehiculo,
     marca_vehiculo,
     modelo_vehiculo,
     tipo_vehiculo,
-
     metodo_pago,
     caja,
     id_user_encargado,
-
     id_rifa,
     notas,
     servicios,
-
     sede
   } = req.body;
 
   const sedeFinal = rol === "SUPER_ADMIN" && sede ? sede : sedeUsuario || "GLOBAL";
   const client = await pool.connect();
 
-  // ✅ Convierte la hora recibida del frontend a hora Bogotá antes de guardar
-  let horaBogota = null;
-  if (req.body.hora) {
-    horaBogota = toBogotaTimeString(req.body.hora);
-  }
-  // Si no viene hora, el DEFAULT de PostgreSQL ya está configurado en hora Bogotá (ver initDB.js)
+  // ✅ El frontend manda la hora local de Bogotá, solo la limpiamos
+  // Si no viene hora, PostgreSQL usa el DEFAULT (también en hora Bogotá)
+  const horaFinal = req.body.hora ? limpiarHora(req.body.hora) : null;
 
   try {
     await client.query("BEGIN");
 
-    const ordenQuery = `
-      INSERT INTO public.orden (
-        cedula_cliente,
-        nombre_cliente,
-        correo_cliente,
-        telefono_cliente,
-        direccion_cliente,
-        placa_vehiculo,
-        marca_vehiculo,
-        modelo_vehiculo,
-        tipo_vehiculo,
-        metodo_pago,
-        caja,
-        id_user_encargado,
-        id_rifa,
-        notas,
-        sede,
-        hora
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-      RETURNING id_orden
-    `;
+    // Si viene hora la incluimos en el INSERT, si no la omitimos para que use el DEFAULT
+    let ordenQuery;
+    let ordenValues;
 
-    const ordenValues = [
-      cedula_cliente,
-      nombre_cliente,
-      correo_cliente,
-      telefono_cliente,
-      direccion_cliente,
-      placa_vehiculo,
-      marca_vehiculo,
-      modelo_vehiculo,
-      tipo_vehiculo,
-      metodo_pago,
-      caja,
-      id_user_encargado,
-      id_rifa,
-      notas,
-      sedeFinal,
-      horaBogota  // null → PostgreSQL usará el DEFAULT (hora Bogotá automática)
-    ];
+    if (horaFinal !== null) {
+      ordenQuery = `
+        INSERT INTO public.orden (
+          cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+          placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, hora
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        RETURNING id_orden
+      `;
+      ordenValues = [
+        cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+        placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, horaFinal
+      ];
+    } else {
+      // Sin hora → PostgreSQL usa DEFAULT (hora Bogotá automática)
+      ordenQuery = `
+        INSERT INTO public.orden (
+          cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+          placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        RETURNING id_orden
+      `;
+      ordenValues = [
+        cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+        placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal
+      ];
+    }
 
     const ordenResult = await client.query(ordenQuery, ordenValues);
     const idOrden = ordenResult.rows[0].id_orden;
@@ -211,10 +188,10 @@ export const getOrdenes = async (req, res) => {
 
     const result = await pool.query(finalQuery, params);
 
-    // ✅ Convierte la hora de cada orden de UTC a hora Bogotá antes de enviar al frontend
+    // ✅ La hora ya está guardada en Bogotá, solo formateamos a "HH:mm"
     const rows = result.rows.map(row => ({
       ...row,
-      hora: pgTimeToBogoata(row.hora)
+      hora: row.hora ? String(row.hora).substring(0, 5) : null
     }));
 
     res.json(rows);
@@ -234,11 +211,8 @@ export const updateOrden = async (req, res) => {
     fecha, hora, notas, servicios
   } = req.body;
 
-  // ✅ Convierte la hora recibida del frontend a hora Bogotá antes de guardar
-  let horaBogota = null;
-  if (hora) {
-    horaBogota = toBogotaTimeString(hora);
-  }
+  // ✅ El frontend ya manda hora en Bogotá, solo limpiamos el formato
+  const horaFinal = hora ? limpiarHora(hora) : null;
 
   const client = await pool.connect();
 
@@ -256,7 +230,7 @@ export const updateOrden = async (req, res) => {
       cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
       placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
       metodo_pago, caja, id_user_encargado, estado,
-      fecha, horaBogota, notas, id
+      fecha, horaFinal, notas, id
     ];
 
     await client.query(updateQuery, values);
