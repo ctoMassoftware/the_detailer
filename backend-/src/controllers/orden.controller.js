@@ -3,7 +3,8 @@ import { DateTime } from "luxon";
 import {
   enviarNotificacionInicioServicio,
   enviarNotificacionSimple,
-  enviarNotificacionModificacion
+  enviarNotificacionModificacion,
+  enviarNotificacionOrdenListaSinRifa
 } from "../services/whatsapp.service.js";
 
 // ✅ Limpia la hora recibida del frontend a formato "HH:mm"
@@ -274,7 +275,7 @@ export const deleteOrden = async (req, res) => {
 export const notificarOrdenLista = async (req, res) => {
   const { nombre, telefono, placa, total } = req.body;
   try {
-    await enviarNotificacionSimple(nombre, telefono, placa, total);
+    await enviarNotificacionOrdenListaSinRifa(nombre, telefono, placa, total);
     res.json({ message: "Notificación enviada" });
   } catch (error) {
     console.error("Error enviando notificación:", error);
