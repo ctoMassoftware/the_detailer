@@ -57,48 +57,42 @@ export const enviarNotificacionOrdenListaConRifa = async (nombre, telefono, plac
     if (!numeroDestino.startsWith('57')) {
         numeroDestino = '57' + numeroDestino;
     }
+
+    const safeNombre = (nombre || 'Cliente').trim();
+    const safePlaca = (placa || 'N/A').trim();
+    const safeTotal = totalPagar != null ? String(totalPagar) : '0';
+    const safeBoleta = numeroBoleta != null ? String(numeroBoleta) : '000';
+
+    console.log('📤 Enviando orden lista con rifa:', { safeNombre, safePlaca, safeTotal, safeBoleta });
+
     try {
-        // Intenta con contentSid/contentVariables (API nueva)
         const response = await client.messages.create({
             from: fromNumber,
             to: `whatsapp:+${numeroDestino}`,
-            contentSid: 'HXc8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8', // REEMPLAZA por el SID real de la plantilla "orden_lista_con_rifa"
+            contentSid: 'HXe9cead84a192d3f2a2ed1e89631786fc',
             contentVariables: JSON.stringify({
-                '1': nombre,
-                '2': placa,
-                '3': totalPagar,
-                '4': numeroBoleta
+                '1': safeNombre,
+                '2': safePlaca,
+                '3': safeTotal,
+                '4': safeBoleta
             })
         });
-        console.log('Mensaje de WhatsApp (orden lista con rifa, contentSid) enviado:', response.sid);
+        console.log('✅ Mensaje con rifa enviado:', response.sid);
         return true;
     } catch (error) {
-        console.error('Error enviando WhatsApp (orden lista con rifa, contentSid):', error?.message || error, error);
-        // Si falla, intenta con template (API clásica)
+        console.error('❌ Error con contentSid:', error?.message);
+
+        // Fallback texto plano
         try {
             const response2 = await client.messages.create({
                 from: fromNumber,
                 to: `whatsapp:+${numeroDestino}`,
-                template: {
-                    name: 'orden_lista_con_rifa', // nombre exacto de la plantilla
-                    languageCode: 'es',
-                    components: [
-                        {
-                            type: 'body',
-                            parameters: [
-                                { type: 'text', text: nombre },
-                                { type: 'text', text: placa },
-                                { type: 'text', text: totalPagar },
-                                { type: 'text', text: numeroBoleta }
-                            ]
-                        }
-                    ]
-                }
+                body: `👋 Hola ${safeNombre},\n\n🚗 Tu vehículo con placa ${safePlaca} está listo para recoger.\n\n💰 Total a pagar: $${safeTotal}\n\n🎟️ ¡The Detailer te premia!\nParticipas en nuestra rifa con la Lotería del Quindío con el número de boleta:\n👉 ${safeBoleta}\n\n¡Mucha suerte y gracias por confiar en nosotros! 🍀`
             });
-            console.log('Mensaje de WhatsApp (orden lista con rifa, template) enviado:', response2.sid);
+            console.log('✅ Fallback con rifa enviado:', response2.sid);
             return true;
         } catch (error2) {
-            console.error('Error enviando WhatsApp (orden lista con rifa, template):', error2?.message || error2, error2);
+            console.error('❌ Error en fallback:', error2?.message);
             return false;
         }
     }
