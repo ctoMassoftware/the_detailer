@@ -4,46 +4,48 @@ export const enviarNotificacionOrdenListaSinRifa = async (nombre, telefono, plac
     if (!numeroDestino.startsWith('57')) {
         numeroDestino = '57' + numeroDestino;
     }
+
+    const safeNombre = (nombre || 'Cliente').trim();
+    const safePlaca = (placa || 'N/A').trim();
+    const safeTotal = totalPagar != null ? String(totalPagar) : '0';
+
+    // Log para verificar exactamente qué se envía
+    console.log('📤 Enviando orden lista sin rifa:', { safeNombre, safePlaca, safeTotal });
+    console.log('📋 contentVariables string:', JSON.stringify({ '1': safeNombre, '2': safePlaca, '3': safeTotal }));
+
     try {
-        // Intenta con contentSid/contentVariables (API nueva)
         const response = await client.messages.create({
             from: fromNumber,
             to: `whatsapp:+${numeroDestino}`,
-            contentSid: 'HX42d11753ef517ec4fabd1b30db4bcabd', // SID real de la plantilla "orden_lista_sin_rifa"
+            contentSid: 'HX42d11753ef517ec4fabd1b30db4bcabd',
             contentVariables: JSON.stringify({
-                '1': nombre,
-                '2': placa,
-                '3': totalPagar
+                '1': safeNombre,
+                '2': safePlaca,
+                '3': safeTotal
             })
         });
-        console.log('Mensaje de WhatsApp (orden lista sin rifa, contentSid) enviado:', response.sid);
+        console.log('✅ Mensaje enviado:', response.sid);
         return true;
     } catch (error) {
-        console.error('Error enviando WhatsApp (orden lista sin rifa, contentSid):', error?.message || error, error);
-        // Si falla, intenta con template (API clásica)
+        console.error('❌ Error completo:', JSON.stringify({
+            message: error?.message,
+            code: error?.code,
+            status: error?.status,
+            details: error?.details,
+            moreInfo: error?.moreInfo
+        }));
+
+        // Fallback con body de texto plano (siempre funciona en WhatsApp aprobado)
         try {
             const response2 = await client.messages.create({
                 from: fromNumber,
                 to: `whatsapp:+${numeroDestino}`,
-                template: {
-                    name: 'orden_lista_sin_rifa', // nombre exacto de la plantilla
-                    languageCode: 'es',
-                    components: [
-                        {
-                            type: 'body',
-                            parameters: [
-                                { type: 'text', text: nombre },
-                                { type: 'text', text: placa },
-                                { type: 'text', text: totalPagar }
-                            ]
-                        }
-                    ]
-                }
+                body: `👋 Hola ${safeNombre},\n\n🚗 Tu vehículo con placa ${safePlaca} está listo para recoger.\n\n💰 Total a pagar: $${safeTotal}\n\n¡Gracias por confiar en nosotros! 🙌`
             });
-            console.log('Mensaje de WhatsApp (orden lista sin rifa, template) enviado:', response2.sid);
+            console.log('✅ Fallback enviado:', response2.sid);
             return true;
         } catch (error2) {
-            console.error('Error enviando WhatsApp (orden lista sin rifa, template):', error2?.message || error2, error2);
+            console.error('❌ Error en fallback:', error2?.message);
             return false;
         }
     }

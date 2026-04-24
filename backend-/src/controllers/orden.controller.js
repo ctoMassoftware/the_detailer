@@ -274,6 +274,7 @@ export const deleteOrden = async (req, res) => {
 
 export const notificarOrdenLista = async (req, res) => {
   const { nombre, telefono, placa, total } = req.body;
+  console.log('[DEBUG] notificarOrdenLista params:', { nombre, telefono, placa, total });
   try {
     await enviarNotificacionOrdenListaSinRifa(nombre, telefono, placa, total);
     res.json({ message: "Notificación enviada" });
