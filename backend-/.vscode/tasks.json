@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Inactivar operarios 9pm (CRON)",
+			"type": "shell",
+			"command": "node ./src/scripts/inactivarOperarios9pm.js",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

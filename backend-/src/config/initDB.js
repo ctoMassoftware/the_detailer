@@ -101,7 +101,8 @@ export const initDB = async () => {
             tipo_vehiculo VARCHAR(50),
             metodo_pago VARCHAR(50),
             caja VARCHAR(50),
-            estado VARCHAR(50) DEFAULT 'FINALIZADA',
+            -- Estados posibles: PROCESO, LISTA, CANCELADA, FINALIZADA_ENTREGADA
+            estado VARCHAR(50) DEFAULT 'PROCESO',
             id_user_encargado INTEGER REFERENCES usuarios(id_user), 
             id_rifa INTEGER REFERENCES evento_rifa(id_evento),
             notas TEXT,

@@ -62,13 +62,15 @@
                 <td>{{ orden.operario }}</td>
                 <td class="fecha-col">{{ orden.fecha }}</td>
                 <td>
-                  <select class="estado-select" [disabled]="orden.estado === 'Lista' || !puedeModificarOrden(orden)" [ngClass]="{
+                  <select class="estado-select" [disabled]="orden.estado === 'Orden finalizada' || !puedeModificarOrden(orden)" [ngClass]="{
                           'bg-proceso': orden.estado === 'Proceso',
                           'bg-lista': orden.estado === 'Lista',
-                          'bg-cancelada': orden.estado === 'Cancelada'
+                          'bg-cancelada': orden.estado === 'Cancelada',
+                          'bg-finalizada': orden.estado === 'Orden finalizada'
                         }" [(ngModel)]="orden.estado" (change)="verificarCambioEstado(orden)">
                     <option value="Proceso">En proceso</option>
                     <option value="Lista">Orden lista</option>
+                    <option value="Orden finalizada">Orden finalizada</option>
                     <option value="Cancelada">Cancelada</option>
                   </select>
                 </td>
@@ -77,12 +79,14 @@
                     <button class="btn-icon" title="Ver Detalles" (click)="abrirModalVer(orden)">
                       <span class="material-symbols-outlined">visibility</span>
                     </button>
-                    <button class="btn-icon" title="Editar" *ngIf="puedeModificarOrden(orden)" (click)="abrirModalEditar(orden)">
-                      <span class="material-symbols-outlined">edit</span>
-                    </button>
-                    <button class="btn-icon delete" title="Eliminar" *ngIf="puedeModificarOrden(orden)" (click)="eliminarOrden(orden)">
-                      <span class="material-symbols-outlined">delete</span>
-                    </button>
+                    <ng-container *ngIf="orden.estado !== 'Orden finalizada'">
+                      <button class="btn-icon" title="Editar" *ngIf="puedeModificarOrden(orden)" (click)="abrirModalEditar(orden)">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                      <button class="btn-icon delete" title="Eliminar" *ngIf="puedeModificarOrden(orden)" (click)="eliminarOrden(orden)">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </ng-container>
                   </div>
                 </td>
               </tr>

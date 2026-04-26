@@ -153,7 +153,7 @@ export class ConsultarOrden implements OnInit {
     if (this.rolUsuario === 'SUPER_ADMIN') {
       return true;
     }
-    if (orden.estado === 'Lista') {
+    if (orden.estado === 'Orden finalizada') {
       return false;
     }
     return true;
@@ -297,7 +297,9 @@ export class ConsultarOrden implements OnInit {
           let estadoNormalizado = 'Proceso';
           const raw = (o.estado || '').toString().toUpperCase().trim();
 
-          if (raw.includes('LISTA') || raw.includes('TERMINADO')) {
+          if (raw === 'FINALIZADA_ENTREGADA') {
+            estadoNormalizado = 'Orden finalizada';
+          } else if (raw.includes('LISTA') || raw.includes('TERMINADO')) {
             estadoNormalizado = 'Lista';
           } else if (raw.includes('CANCEL')) {
             estadoNormalizado = 'Cancelada';
@@ -425,6 +427,12 @@ export class ConsultarOrden implements OnInit {
       precio: s.precio || s.precio_unitario || s.valor || 0
     }));
 
+    // Mapear el estado visual a valor de backend
+    let estadoBackend = orden.estado;
+    if (orden.estado === 'Orden finalizada') {
+      estadoBackend = 'FINALIZADA_ENTREGADA';
+    }
+
     const payload = {
       cedula_cliente: orden.cedula,
       nombre_cliente: orden.cliente,
@@ -438,7 +446,7 @@ export class ConsultarOrden implements OnInit {
       metodo_pago: orden.metodoPago,
       caja: orden.caja,
       id_user_encargado: orden.id_operario,
-      estado: orden.estado,
+      estado: estadoBackend,
       fecha: orden.fecha,
       hora: orden.hora,
       notas: orden.notas,

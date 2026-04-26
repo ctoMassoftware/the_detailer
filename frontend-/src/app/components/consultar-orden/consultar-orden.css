@@ -951,7 +951,18 @@ input[type="date"] {
 .bg-proceso { background-color: #a29f9b; }
 .bg-lista { background-color: #10b981; }
 .bg-cancelada { background-color: #ef4444; }
-.estado-select:not(.bg-proceso):not(.bg-lista):not(.bg-cancelada) {
+.bg-finalizada {
+  background-color: #fbbf24;
+  color: #fff !important;
+  white-space: normal !important;
+  max-width: 180px;
+}
+
+.estado-select {
+  white-space: normal !important;
+  max-width: 180px;
+}
+.estado-select:not(.bg-proceso):not(.bg-lista):not(.bg-cancelada):not(.bg-finalizada) {
   background-color: #4b5563;
 }
 
