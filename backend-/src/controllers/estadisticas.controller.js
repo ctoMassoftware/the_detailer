@@ -40,7 +40,7 @@ export const getResumenDashboard = async (req, res) => {
                     );
                     // Operarios activos en la sede
                     const operariosActivosRes = await client.query(
-                        `SELECT COUNT(*) FROM public.usuarios WHERE sede = $1 AND estado_operario = TRUE AND rol = 'OPERARIO'`,
+                        `SELECT COUNT(*) FROM public.usuarios WHERE sede = $1 AND estado_operario = TRUE AND rol ILIKE 'operario'`,
                         [sedeNombre]
                     );
                     // Comisión lavadero (60% de ventas en servicios en el rango)

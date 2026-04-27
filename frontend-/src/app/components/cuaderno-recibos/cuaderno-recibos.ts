@@ -19,6 +19,8 @@ export class CuadernoRecibos implements OnInit {
   filtroFecha: string = '';
   totalDelDia: number = 0;
 
+  detallesVisibles: boolean[] = [];
+
   ngOnInit() {
     this.filtroFecha = new Date().toISOString().split('T')[0];
     this.cargarHistorial();
@@ -29,6 +31,7 @@ export class CuadernoRecibos implements OnInit {
       next: (res: any[]) => {
         this.historialVentas = res;
         this.calcularTotalDelDia();
+        this.detallesVisibles = new Array(res.length).fill(false);
       },
       error: (err) => console.error('Error al cargar historial', err)
     });
@@ -55,5 +58,9 @@ export class CuadernoRecibos implements OnInit {
 
     if (!resultadoFinal) return 'No registrado';
     return resultadoFinal.charAt(0).toUpperCase() + resultadoFinal.slice(1).toLowerCase();
+  }
+
+  toggleDetalles(index: number) {
+    this.detallesVisibles[index] = !this.detallesVisibles[index];
   }
 }

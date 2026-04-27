@@ -3,7 +3,9 @@
   <app-nav></app-nav>
 
   <div class="alert-success" *ngIf="mostrarAlerta" [class.error]="tipoAlerta === 'error'">
-    <span class="material-symbols-outlined">{{ tipoAlerta === 'success' ? 'check_circle' : 'error' }}</span>
+    <span class="material-symbols-outlined">
+      {{ tipoAlerta === 'success' ? 'check_circle' : 'error' }}
+    </span>
     <div style="display: flex; flex-direction: column;">
       <span>{{ tipoAlerta === 'success' ? '¡Excelente!' : 'Atención' }}</span>
       <span style="font-size: 0.75rem; opacity: 0.8; font-weight: 500; text-transform: none;">

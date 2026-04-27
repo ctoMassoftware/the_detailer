@@ -1,4 +1,3 @@
-
 // Importaciones correctas
 import { Component, OnInit, inject } from '@angular/core';
 import { Nav } from '../../shared/nav/nav';
@@ -26,15 +25,15 @@ interface Orden {
   vehiculoMarca: string;
   vehiculoModelo: string;
   vehiculoPlaca: string;
-  vehiculoTipo: string;
-  serviciosDetallados: any[];
-  servicioPrincipal: string;
-  operario: string;
-  id_operario: number | null;
-  metodoPago: string;
-  caja: string;
-  valorTotal: number;
-  notas: string;
+  vehiculoTipo?: string;
+  serviciosDetallados?: any[];
+  servicioPrincipal?: string;
+  operario?: string;
+  id_operario?: number | null;
+  metodoPago?: string;
+  caja?: string;
+  valorTotal?: number;
+  notas?: string;
 }
 
 @Component({
@@ -45,6 +44,43 @@ interface Orden {
   styleUrls: ['./consultar-orden.css']
 })
 export class ConsultarOrden implements OnInit {
+  // ...existing properties...
+  // --- Adicional (modal y lógica) ---
+  mostrarModalAdicional: boolean = false;
+  descAdicional: string = '';
+  valorAdicional: number | null = null;
+
+  onServicioSeleccionado() {
+    if (this.servicioSeleccionadoParaAgregar === 'ADICIONAL') {
+      this.servicioSeleccionadoParaAgregar = null;
+      this.abrirModalAdicional();
+    }
+  }
+
+  abrirModalAdicional() {
+    this.descAdicional = '';
+    this.valorAdicional = null;
+    this.mostrarModalAdicional = true;
+  }
+
+  cerrarModalAdicional() {
+    this.mostrarModalAdicional = false;
+  }
+
+  confirmarAdicional() {
+    if (!this.descAdicional || !this.valorAdicional || this.valorAdicional <= 0) return;
+    if (!this.ordenSeleccionada.serviciosDetallados) this.ordenSeleccionada.serviciosDetallados = [];
+    this.ordenSeleccionada.serviciosDetallados.push({
+      nombre: this.descAdicional,
+      precio: this.valorAdicional,
+      cantidad: 1,
+      tipo: 'Adicional'
+    });
+    // Filtra adicionales con valor 0
+    this.ordenSeleccionada.serviciosDetallados = this.ordenSeleccionada.serviciosDetallados.filter((s: any) => s.tipo !== 'Adicional' || (s.precio && s.precio > 0));
+    this.recalcularTotal();
+    this.cerrarModalAdicional();
+  }
       // Permitir solo una selección, pero si el usuario selecciona ambas, ambas quedan activas
       onPreferenciaReciboChange(tipo: string, event: any) {
         if (event.target.checked) {
@@ -233,6 +269,10 @@ export class ConsultarOrden implements OnInit {
   get serviciosDisponiblesParaVehiculo() {
     const tipo = (this.ordenSeleccionada?.vehiculoTipo || '').toLowerCase();
     return this.listaServicios.filter((item: any) => {
+      // Excluir adicionales con precio 0 o menor
+      if ((item.tipo === 'Adicional' || item.nombre?.toLowerCase().includes('adicional')) && (!item.precio || item.precio <= 0)) {
+        return false;
+      }
       if (tipo.includes('automovil')) return item.aplica_automovil !== false;
       if (tipo.includes('campero')) return item.aplica_campero !== false;
       if (tipo.includes('camioneta')) return item.aplica_camioneta !== false;
@@ -279,6 +319,10 @@ export class ConsultarOrden implements OnInit {
   }
 
   recalcularTotal() {
+    // Elimina adicionales con valor 0
+    if (this.ordenSeleccionada.serviciosDetallados) {
+      this.ordenSeleccionada.serviciosDetallados = this.ordenSeleccionada.serviciosDetallados.filter((s: any) => s.tipo !== 'Adicional' || (s.precio && s.precio > 0));
+    }
     let total = 0;
     if (this.ordenSeleccionada.serviciosDetallados) {
       this.ordenSeleccionada.serviciosDetallados.forEach((item: any) => {
