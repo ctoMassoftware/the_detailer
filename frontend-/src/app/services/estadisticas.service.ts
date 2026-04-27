@@ -56,7 +56,7 @@ export class EstadisticasService {
       return this.http.get(`${this.apiUrl}/exportar`, { params, responseType: 'blob' });
     }
   private http = inject(HttpClient);
-  private apiUrl = 'thedetailer.up.railway.app/api/estadisticas';
+  private apiUrl = 'https://https://thedetailer.up.railway.app/api/estadisticas';
 
   // 👈 Ahora acepta la sede como parámetro opcional
   getResumenDashboard(sede?: string): Observable<DashboardStats> {

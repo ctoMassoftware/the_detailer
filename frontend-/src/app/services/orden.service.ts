@@ -6,7 +6,10 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class OrdenService {
-  private apiUrl = 'thedetailer.up.railway.app/api/ordenes';
+  private apiUrl = 'https://thedetailer.up.railway.app/api/ordenes';
+    buscarClientesPlacas(query: string) {
+      return this.http.get<any[]>(`${this.apiUrl}/buscar-clientes-placas`, { params: new HttpParams().set('query', query) });
+    }
   private http = inject(HttpClient);
 
   // 👈 Modificado para atrapar la sede y mandarla en la URL

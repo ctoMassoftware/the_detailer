@@ -9,7 +9,7 @@ export class VentaMostradorService {
   
   // URL directa a tu backend local. 
   // (Si en el futuro subes esto a un servidor, solo cambias el localhost por tu dominio)
-  private apiUrl = 'thedetailer.up.railway.app/api/venta-mostrador';
+  private apiUrl = 'https://thedetailer.up.railway.app/api/venta-mostrador';
 
   constructor(private http: HttpClient) { }
 

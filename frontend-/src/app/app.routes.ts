@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { Login } from './components/login/login';
 import { Home } from './components/home/home';
-import { CrearOrden } from './components/crear-orden/crear-orden';
+import { CrearOrdenComponent } from './components/crear-orden/crear-orden';
 import { ConsultarOrden } from './components/consultar-orden/consultar-orden';
 import { Inventario } from './components/inventario/inventario';
 import { InventarioProductos } from './components/inventario-productos/inventario-productos';
@@ -25,7 +25,7 @@ export const routes: Routes = [
   // RUTAS OPERATIVAS (Acceso para Operarios y Admins)
   // ==========================================
   { path: 'home', component: Home, canActivate: [authGuard] },
-  { path: 'crear-orden', component: CrearOrden, canActivate: [authGuard] },
+  { path: 'crear-orden', component: CrearOrdenComponent, canActivate: [authGuard] },
   { path: 'consultar-orden', component: ConsultarOrden, canActivate: [authGuard] },
   { path: 'inventario', component: Inventario, canActivate: [authGuard] },
   { path: 'inventario2', component: InventarioProductos, canActivate: [authGuard] },
