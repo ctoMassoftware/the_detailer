@@ -7,7 +7,7 @@ import { Observable, tap } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'https://thedetailer.up.railway.app/api/auth';
+  private apiUrl = 'http://localhost:3000/api/auth';
   private http = inject(HttpClient);
   private router = inject(Router);
 

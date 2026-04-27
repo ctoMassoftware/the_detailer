@@ -45,6 +45,14 @@
               <strong>{{ stats.ventas.dia | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
             </div>
             <div class="mini-kpi">
+              <span>Efectivo</span>
+              <strong style="color:#00e676">{{ totalEfectivo | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+            </div>
+            <div class="mini-kpi">
+              <span style="color:#2196f3">Transferencia</span>
+              <strong style="color:#2196f3">{{ totalTransferencia | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+            </div>
+            <div class="mini-kpi">
               <span>Semana</span>
               <strong>{{ stats.ventas.semana | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
             </div>

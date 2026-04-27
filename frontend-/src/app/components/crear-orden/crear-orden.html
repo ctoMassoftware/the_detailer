@@ -110,6 +110,27 @@
             <textarea [(ngModel)]="datosOrden.notas" placeholder="Ej: Vehículo con rayón en puerta derecha..."
               class="input-dark" rows="3"></textarea>
           </div>
+
+          <!-- Opciones de casco solo para motos -->
+          <div class="form-group" *ngIf="datosOrden.tipoVehiculo === 'moto'" style="margin-bottom: 0;">
+            <table style="width:100%; border:none; background:transparent;">
+              <tr>
+                <td style="border:none; background:transparent; padding:0; vertical-align:middle;">
+                  <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
+                    <input type="checkbox" [(ngModel)]="datosOrden.deja_casco" 
+                      style="accent-color: #e53935; width: 1.2em; height: 1.2em; margin-right: 0.5em;">
+                    <span style="color: #e53935; font-weight: 500;">¿Deja casco?</span>
+                  </label>
+                </td>
+                <td style="border:none; background:transparent; padding:0; vertical-align:middle; width: 180px;">
+                  <div *ngIf="datosOrden.deja_casco" style="display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end;">
+                    <span>Cantidad:</span>
+                    <input type="number" min="1" [(ngModel)]="datosOrden.cantidad_cascos" class="input-dark" placeholder="Ej: 1" (keypress)="validarSoloNumeros($event)" style="width: 70px;">
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
         </div>
       </section>
 

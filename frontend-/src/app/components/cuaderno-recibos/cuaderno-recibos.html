@@ -101,11 +101,23 @@
       </div>
 
       <div class="total-summary-card">
-        <div class="summary-container" style="justify-content: flex-end;">
+        <div class="summary-container" style="justify-content: flex-end; gap: 2rem;">
           <div class="total-wrapper">
             <label class="total-label">Total del Día:</label>
             <div class="input-wrapper-simple">
               <input type="text" class="total-input" [value]="'$ ' + (totalDelDia | number)" readonly />
+            </div>
+          </div>
+          <div class="total-wrapper">
+            <label class="total-label" style="color:#00e676">Efectivo:</label>
+            <div class="input-wrapper-simple">
+              <input type="text" class="total-input" [value]="'$ ' + (totalEfectivo | number)" readonly />
+            </div>
+          </div>
+          <div class="total-wrapper">
+            <label class="total-label" style="color:#2196f3">Transferencia:</label>
+            <div class="input-wrapper-simple">
+              <input type="text" class="total-input" style="color:#2196f3;" [value]="'$ ' + (totalTransferencia | number)" readonly />
             </div>
           </div>
         </div>

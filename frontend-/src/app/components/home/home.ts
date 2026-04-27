@@ -45,7 +45,7 @@ export class Home implements OnInit {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     // Enviamos el rango de fechas en la URL
-    let url = `https://thedetailer.up.railway.app/api/estadisticas/dashboard?`;
+    let url = `http://localhost:3000/api/estadisticas/dashboard?`;
     if (this.fechaDesde) url += `fecha_desde=${this.fechaDesde}&`;
     if (this.fechaHasta) url += `fecha_hasta=${this.fechaHasta}`;
 

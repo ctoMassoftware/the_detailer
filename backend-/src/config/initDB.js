@@ -211,6 +211,9 @@ export const initDB = async () => {
             "ALTER TABLE inventario_venta ADD COLUMN IF NOT EXISTS sede VARCHAR(50)",
             // NUEVO: Asegura que la columna sede exista en orden
             "ALTER TABLE orden ADD COLUMN IF NOT EXISTS sede VARCHAR(50)",
+            // NUEVO: Agrega columnas para casco en orden
+            "ALTER TABLE orden ADD COLUMN IF NOT EXISTS deja_casco BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE orden ADD COLUMN IF NOT EXISTS cantidad_cascos INTEGER DEFAULT 0",
 
             "ALTER TABLE inventario_producto ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 5",
             "ALTER TABLE inventario_venta ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 5",
