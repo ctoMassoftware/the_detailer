@@ -38,10 +38,11 @@
                 <th>Método Pago</th>
                 <th>Vendedor</th>
                 <th class="text-right">Total</th>
+                <th class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let venta of historialVentas">
+              <tr *ngFor="let venta of historialVentas; let i = index">
                 <td class="font-medium"># {{ venta.id_venta }}</td>
                 <td>{{ venta.hora | slice:0:5 }}</td>
                 <td>{{ venta.cliente_nombre }}</td>
@@ -51,15 +52,46 @@
                     {{ venta.metodo_pago }}
                   </span>
                 </td>
-
                 <td class="font-medium" style="color: #9ca3af;">
                   {{ obtenerNombreVendedor(venta) }}
                 </td>
-
                 <td class="text-right font-medium" style="color: #00e676;">$ {{ venta.total | number }}</td>
+                <td class="text-center">
+                  <div class="action-buttons">
+                    <button class="btn-icon" title="Ver Detalles" (click)="toggleDetalles(i)" [attr.aria-label]="'Ver detalles de venta ' + venta.id_venta">
+                      <span class="material-symbols-outlined">visibility</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngFor="let venta of historialVentas; let i = index">
+                <td colspan="7" style="padding:0; border: none; background: #23272b;">
+                  <table *ngIf="venta.detalles && venta.detalles.length > 0 && detallesVisibles[i]" style="width:100%; margin-bottom: 1.5rem; background: #23272b;">
+                    <thead>
+                      <tr style="background: #23272b; color: #9ca3af; font-size: 0.95em;">
+                        <th style="padding: 0.5rem 0.5rem;">Producto</th>
+                        <th style="padding: 0.5rem 0.5rem;">Categoría</th>
+                        <th style="padding: 0.5rem 0.5rem;">Proveedor</th>
+                        <th style="padding: 0.5rem 0.5rem;">Cantidad</th>
+                        <th style="padding: 0.5rem 0.5rem;">Precio</th>
+                        <th style="padding: 0.5rem 0.5rem;">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let det of venta.detalles">
+                        <td style="padding: 0.5rem 0.5rem; color: #fff;">{{ det.nombre_producto }}</td>
+                        <td style="padding: 0.5rem 0.5rem;">{{ det.categoria }}</td>
+                        <td style="padding: 0.5rem 0.5rem;">{{ det.proveedor }}</td>
+                        <td style="padding: 0.5rem 0.5rem; text-align:center;">{{ det.cantidad_vendida }}</td>
+                        <td style="padding: 0.5rem 0.5rem; text-align:right;">$ {{ det.precio_unitario | number }}</td>
+                        <td style="padding: 0.5rem 0.5rem; text-align:right;">$ {{ det.subtotal | number }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
               </tr>
               <tr *ngIf="historialVentas.length === 0">
-                <td colspan="6" class="text-center" style="padding: 2rem; color: #9ca3af;">
+                <td colspan="7" class="text-center" style="padding: 2rem; color: #9ca3af;">
                   No hay ventas registradas en esta fecha.
                 </td>
               </tr>

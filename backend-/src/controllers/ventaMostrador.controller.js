@@ -22,13 +22,30 @@ export const registrarVentaMostrador = async (req, res) => {
 
         // 2. Insertar Detalles y Descontar Inventario
         for (let prod of productos) {
-            
-            await client.query(`
-                INSERT INTO detalle_venta_mostrador (id_venta, id_producto_venta, cantidad_vendida, precio_unitario, subtotal)
-                VALUES ($1, $2, $3, $4, $5)
-            `, [idVenta, prod.id_producto_venta, prod.cantidad, prod.precio_venta, (prod.cantidad * prod.precio_venta)]);
+            // Obtener datos actuales del producto
+            const { rows: productoRows } = await client.query(
+                'SELECT nombre_producto, categoria, proveedor, costo FROM inventario_venta WHERE id_producto_venta = $1',
+                [prod.id_producto_venta]
+            );
+            const producto = productoRows[0] || {};
 
-            // Descontar inventario validando stock mínimo (La columna de tu DB se llama 'cantidad')
+            await client.query(`
+                INSERT INTO detalle_venta_mostrador (
+                  id_venta, id_producto_venta, nombre_producto, categoria, proveedor, costo_unitario, cantidad_vendida, precio_unitario, subtotal
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            `, [
+                idVenta,
+                prod.id_producto_venta,
+                producto.nombre_producto || prod.nombre_producto || null,
+                producto.categoria || prod.categoria || null,
+                producto.proveedor || prod.proveedor || null,
+                producto.costo || prod.costo || null,
+                prod.cantidad,
+                prod.precio_venta,
+                (prod.cantidad * prod.precio_venta)
+            ]);
+
+            // Descontar inventario validando stock mínimo
             const stockRes = await client.query(`
                 UPDATE inventario_venta 
                 SET cantidad = cantidad - $1 
@@ -83,8 +100,27 @@ export const getHistorialMostrador = async (req, res) => {
             WHERE v.fecha = $1 ${sqlSedeFiltro}
             ORDER BY v.hora DESC
         `;
-        const result = await pool.query(query, params);
-        res.json(result.rows);
+        const ventasRes = await pool.query(query, params);
+        const ventas = ventasRes.rows;
+
+        // Obtener detalles para todas las ventas
+        const ids = ventas.map(v => v.id_venta);
+        let detalles = [];
+        if (ids.length > 0) {
+            const detallesRes = await pool.query(
+                `SELECT * FROM detalle_venta_mostrador WHERE id_venta = ANY($1::int[])`,
+                [ids]
+            );
+            detalles = detallesRes.rows;
+        }
+
+        // Asociar detalles a cada venta
+        const ventasConDetalles = ventas.map(venta => ({
+            ...venta,
+            detalles: detalles.filter(d => d.id_venta === venta.id_venta)
+        }));
+
+        res.json(ventasConDetalles);
     } catch (error) {
         console.error('Error obteniendo historial:', error);
         res.status(500).json({ error: 'Error al consultar el cuaderno de recibos' });

@@ -213,16 +213,39 @@
             <div *ngIf="modoEdicion" class="add-service-container"
               style="display: flex; gap: 0.5rem; align-items: center;">
               <select [(ngModel)]="servicioSeleccionadoParaAgregar" class="input-dark"
-                style="padding: 0.4rem; min-width: 200px;">
+                style="padding: 0.4rem; min-width: 200px;" (change)="onServicioSeleccionado()">
                 <option [ngValue]="null" disabled selected>Seleccionar servicio/combo</option>
                 <option *ngFor="let serv of serviciosDisponiblesParaVehiculo" [ngValue]="serv">
                   {{ serv.nombre }} - $ {{ serv.precio | number }}
                 </option>
+                <option [ngValue]="'ADICIONAL'">Adicional</option>
               </select>
               <button class="btn btn-primary" (click)="agregarServicio()" [disabled]="!servicioSeleccionadoParaAgregar"
                 style="min-width: 40px; padding: 0 0.5rem;">
                 <span class="material-symbols-outlined" style="font-size: 1.2rem;">add</span>
               </button>
+            <!-- Modal para agregar adicional -->
+            <div class="modal-overlay" *ngIf="mostrarModalAdicional">
+              <div class="modal-content" style="max-width: 400px; padding: 2.5rem;">
+                <div class="modal-icon">
+                  <span class="material-symbols-outlined" style="color: var(--primary);">playlist_add</span>
+                </div>
+                <h2 class="modal-title">Agregar Adicional</h2>
+                <p class="modal-message" style="margin-bottom: 1.5rem;">Añade un servicio extra a la orden actual</p>
+                <div class="form-group" style="text-align: left; margin-bottom: 1.2rem;">
+                  <label style="color: white;">¿Qué servicio extra se realizó?</label>
+                  <input type="text" class="input-dark" placeholder="Ej: Brillada de farolas" [(ngModel)]="descAdicional">
+                </div>
+                <div class="form-group" style="text-align: left; margin-bottom: 2rem;">
+                  <label style="color: white;">Valor a cobrar ($)</label>
+                  <input type="number" class="input-dark" placeholder="Ej: 30000" [(ngModel)]="valorAdicional">
+                </div>
+                <div class="modal-actions" style="display: flex; gap: 1rem;">
+                  <button class="btn-modal btn-secondary" (click)="cerrarModalAdicional()" style="flex: 1;">Cancelar</button>
+                  <button class="btn-modal" (click)="confirmarAdicional()" style="flex: 1;">Aceptar</button>
+                </div>
+              </div>
+            </div>
             </div>
           </div>
 

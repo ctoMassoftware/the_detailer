@@ -137,11 +137,47 @@ export const initDB = async () => {
         CREATE TABLE IF NOT EXISTS detalle_venta_mostrador (
             id_detalle SERIAL PRIMARY KEY,
             id_venta INTEGER REFERENCES venta_mostrador(id_venta) ON DELETE CASCADE,
-            id_producto_venta INTEGER REFERENCES inventario_venta(id_producto_venta),
+            id_producto_venta INTEGER REFERENCES inventario_venta(id_producto_venta) ON DELETE SET NULL,
+            nombre_producto VARCHAR(150),
+            categoria VARCHAR(100),
+            proveedor VARCHAR(100),
+            costo_unitario NUMERIC(12, 2),
             cantidad_vendida INTEGER NOT NULL,
             precio_unitario NUMERIC(12, 2) NOT NULL,
             subtotal NUMERIC(12, 2) NOT NULL
         );
+                                -- MIGRACIÓN: Agrega columnas históricas a detalle_venta_mostrador
+                                DO $$ BEGIN
+                                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='detalle_venta_mostrador' AND column_name='nombre_producto') THEN
+                                        ALTER TABLE detalle_venta_mostrador ADD COLUMN nombre_producto VARCHAR(150);
+                                    END IF;
+                                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='detalle_venta_mostrador' AND column_name='categoria') THEN
+                                        ALTER TABLE detalle_venta_mostrador ADD COLUMN categoria VARCHAR(100);
+                                    END IF;
+                                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='detalle_venta_mostrador' AND column_name='proveedor') THEN
+                                        ALTER TABLE detalle_venta_mostrador ADD COLUMN proveedor VARCHAR(100);
+                                    END IF;
+                                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='detalle_venta_mostrador' AND column_name='costo_unitario') THEN
+                                        ALTER TABLE detalle_venta_mostrador ADD COLUMN costo_unitario NUMERIC(12,2);
+                                    END IF;
+                                END $$;
+                -- MIGRACIÓN: Cambia la clave foránea para permitir ON DELETE SET NULL en detalle_venta_mostrador
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.table_constraints
+                        WHERE constraint_type = 'FOREIGN KEY'
+                        AND table_name = 'detalle_venta_mostrador'
+                        AND constraint_name LIKE '%id_producto_venta%'
+                    ) THEN
+                        ALTER TABLE detalle_venta_mostrador DROP CONSTRAINT IF EXISTS detalle_venta_mostrador_id_producto_venta_fkey;
+                    END IF;
+                END$$;
+                ALTER TABLE detalle_venta_mostrador
+                    ADD CONSTRAINT detalle_venta_mostrador_id_producto_venta_fkey
+                    FOREIGN KEY (id_producto_venta)
+                    REFERENCES inventario_venta(id_producto_venta)
+                    ON DELETE SET NULL;
         
         -- 12. GANADORES DE RIFA
         CREATE TABLE IF NOT EXISTS rifa_ganador (

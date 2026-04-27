@@ -461,11 +461,9 @@
   top: 6rem;
   right: 2rem;
   z-index: 100;
-  
   background-color: #000000;
-  color: #fd0100;
-  border: 1px solid #fd0100;
-  
+  color: #21c55d;
+  border: 1px solid #21c55d;
   padding: 1rem 1.5rem;
   border-radius: 0.5rem;
   display: flex;
@@ -473,9 +471,14 @@
   gap: 0.75rem;
   font-weight: 700;
   font-size: 1rem;
-  
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 25px rgba(33, 197, 93, 0.3);
   animation: slideInRight 0.3s ease-out;
+}
+
+.alert-success.error {
+  color: #fd0100;
+  border: 1px solid #fd0100;
+  box-shadow: 0 10px 25px rgba(253, 1, 0, 0.3);
 }
 
 .alert-success .material-symbols-outlined {
