@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class InventarioVentaService {
   private http = inject(HttpClient);
-  private apiUrl = 'thedetailer.up.railway.app/api/inventario-venta';
+  private apiUrl = 'https://thedetailer.up.railway.app/api/inventario-venta';
 
   getProductos(sede?: string): Observable<any[]> {
     let params = new HttpParams();

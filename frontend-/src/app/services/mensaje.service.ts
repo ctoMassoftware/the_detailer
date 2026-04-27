@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class MensajeService {
   private http = inject(HttpClient);
-  private apiUrl = 'thedetailer.up.railway.app/api/mensajes';
+  private apiUrl = 'https://thedetailer.up.railway.app/api/mensajes';
 
   getMensajes(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl);

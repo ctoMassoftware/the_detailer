@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class ServicioService {
-  private apiUrl = 'thedetailer.up.railway.app/api/servicios';
+  private apiUrl = 'https://thedetailer.up.railway.app/api/servicios';
   private http = inject(HttpClient);
 
   getServicios(): Observable<any[]> {
