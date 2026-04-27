@@ -1,3 +1,26 @@
+// Buscar clientes o placas por coincidencia parcial
+export const buscarClientesPlacas = async (req, res) => {
+  const { query } = req.query;
+  if (!query || query.length < 2) {
+    return res.status(400).json({ error: 'Query demasiado corta' });
+  }
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT DISTINCT nombre_cliente, placa_vehiculo, telefono_cliente
+       FROM public.orden
+       WHERE nombre_cliente ILIKE $1 OR placa_vehiculo ILIKE $1
+       ORDER BY nombre_cliente
+       LIMIT 10`,
+      [`%${query}%`]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Error buscando clientes/placas' });
+  } finally {
+    client.release();
+  }
+};
 import { pool } from "../config/db.js";
 import { DateTime } from "luxon";
 import {

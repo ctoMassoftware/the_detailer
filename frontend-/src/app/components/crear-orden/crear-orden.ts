@@ -1,3 +1,4 @@
+
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +15,72 @@ import { OperarioService } from '../../services/operario.service';
   templateUrl: './crear-orden.html',
   styleUrls: ['./crear-orden.css']
 })
-export class CrearOrden implements OnInit {
+export class CrearOrdenComponent implements OnInit {
+    // --- Autocompletar clientes/placas para el input de nombre_cliente ---
+    sugerenciasClientes: any[] = [];
+    buscandoCliente = false;
+
+    buscarClientePlaca(event: Event) {
+      const input = event.target as HTMLInputElement | null;
+      const valor = input?.value || '';
+      if (valor.length >= 2) {
+        this.buscandoCliente = true;
+        this.ordenService.buscarClientesPlacas(valor).subscribe({
+          next: (res: any[]) => {
+            this.sugerenciasClientes = res;
+            this.buscandoCliente = false;
+          },
+          error: (err: any) => {
+            this.sugerenciasClientes = [];
+            this.buscandoCliente = false;
+          }
+        });
+      } else {
+        this.sugerenciasClientes = [];
+      }
+    }
+
+    seleccionarSugerenciaCliente(s: any) {
+      if (!s) return;
+      this.datosOrden.nombre_cliente = s.nombre_cliente || '';
+      this.datosOrden.telefono_cliente = s.telefono_cliente || '';
+      this.datosOrden.placa = s.placa_vehiculo || '';
+      this.sugerenciasClientes = [];
+    }
+  // --- Autocompletar placas ---
+  sugerenciasPlaca: any[] = [];
+  buscandoPlaca = false;
+
+  buscarPlaca(event: Event) {
+    const input = event.target as HTMLInputElement | null;
+    const valor = input?.value || '';
+    if (valor.length >= 2) {
+      this.buscandoPlaca = true;
+      this.ordenService.buscarClientesPlacas(valor).subscribe({
+        next: (res: any[]) => {
+          this.sugerenciasPlaca = res;
+          this.buscandoPlaca = false;
+        },
+        error: (err: any) => {
+          this.sugerenciasPlaca = [];
+          this.buscandoPlaca = false;
+        }
+      });
+    } else {
+      this.sugerenciasPlaca = [];
+    }
+  }
+
+  seleccionarSugerenciaPlaca(s: any) {
+    if (!s) return;
+    this.datosOrden.placa = s.placa_vehiculo || '';
+    this.datosOrden.nombre_cliente = s.nombre_cliente || '';
+    this.datosOrden.telefono_cliente = s.telefono_cliente || '';
+    this.sugerenciasPlaca = [];
+  }
+  // ...resto de la clase y métodos...
+
+// ...el resto de la clase CrearOrdenComponent sigue aquí...
 
   private servicioService = inject(ServicioService);
   private ordenService = inject(OrdenService);

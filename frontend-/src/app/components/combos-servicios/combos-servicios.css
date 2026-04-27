@@ -363,10 +363,17 @@
   animation: scaleUp 0.25s ease-out;
 }
 
+@media (max-width: 1024px) {
+  .modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+}
+
 .modal-header {
   padding: 1.5rem 2rem;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: flex-start;
   margin-bottom: 0.5rem;
 }
