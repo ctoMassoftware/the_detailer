@@ -14,6 +14,13 @@ import {
   FormatoExporte
 } from '../../services/estadisticas.service';
 
+type VentasConDetalle = {
+  dia: number;
+  semana: number;
+  mes: number;
+  detalle_dia?: any[];
+};
+
 @Component({
   selector: 'app-graficas',
   standalone: true,
@@ -28,8 +35,8 @@ export class Graficas implements OnInit {
 
   private estadisticasService = inject(EstadisticasService);
 
-  stats: DashboardStats = {
-    ventas: { dia: 0, semana: 0, mes: 0 },
+  stats: Omit<DashboardStats, 'ventas'> & { ventas: VentasConDetalle } = {
+    ventas: { dia: 0, semana: 0, mes: 0, detalle_dia: [] },
     top_servicios: []
   };
 
@@ -51,6 +58,9 @@ export class Graficas implements OnInit {
   rolUsuario: string | null = null;
   sedeSeleccionada: string | null = null;
   sedesDisponibles: string[] = ['CENTENARIO', 'GALAN'];
+
+  totalEfectivo: number = 0;
+  totalTransferencia: number = 0;
 
   constructor(private route: ActivatedRoute) {}
 
@@ -98,7 +108,25 @@ export class Graficas implements OnInit {
 
     this.estadisticasService.getResumenDashboard(sedeParam).subscribe({
       next: (data) => {
-        this.stats = data;
+        this.stats = {
+          ...data,
+          ventas: {
+            ...data.ventas,
+            detalle_dia: Array.isArray((data.ventas as any).detalle_dia) ? (data.ventas as any).detalle_dia : []
+          }
+        };
+        // Calcular totales por método de pago si hay detalle_dia
+        if (this.stats.ventas.detalle_dia && Array.isArray(this.stats.ventas.detalle_dia)) {
+          this.totalEfectivo = this.stats.ventas.detalle_dia
+            .filter((v: any) => (v.metodo_pago || '').toLowerCase() === 'efectivo')
+            .reduce((sum: number, v: any) => sum + Number(v.total), 0);
+          this.totalTransferencia = this.stats.ventas.detalle_dia
+            .filter((v: any) => (v.metodo_pago || '').toLowerCase().includes('transfer'))
+            .reduce((sum: number, v: any) => sum + Number(v.total), 0);
+        } else {
+          this.totalEfectivo = 0;
+          this.totalTransferencia = 0;
+        }
       },
       error: (err) => {
         console.error('Error cargando estadísticas', err);

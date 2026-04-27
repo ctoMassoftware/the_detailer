@@ -18,6 +18,8 @@ export class CuadernoRecibos implements OnInit {
   historialVentas: any[] = [];
   filtroFecha: string = '';
   totalDelDia: number = 0;
+  totalEfectivo: number = 0;
+  totalTransferencia: number = 0;
 
   detallesVisibles: boolean[] = [];
 
@@ -48,6 +50,12 @@ export class CuadernoRecibos implements OnInit {
 
   calcularTotalDelDia() {
     this.totalDelDia = this.historialVentas.reduce((sum, venta) => sum + Number(venta.total), 0);
+    this.totalEfectivo = this.historialVentas
+      .filter(venta => (venta.metodo_pago || '').toLowerCase() === 'efectivo')
+      .reduce((sum, venta) => sum + Number(venta.total), 0);
+    this.totalTransferencia = this.historialVentas
+      .filter(venta => (venta.metodo_pago || '').toLowerCase().includes('transfer'))
+      .reduce((sum, venta) => sum + Number(venta.total), 0);
   }
 
   obtenerNombreVendedor(venta: any): string {

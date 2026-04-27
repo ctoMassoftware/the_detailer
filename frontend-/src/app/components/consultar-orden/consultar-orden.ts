@@ -1,14 +1,13 @@
-// Importaciones correctas
 import { Component, OnInit, inject } from '@angular/core';
 import { Nav } from '../../shared/nav/nav';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router'; 
+import { ActivatedRoute } from '@angular/router';
 import { OrdenService } from '../../services/orden.service';
 import { OperarioService } from '../../services/operario.service';
 import { RifaService } from '../../services/rifa.service';
 import { ServicioService } from '../../services/servicio.service';
-import { ImpresoraService } from '../../services/impresora.service'; 
+import { ImpresoraService } from '../../services/impresora.service';
 import Swal from 'sweetalert2';
 
 interface Orden {
@@ -34,6 +33,9 @@ interface Orden {
   caja?: string;
   valorTotal?: number;
   notas?: string;
+  // ✅ Campos de casco
+  dejoCasco?: boolean;
+  cantidadCascos?: number;
 }
 
 @Component({
@@ -44,7 +46,10 @@ interface Orden {
   styleUrls: ['./consultar-orden.css']
 })
 export class ConsultarOrden implements OnInit {
-  // ...existing properties...
+
+  totalEfectivoFiltrado: number = 0;
+  totalTransferenciaFiltrado: number = 0;
+
   // --- Adicional (modal y lógica) ---
   mostrarModalAdicional: boolean = false;
   descAdicional: string = '';
@@ -76,45 +81,49 @@ export class ConsultarOrden implements OnInit {
       cantidad: 1,
       tipo: 'Adicional'
     });
-    // Filtra adicionales con valor 0
-    this.ordenSeleccionada.serviciosDetallados = this.ordenSeleccionada.serviciosDetallados.filter((s: any) => s.tipo !== 'Adicional' || (s.precio && s.precio > 0));
+    this.ordenSeleccionada.serviciosDetallados = this.ordenSeleccionada.serviciosDetallados.filter(
+      (s: any) => s.tipo !== 'Adicional' || (s.precio && s.precio > 0)
+    );
     this.recalcularTotal();
     this.cerrarModalAdicional();
   }
-      // Permitir solo una selección, pero si el usuario selecciona ambas, ambas quedan activas
-      onPreferenciaReciboChange(tipo: string, event: any) {
-        if (event.target.checked) {
-          // Si selecciona una y la otra ya está, permite ambas
-          if (!this.preferenciaRecibo.includes(tipo)) {
-            this.preferenciaRecibo.push(tipo);
-          }
-        } else {
-          // Si desmarca, elimina solo esa
-          this.preferenciaRecibo = this.preferenciaRecibo.filter(t => t !== tipo);
-        }
-        // Si el usuario selecciona una, la otra se desmarca automáticamente (solo si no quiere ambas)
-        if (this.preferenciaRecibo.length === 2) return;
-        if (tipo === 'VIRTUAL' && event.target.checked) {
-          this.preferenciaRecibo = ['VIRTUAL'];
-        } else if (tipo === 'FISICO' && event.target.checked) {
-          this.preferenciaRecibo = ['FISICO'];
-        }
+
+  validarSoloNumeros(event: KeyboardEvent) {
+    const charCode = event.which ? event.which : event.keyCode;
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+      event.preventDefault();
+      return false;
+    }
+    return true;
+  }
+
+  onPreferenciaReciboChange(tipo: string, event: any) {
+    if (event.target.checked) {
+      if (!this.preferenciaRecibo.includes(tipo)) {
+        this.preferenciaRecibo.push(tipo);
       }
-    // Permite que ambos checkboxes puedan estar desmarcados. Validación solo al confirmar.
-  // ...existing code...
-  // Solo se permite impresión física por Windows/USB (cambiar a 'ANDROID' para Android cuando se requiera)
-  // Solo se permite impresión física por Windows/USB (cambiar a 'RAWBT' para Android cuando se requiera)
+    } else {
+      this.preferenciaRecibo = this.preferenciaRecibo.filter(t => t !== tipo);
+    }
+    if (this.preferenciaRecibo.length === 2) return;
+    if (tipo === 'VIRTUAL' && event.target.checked) {
+      this.preferenciaRecibo = ['VIRTUAL'];
+    } else if (tipo === 'FISICO' && event.target.checked) {
+      this.preferenciaRecibo = ['FISICO'];
+    }
+  }
+
   metodoImpresionFacturaOrden: 'WINDOWS' | 'RAWBT' = 'RAWBT';
 
   private ordenService = inject(OrdenService);
   private operarioService = inject(OperarioService);
   private rifaService = inject(RifaService);
   private servicioService = inject(ServicioService);
-  private impresoraService = inject(ImpresoraService); 
-  private route = inject(ActivatedRoute); 
+  private impresoraService = inject(ImpresoraService);
+  private route = inject(ActivatedRoute);
 
-  sedeSeleccionada: string | null = null; 
-  rolUsuario: string = ''; 
+  sedeSeleccionada: string | null = null;
+  rolUsuario: string = '';
 
   filtroOperario: string = '';
   filtroFecha: string = '';
@@ -129,7 +138,10 @@ export class ConsultarOrden implements OnInit {
   // VARIABLES CALCULADORA
   montoRecibido: number | null = null;
 
-  ordenSeleccionada: Orden | any = {};
+  ordenSeleccionada: Orden | any = {
+    dejoCasco: false,
+    cantidadCascos: 1
+  };
   ordenesRegistradas: Orden[] = [];
   ordenesFiltradas: Orden[] = [];
   listaOperarios: any[] = [];
@@ -168,7 +180,7 @@ export class ConsultarOrden implements OnInit {
       this.cargarOrdenes();
       this.cargarOperarios();
       this.cargarServicios();
-      this.cargarRifaActiva(); 
+      this.cargarRifaActiva();
     });
   }
 
@@ -186,12 +198,8 @@ export class ConsultarOrden implements OnInit {
   }
 
   puedeModificarOrden(orden: Orden): boolean {
-    if (this.rolUsuario === 'SUPER_ADMIN') {
-      return true;
-    }
-    if (orden.estado === 'Orden finalizada') {
-      return false;
-    }
+    if (this.rolUsuario === 'SUPER_ADMIN') return true;
+    if (orden.estado === 'Orden finalizada') return false;
     return true;
   }
 
@@ -215,9 +223,7 @@ export class ConsultarOrden implements OnInit {
 
   private formatearFecha(fecha: string | Date): string {
     if (!fecha) return '';
-    if (typeof fecha === 'string') {
-      return fecha.split('T')[0];
-    }
+    if (typeof fecha === 'string') return fecha.split('T')[0];
     return new Date(fecha).toISOString().split('T')[0];
   }
 
@@ -237,9 +243,7 @@ export class ConsultarOrden implements OnInit {
         } else if (data && typeof data === 'object') {
           const keys = Object.keys(data);
           for (const key of keys) {
-            if (Array.isArray(data[key])) {
-              rawList = [...rawList, ...data[key]];
-            }
+            if (Array.isArray(data[key])) rawList = [...rawList, ...data[key]];
           }
         }
 
@@ -269,7 +273,6 @@ export class ConsultarOrden implements OnInit {
   get serviciosDisponiblesParaVehiculo() {
     const tipo = (this.ordenSeleccionada?.vehiculoTipo || '').toLowerCase();
     return this.listaServicios.filter((item: any) => {
-      // Excluir adicionales con precio 0 o menor
       if ((item.tipo === 'Adicional' || item.nombre?.toLowerCase().includes('adicional')) && (!item.precio || item.precio <= 0)) {
         return false;
       }
@@ -287,13 +290,9 @@ export class ConsultarOrden implements OnInit {
     const tipoVehiculo = (this.ordenSeleccionada.vehiculoTipo || '').toLowerCase();
     let precioSegunTipo = this.servicioSeleccionadoParaAgregar.precio_automovil || 0;
 
-    if (tipoVehiculo.includes('campero')) {
-      precioSegunTipo = this.servicioSeleccionadoParaAgregar.precio_campero || 0;
-    } else if (tipoVehiculo.includes('camioneta')) {
-      precioSegunTipo = this.servicioSeleccionadoParaAgregar.precio_camioneta || 0;
-    } else if (tipoVehiculo.includes('moto')) {
-      precioSegunTipo = this.servicioSeleccionadoParaAgregar.precio_moto || 0;
-    }
+    if (tipoVehiculo.includes('campero')) precioSegunTipo = this.servicioSeleccionadoParaAgregar.precio_campero || 0;
+    else if (tipoVehiculo.includes('camioneta')) precioSegunTipo = this.servicioSeleccionadoParaAgregar.precio_camioneta || 0;
+    else if (tipoVehiculo.includes('moto')) precioSegunTipo = this.servicioSeleccionadoParaAgregar.precio_moto || 0;
 
     const nuevoServicio = {
       id_servicio: this.servicioSeleccionadoParaAgregar.id_servicio,
@@ -304,10 +303,7 @@ export class ConsultarOrden implements OnInit {
       precio_unitario: precioSegunTipo
     };
 
-    if (!this.ordenSeleccionada.serviciosDetallados) {
-      this.ordenSeleccionada.serviciosDetallados = [];
-    }
-
+    if (!this.ordenSeleccionada.serviciosDetallados) this.ordenSeleccionada.serviciosDetallados = [];
     this.ordenSeleccionada.serviciosDetallados.push(nuevoServicio);
     this.recalcularTotal();
     this.servicioSeleccionadoParaAgregar = null;
@@ -319,9 +315,10 @@ export class ConsultarOrden implements OnInit {
   }
 
   recalcularTotal() {
-    // Elimina adicionales con valor 0
     if (this.ordenSeleccionada.serviciosDetallados) {
-      this.ordenSeleccionada.serviciosDetallados = this.ordenSeleccionada.serviciosDetallados.filter((s: any) => s.tipo !== 'Adicional' || (s.precio && s.precio > 0));
+      this.ordenSeleccionada.serviciosDetallados = this.ordenSeleccionada.serviciosDetallados.filter(
+        (s: any) => s.tipo !== 'Adicional' || (s.precio && s.precio > 0)
+      );
     }
     let total = 0;
     if (this.ordenSeleccionada.serviciosDetallados) {
@@ -338,6 +335,7 @@ export class ConsultarOrden implements OnInit {
     this.ordenService.getOrdenes(this.sedeSeleccionada || undefined).subscribe({
       next: (data: any[]) => {
         this.ordenesRegistradas = data.map((o: any) => {
+          // ✅ Lógica de estados ORIGINAL — no modificar
           let estadoNormalizado = 'Proceso';
           const raw = (o.estado || '').toString().toUpperCase().trim();
 
@@ -368,7 +366,6 @@ export class ConsultarOrden implements OnInit {
             vehiculoTipo: o.tipo_vehiculo,
             serviciosDetallados: (o.lista_servicios || []).map((s: any) => ({
               ...s,
-              // Asegura que siempre haya un campo 'precio' correcto
               precio: s.precio !== undefined ? s.precio
                 : (s.valor !== undefined ? s.valor
                 : (s.precio_unitario !== undefined ? s.precio_unitario : 0)),
@@ -383,7 +380,10 @@ export class ConsultarOrden implements OnInit {
             metodoPago: o.metodo_pago,
             caja: o.caja,
             valorTotal: parseFloat(o.total_orden) || 0,
-            notas: o.notas || ''
+            notas: o.notas || '',
+            // ✅ Campos de casco
+            dejoCasco: o.deja_casco ?? false,
+            cantidadCascos: o.cantidad_cascos ?? 0,
           };
         });
 
@@ -406,10 +406,7 @@ export class ConsultarOrden implements OnInit {
       const coincideOperario = tieneFiltroOp
         ? (orden.operario || '').toLowerCase().includes(this.filtroOperario.toLowerCase())
         : true;
-      const coincideFecha = tieneFiltroFecha
-        ? orden.fecha === this.filtroFecha
-        : true;
-
+      const coincideFecha = tieneFiltroFecha ? orden.fecha === this.filtroFecha : true;
       return coincideOperario && coincideFecha;
     });
 
@@ -418,12 +415,18 @@ export class ConsultarOrden implements OnInit {
 
     if (this.mostrarTotal) {
       this.totalFiltrado = this.ordenesFiltradas.reduce((acc, orden) => acc + (orden.valorTotal || 0), 0);
-      this.pagoOperarioFiltrado = this.ordenesFiltradas.reduce((acc, orden) => {
-        return acc + ((orden.valorTotal || 0) * 0.40);
-      }, 0);
+      this.pagoOperarioFiltrado = this.ordenesFiltradas.reduce((acc, orden) => acc + ((orden.valorTotal || 0) * 0.40), 0);
+      this.totalEfectivoFiltrado = this.ordenesFiltradas
+        .filter(orden => (orden.metodoPago || '').toLowerCase() === 'efectivo')
+        .reduce((acc, orden) => acc + (orden.valorTotal || 0), 0);
+      this.totalTransferenciaFiltrado = this.ordenesFiltradas
+        .filter(orden => (orden.metodoPago || '').toLowerCase().includes('transfer'))
+        .reduce((acc, orden) => acc + (orden.valorTotal || 0), 0);
     } else {
       this.totalFiltrado = 0;
       this.pagoOperarioFiltrado = 0;
+      this.totalEfectivoFiltrado = 0;
+      this.totalTransferenciaFiltrado = 0;
     }
   }
 
@@ -434,9 +437,7 @@ export class ConsultarOrden implements OnInit {
   }
 
   cambiarPagina(pagina: number) {
-    if (pagina >= 1 && pagina <= this.totalPaginas) {
-      this.paginaActual = pagina;
-    }
+    if (pagina >= 1 && pagina <= this.totalPaginas) this.paginaActual = pagina;
   }
 
   get totalPaginas(): number {
@@ -453,6 +454,8 @@ export class ConsultarOrden implements OnInit {
     this.mostrarTotal = false;
     this.totalFiltrado = 0;
     this.pagoOperarioFiltrado = 0;
+    this.totalEfectivoFiltrado = 0;
+    this.totalTransferenciaFiltrado = 0;
     this.aplicarFiltros();
   }
 
@@ -471,7 +474,7 @@ export class ConsultarOrden implements OnInit {
       precio: s.precio || s.precio_unitario || s.valor || 0
     }));
 
-    // Mapear el estado visual a valor de backend
+    // ✅ Mapear estado visual → valor de backend ORIGINAL
     let estadoBackend = orden.estado;
     if (orden.estado === 'Orden finalizada') {
       estadoBackend = 'FINALIZADA_ENTREGADA';
@@ -496,6 +499,7 @@ export class ConsultarOrden implements OnInit {
       notas: orden.notas,
       servicios: serviciosMapeados
     };
+
     this.ordenService.updateOrden(orden.id_orden_db, payload).subscribe({
       next: () => {
         Swal.fire({
@@ -573,7 +577,7 @@ export class ConsultarOrden implements OnInit {
 
   abrirFactura(orden: Orden) {
     this.ordenSeleccionada = { ...orden };
-    this.montoRecibido = null; // Reiniciar calculadora
+    this.montoRecibido = null;
     this.mostrarFactura = true;
     this.mostrarModal = false;
     this.mostrarRifa = false;
@@ -585,7 +589,7 @@ export class ConsultarOrden implements OnInit {
   cerrarFactura() {
     this.mostrarFactura = false;
     this.mostrarRifa = false;
-    this.cargarOrdenes(); 
+    this.cargarOrdenes();
   }
 
   enviarFactura() {
@@ -621,7 +625,6 @@ export class ConsultarOrden implements OnInit {
           serviciosDetallados: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
           servicioPrincipal: this.ordenSeleccionada.servicioPrincipal || (this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados[0].nombre : undefined)
         };
-        // Impresión por RawBT (Android)
         this.impresoraService.imprimirTicket(datosTicket, 'ORDEN', 'RAWBT');
       }
       if (this.preferenciaRecibo.includes('VIRTUAL') && !this.mostrarRifa) {
@@ -646,7 +649,7 @@ export class ConsultarOrden implements OnInit {
         telefono: this.ordenSeleccionada.celular,
         placa_vehiculo: this.ordenSeleccionada.vehiculoPlaca,
         total_pagar: this.ordenSeleccionada.valorTotal,
-        preferencia_recibo: this.preferenciaRecibo 
+        preferencia_recibo: this.preferenciaRecibo
       };
 
       this.rifaService.registrarBoleta(boletaData).subscribe({
@@ -698,7 +701,6 @@ export class ConsultarOrden implements OnInit {
             baseGrid[idx].telefono = b.telefono || '';
           }
         });
-
         this.numerosRifa = baseGrid;
         this.aplicarFiltroRifa();
       },
@@ -708,21 +710,17 @@ export class ConsultarOrden implements OnInit {
 
   aplicarFiltroRifa() {
     const texto = (this.filtroRifa || '').trim();
-
     if (!texto) {
       this.numerosRifaFiltrados = this.numerosRifa;
       return;
     }
-
     this.numerosRifaFiltrados = this.numerosRifa.filter(n => n.valor.includes(texto));
   }
 
   seleccionarNumeroRifa(item: any) {
     if (item.estado === 'ocupado') return;
-
     const anterior = this.numerosRifa.find(n => n.estado === 'seleccionado');
     if (anterior) anterior.estado = 'libre';
-
     item.estado = 'seleccionado';
     this.numeroBoletaRifa = item.valor;
   }

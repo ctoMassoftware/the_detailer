@@ -67,7 +67,9 @@ export const createOrden = async (req, res) => {
     id_rifa,
     notas,
     servicios,
-    sede
+    sede,
+    deja_casco = false,
+    cantidad_cascos = 0
   } = req.body;
 
   const sedeFinal = rol === "SUPER_ADMIN" && sede ? sede : sedeUsuario || "GLOBAL";
@@ -89,15 +91,15 @@ export const createOrden = async (req, res) => {
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, hora
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, hora
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
         RETURNING id_orden
       `;
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, horaFinal
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, horaFinal
       ];
     } else {
       // Sin hora → PostgreSQL usa DEFAULT (hora Bogotá automática)
@@ -105,15 +107,15 @@ export const createOrden = async (req, res) => {
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
         RETURNING id_orden
       `;
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos
       ];
     }
 

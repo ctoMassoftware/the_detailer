@@ -110,7 +110,9 @@ export class CrearOrdenComponent implements OnInit {
     tecnico_asignado: null,
     metodo_pago: 'Efectivo',
     caja: 'Caja 1',
-    notas: ''
+    notas: '',
+    deja_casco: false,
+    cantidad_cascos: 0
   };
 
   itemsSeleccionados: any[] = [];
@@ -417,7 +419,8 @@ export class CrearOrdenComponent implements OnInit {
 
     this.datosOrden.tecnico_asignado = operarioEncontrado.id_user || operarioEncontrado.id;
 
-    const payload = {
+    // Solo enviar deja_casco y cantidad_cascos si es moto
+    const payload: any = {
       cedula_cliente: this.datosOrden.cedula_cliente || '', 
       nombre_cliente: this.datosOrden.nombre_cliente,
       correo_cliente: this.datosOrden.correo_cliente || '',
@@ -438,6 +441,10 @@ export class CrearOrdenComponent implements OnInit {
         precio: item.precio
       }))
     };
+    if (this.datosOrden.tipoVehiculo === 'moto') {
+      payload.deja_casco = this.datosOrden.deja_casco;
+      payload.cantidad_cascos = this.datosOrden.deja_casco ? Number(this.datosOrden.cantidad_cascos) : 0;
+    }
 
     this.ordenService.createOrden(payload).subscribe({
       next: (resp) => {
