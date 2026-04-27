@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class OperarioService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/operarios';
+  private apiUrl = 'thedetailer.up.railway.app/api/operarios';
 
   // 👈 Modificado para recibir la sede y enviarla como parámetro
   getOperarios(sede?: string): Observable<any[]> {
