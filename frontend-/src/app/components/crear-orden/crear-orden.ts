@@ -45,6 +45,10 @@ export class CrearOrdenComponent implements OnInit {
       this.datosOrden.nombre_cliente = s.nombre_cliente || '';
       this.datosOrden.telefono_cliente = s.telefono_cliente || '';
       this.datosOrden.placa = s.placa_vehiculo || '';
+      // Autocompletar tipo de vehículo, marca y modelo (mapeo correcto)
+      this.datosOrden.tipoVehiculo = s.tipo_vehiculo || '';
+      this.datosOrden.marca = s.marca_vehiculo || '';
+      this.datosOrden.modelo = s.modelo_vehiculo || '';
       this.sugerenciasClientes = [];
     }
   // --- Autocompletar placas ---
@@ -76,6 +80,10 @@ export class CrearOrdenComponent implements OnInit {
     this.datosOrden.placa = s.placa_vehiculo || '';
     this.datosOrden.nombre_cliente = s.nombre_cliente || '';
     this.datosOrden.telefono_cliente = s.telefono_cliente || '';
+    // Autocompletar tipo de vehículo, marca y modelo (mapeo correcto)
+    this.datosOrden.tipoVehiculo = s.tipo_vehiculo || '';
+    this.datosOrden.marca = s.marca_vehiculo || '';
+    this.datosOrden.modelo = s.modelo_vehiculo || '';
     this.sugerenciasPlaca = [];
   }
   // ...resto de la clase y métodos...
