@@ -7,7 +7,14 @@ export interface VentaDiariaMes {
 }
 
 export interface ReporteOperativo {
-  ventas: { total_ordenes: string; total_ventas: string };
+  ventas: {
+    total_ordenes: string;
+    total_ventas: string;
+    total_ventas_semana?: string;
+    total_ventas_mes?: string;
+    total_ordenes_dinero?: string;
+    total_ventas_cantidad?: string;
+  };
   inventario: { total_insumos: string; stock_total: string; alertas_stock: string };
   pagos: { total_pagos: string; total_pagado: string };
 }
@@ -51,12 +58,15 @@ export class EstadisticasService {
       return this.http.get<ReporteOperativo>(`${this.apiUrl}/reporte-operativo`, { params });
     }
 
-    exportarReporte(tipo: TipoExporte, formato: FormatoExporte) {
-      const params = new HttpParams().set('tipo', tipo).set('formato', formato);
+    exportarReporte(tipo: TipoExporte, formato: FormatoExporte, sede?: string) {
+      let params = new HttpParams().set('tipo', tipo).set('formato', formato);
+      if (sede) {
+        params = params.set('sede', sede);
+      }
       return this.http.get(`${this.apiUrl}/exportar`, { params, responseType: 'blob' });
     }
   private http = inject(HttpClient);
-  private apiUrl = 'https://thedetailer.up.railway.app/api/estadisticas';
+  private apiUrl = 'http://localhost:3000/api/estadisticas';
 
   // 👈 Ahora acepta la sede como parámetro opcional
   getResumenDashboard(sede?: string): Observable<DashboardStats> {
