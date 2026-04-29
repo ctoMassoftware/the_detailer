@@ -2,6 +2,7 @@ import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core'
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Nav } from '../../shared/nav/nav';
@@ -40,6 +41,15 @@ export class Graficas implements OnInit {
     top_servicios: []
   };
 
+  totalDiaCompleto: number = 0;
+  totalSemanaCompleto: number = 0;
+  totalMesCompleto: number = 0;
+
+  // Totales del día desglosados (órdenes + mostrador)
+  totalHoy: number = 0;
+  totalEfectivo: number = 0;
+  totalTransferencia: number = 0;
+
   ventasDiariasMes: VentaDiariaMes[] = [];
   reporteOperativo: ReporteOperativo = {
     ventas: { total_ordenes: '0', total_ventas: '0' },
@@ -47,7 +57,7 @@ export class Graficas implements OnInit {
     pagos: { total_pagos: '0', total_pagado: '0' }
   };
 
-  formatoExporte: FormatoExporte = 'csv';
+  formatoExporte: FormatoExporte = 'pdf';
   exportandoClave: string | null = null;
   descargandoPdfGraficas = false;
   errorCarga = '';
@@ -59,13 +69,9 @@ export class Graficas implements OnInit {
   sedeSeleccionada: string | null = null;
   sedesDisponibles: string[] = ['CENTENARIO', 'GALAN'];
 
-  totalEfectivo: number = 0;
-  totalTransferencia: number = 0;
-
   constructor(private route: ActivatedRoute) {}
 
   ngOnInit() {
-    // Obtener sede y rol del usuario logueado
     const userStr = localStorage.getItem('user') || localStorage.getItem('usuario');
     if (userStr) {
       try {
@@ -78,7 +84,6 @@ export class Graficas implements OnInit {
       }
     }
 
-    // Leer sede desde queryParams si viene de home
     this.route.queryParams.subscribe(params => {
       const sedeParam = params['sede'];
       if (sedeParam && this.sedesDisponibles.includes(sedeParam)) {
@@ -92,67 +97,103 @@ export class Graficas implements OnInit {
     });
   }
 
+  private getSedeParam(): string | undefined {
+    if (this.rolUsuario === 'SUPER_ADMIN') {
+      return this.sedeSeleccionada || undefined;
+    } else if (this.rolUsuario === 'ADMIN') {
+      return undefined;
+    } else {
+      return this.sedeUsuario || undefined;
+    }
+  }
+
   cargarDatos() {
     this.loading = true;
     this.errorCarga = '';
 
-    // Si es SUPER_ADMIN, usar la sede seleccionada
-    let sedeParam: string | undefined = undefined;
-    if (this.rolUsuario === 'SUPER_ADMIN') {
-      sedeParam = this.sedeSeleccionada || undefined;
-    } else if (this.rolUsuario === 'ADMIN') {
-      sedeParam = undefined; // Puede ver todas
-    } else {
-      sedeParam = this.sedeUsuario || undefined;
-    }
+    const sedeParam = this.getSedeParam();
 
-    this.estadisticasService.getResumenDashboard(sedeParam).subscribe({
-      next: (data) => {
+    // ✅ FIX PRINCIPAL: forkJoin espera que los 3 observables completen
+    // antes de calcular cualquier total. Esto elimina el race condition
+    // donde getReporteOperativo llegaba antes que getResumenDashboard
+    // y calculaba totales con stats.ventas.semana/mes en 0.
+    forkJoin({
+      resumen: this.estadisticasService.getResumenDashboard(sedeParam),
+      ventasDiarias: this.estadisticasService.getVentasDiariasMes(sedeParam),
+      operativo: this.estadisticasService.getReporteOperativo(sedeParam)
+    }).subscribe({
+      next: ({ resumen, ventasDiarias, operativo }) => {
+
+        // --- Asignar datos base ---
         this.stats = {
-          ...data,
+          ...resumen,
           ventas: {
-            ...data.ventas,
-            detalle_dia: Array.isArray((data.ventas as any).detalle_dia) ? (data.ventas as any).detalle_dia : []
+            ...resumen.ventas,
+            detalle_dia: Array.isArray((resumen.ventas as any).detalle_dia)
+              ? (resumen.ventas as any).detalle_dia
+              : []
           }
         };
-        // Calcular totales por método de pago si hay detalle_dia
-        if (this.stats.ventas.detalle_dia && Array.isArray(this.stats.ventas.detalle_dia)) {
-          this.totalEfectivo = this.stats.ventas.detalle_dia
-            .filter((v: any) => (v.metodo_pago || '').toLowerCase() === 'efectivo')
-            .reduce((sum: number, v: any) => sum + Number(v.total), 0);
-          this.totalTransferencia = this.stats.ventas.detalle_dia
-            .filter((v: any) => (v.metodo_pago || '').toLowerCase().includes('transfer'))
-            .reduce((sum: number, v: any) => sum + Number(v.total), 0);
-        } else {
-          this.totalEfectivo = 0;
-          this.totalTransferencia = 0;
-        }
-      },
-      error: (err) => {
-        console.error('Error cargando estadísticas', err);
-        this.errorCarga = 'No se pudo cargar el dashboard de ventas.';
-      }
-    });
 
-    this.estadisticasService.getVentasDiariasMes(sedeParam).subscribe({
-      next: (data: VentaDiariaMes[]) => {
-        this.ventasDiariasMes = data || [];
-      },
-      error: (err: any) => {
-        console.error('Error cargando ventas diarias del mes', err);
-      }
-    });
+        this.ventasDiariasMes = ventasDiarias || [];
+        this.reporteOperativo = operativo;
 
-    this.estadisticasService.getReporteOperativo(sedeParam).subscribe({
-      next: (data: ReporteOperativo) => {
-        this.reporteOperativo = data;
+        // ─── CÁLCULO DE TOTALES DEL DÍA ACTUAL ────────────────────────────────
+        //
+        // El backend ahora devuelve DOS fuentes con desglose por metodo_pago:
+        //
+        // 1) resumen.ventas.detalle_dia       → VENTA_MOSTRADOR del día por metodo_pago
+        //    [{ metodo_pago: 'efectivo', total: 50000 }, ...]
+        //
+        // 2) resumen.ventas.ordenes_dia_detalle → ÓRDENES del día por metodo_pago
+        //    [{ metodo_pago: 'efectivo', total: 120000 }, ...]
+        //
+        // Total del día = suma de ambas fuentes
+        // Efectivo      = efectivo mostrador + efectivo órdenes
+        // Transferencia = transferencia mostrador + transferencia órdenes
+        // ──────────────────────────────────────────────────────────────────────
+
+        // Helper: suma por método de pago en un array de { metodo_pago, total }
+        const sumaPorMetodo = (arr: any[], filtro: (mp: string) => boolean): number =>
+          (arr || [])
+            .filter((v: any) => filtro((v.metodo_pago || '').toLowerCase()))
+            .reduce((sum: number, v: any) => sum + Number(v.total), 0);
+
+        const sumaTodo = (arr: any[]): number =>
+          (arr || []).reduce((sum: number, v: any) => sum + Number(v.total), 0);
+
+        // Ventas mostrador del día por metodo_pago
+        const detalleDia: any[]        = this.stats.ventas.detalle_dia ?? [];
+        // Órdenes del día por metodo_pago (campo nuevo del backend)
+        const ordenesDia: any[]        = (resumen.ventas as any).ordenes_dia_detalle ?? [];
+
+        // Efectivo = mostrador efectivo + órdenes efectivo
+        this.totalEfectivo = sumaPorMetodo(detalleDia, mp => mp === 'efectivo')
+                           + sumaPorMetodo(ordenesDia, mp => mp === 'efectivo');
+
+        // Transferencia = mostrador transferencia + órdenes transferencia
+        this.totalTransferencia = sumaPorMetodo(detalleDia, mp => mp.includes('transfer'))
+                                + sumaPorMetodo(ordenesDia, mp => mp.includes('transfer'));
+
+        // Total del día = toda la venta mostrador + todas las órdenes del día
+        this.totalHoy         = sumaTodo(detalleDia) + sumaTodo(ordenesDia);
+        this.totalDiaCompleto = this.totalHoy;
+
+        // ✅ FIX #3: Semana y Mes — ahora ambos valores están disponibles
+        // porque forkJoin garantiza que resumen Y operativo llegaron
+        const totalOrdenesSemana = Number(this.stats.ventas.semana) || 0;
+        const totalOrdenesMes = Number(this.stats.ventas.mes) || 0;
+        const totalMostradorSemana = Number((operativo.ventas as any).total_ventas_semana) || 0;
+        const totalMostradorMes = Number((operativo.ventas as any).total_ventas_mes) || 0;
+
+        this.totalSemanaCompleto = totalOrdenesSemana + totalMostradorSemana;
+        this.totalMesCompleto = totalOrdenesMes + totalMostradorMes;
+
         this.loading = false;
       },
-      error: (err: any) => {
-        console.error('Error cargando reporte operativo', err);
-        if (!this.errorCarga) {
-          this.errorCarga = 'No se pudieron cargar los reportes operativos.';
-        }
+      error: (err) => {
+        console.error('Error cargando datos del dashboard', err);
+        this.errorCarga = 'No se pudieron cargar los datos del dashboard. Intenta de nuevo.';
         this.loading = false;
       }
     });
@@ -165,7 +206,6 @@ export class Graficas implements OnInit {
     this.descargandoPdfComisiones = true;
     try {
       const comisionesElement = this.comisionesPdfTarget.nativeElement;
-      // Ajustar el tamaño del canvas para capturar todo el contenido
       const originalWidth = comisionesElement.scrollWidth;
       const originalHeight = comisionesElement.scrollHeight;
       const canvas = await html2canvas(comisionesElement, {
@@ -175,10 +215,8 @@ export class Graficas implements OnInit {
         useCORS: true,
         backgroundColor: '#1A1A1A'
       });
-      const imageData = canvas.toDataURL('image/png');
-      // Siempre usar orientación horizontal (landscape)
       const pdf = new jsPDF({
-        orientation: 'landscape', // NO CAMBIAR A portrait
+        orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
@@ -186,8 +224,6 @@ export class Graficas implements OnInit {
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 10;
       const contentWidth = pageWidth - margin * 2;
-      const contentHeight = (canvas.height * contentWidth) / canvas.width;
-      let yOffset = 0;
       let pageCanvas = document.createElement('canvas');
       let pageCtx = pageCanvas.getContext('2d');
       const pagePxHeight = Math.floor((pageHeight - margin * 2) * (canvas.width / contentWidth));
@@ -197,25 +233,13 @@ export class Graficas implements OnInit {
         pageCanvas.height = Math.min(pagePxHeight, canvas.height - renderedHeight);
         if (pageCtx) {
           pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
-          pageCtx.drawImage(
-            canvas,
-            0,
-            renderedHeight,
-            canvas.width,
-            pageCanvas.height,
-            0,
-            0,
-            canvas.width,
-            pageCanvas.height
-          );
+          pageCtx.drawImage(canvas, 0, renderedHeight, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
         }
         const pageImageData = pageCanvas.toDataURL('image/png');
         const pageDrawHeight = (pageCanvas.height * contentWidth) / canvas.width;
         pdf.addImage(pageImageData, 'PNG', margin, margin, contentWidth, pageDrawHeight);
         renderedHeight += pagePxHeight;
-        if (renderedHeight < canvas.height) {
-          pdf.addPage();
-        }
+        if (renderedHeight < canvas.height) pdf.addPage();
       }
       const datePart = new Date().toISOString().slice(0, 10);
       pdf.save(`reporte-comisiones-${datePart}.pdf`);
@@ -231,35 +255,35 @@ export class Graficas implements OnInit {
     const clave = `${tipo}-${formato}`;
     this.exportandoClave = clave;
 
-      this.estadisticasService.exportarReporte(tipo, formato).subscribe({
-        next: (blob: Blob) => {
-          const url = window.URL.createObjectURL(blob);
-          const anchor = document.createElement('a');
-          anchor.href = url;
-          const extension = formato === 'excel' ? 'xlsx' : formato;
-          anchor.download = `reporte-${tipo}.${extension}`;
-          document.body.appendChild(anchor);
-          anchor.click();
-          anchor.remove();
-          window.URL.revokeObjectURL(url);
-          this.exportandoClave = null;
-        },
-        error: (err: any) => {
-          console.error(`Error exportando reporte ${tipo} en formato ${formato}`, err);
-          this.exportandoClave = null;
-        }
-      });
+    const sedeParam = this.getSedeParam();
+
+    this.estadisticasService.exportarReporte(tipo, formato, sedeParam).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        const extension = formato === 'excel' ? 'xlsx' : formato;
+        anchor.download = `reporte-${tipo}.${extension}`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.URL.revokeObjectURL(url);
+        this.exportandoClave = null;
+      },
+      error: (err: any) => {
+        console.error(`Error exportando reporte ${tipo} en formato ${formato}`, err);
+        this.exportandoClave = null;
+      }
+    });
   }
 
   async descargarPdfGraficas() {
     if (!this.dashboardPdfTarget?.nativeElement || this.descargandoPdfGraficas) {
       return;
     }
-
     this.descargandoPdfGraficas = true;
     try {
       const dashboardElement = this.dashboardPdfTarget.nativeElement;
-      // Ajustar el tamaño del canvas para capturar todo el contenido
       const originalWidth = dashboardElement.scrollWidth;
       const originalHeight = dashboardElement.scrollHeight;
       const canvas = await html2canvas(dashboardElement, {
@@ -269,20 +293,15 @@ export class Graficas implements OnInit {
         useCORS: true,
         backgroundColor: '#1A1A1A'
       });
-
-      const imageData = canvas.toDataURL('image/png');
-      // Siempre usar orientación horizontal (landscape)
       const pdf = new jsPDF({
-        orientation: 'landscape', // NO CAMBIAR A portrait
+        orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
-
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 10;
       const contentWidth = pageWidth - margin * 2;
-      const contentHeight = (canvas.height * contentWidth) / canvas.width;
       let pageCanvas = document.createElement('canvas');
       let pageCtx = pageCanvas.getContext('2d');
       const pagePxHeight = Math.floor((pageHeight - margin * 2) * (canvas.width / contentWidth));
@@ -292,27 +311,14 @@ export class Graficas implements OnInit {
         pageCanvas.height = Math.min(pagePxHeight, canvas.height - renderedHeight);
         if (pageCtx) {
           pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
-          pageCtx.drawImage(
-            canvas,
-            0,
-            renderedHeight,
-            canvas.width,
-            pageCanvas.height,
-            0,
-            0,
-            canvas.width,
-            pageCanvas.height
-          );
+          pageCtx.drawImage(canvas, 0, renderedHeight, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
         }
         const pageImageData = pageCanvas.toDataURL('image/png');
         const pageDrawHeight = (pageCanvas.height * contentWidth) / canvas.width;
         pdf.addImage(pageImageData, 'PNG', margin, margin, contentWidth, pageDrawHeight);
         renderedHeight += pagePxHeight;
-        if (renderedHeight < canvas.height) {
-          pdf.addPage();
-        }
+        if (renderedHeight < canvas.height) pdf.addPage();
       }
-
       const datePart = new Date().toISOString().slice(0, 10);
       pdf.save(`graficas-dashboard-${datePart}.pdf`);
     } catch (error) {
@@ -337,15 +343,11 @@ export class Graficas implements OnInit {
     return `${Math.max(8, Math.round((actual / max) * 100))}%`;
   }
 
-
   getPorcentajeBarra(valorActual: string): string {
     if (!this.stats.top_servicios.length) return '0%';
-    
     const maxVenta = Math.max(...this.stats.top_servicios.map(item => Number(item.total_vendido)));
-    
     const actual = Number(valorActual);
     const porcentaje = (actual / maxVenta) * 100;
-    
     return `${porcentaje}%`;
   }
 }

@@ -7,7 +7,7 @@ export const buscarClientesPlacas = async (req, res) => {
   const client = await pool.connect();
   try {
     const result = await client.query(
-      `SELECT DISTINCT nombre_cliente, placa_vehiculo, telefono_cliente
+      `SELECT DISTINCT nombre_cliente, placa_vehiculo, telefono_cliente, tipo_vehiculo, marca_vehiculo, modelo_vehiculo
        FROM public.orden
        WHERE nombre_cliente ILIKE $1 OR placa_vehiculo ILIKE $1
        ORDER BY nombre_cliente

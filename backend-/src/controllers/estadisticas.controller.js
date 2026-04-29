@@ -1,11 +1,3 @@
-export const getReporteOperativo = async (req, res) => {
-    // Mock de datos, reemplaza con lógica real si lo necesitas
-    res.json({
-        ventas: { total_ordenes: '10', total_ventas: '500000' },
-        inventario: { total_insumos: '20', stock_total: '100', alertas_stock: '2' },
-        pagos: { total_pagos: '5', total_pagado: '200000' }
-    });
-};
 import { pool } from '../config/db.js';
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
@@ -20,7 +12,6 @@ export const getResumenDashboard = async (req, res) => {
             // Si es SUPER_ADMIN, armar metricas_sedes para todas las sedes
             let metricas_sedes = [];
             if (esAdminGlobal) {
-                // Obtener lista de sedes distintas en órdenes y ventas mostrador
                 const sedesResult = await client.query(`
                     SELECT DISTINCT sede FROM (
                         SELECT sede FROM public.orden WHERE sede IS NOT NULL
@@ -29,33 +20,27 @@ export const getResumenDashboard = async (req, res) => {
                     ) s
                 `);
                 const sedes = sedesResult.rows.map(r => r.sede);
-                // Filtro de rango de fechas
                 let fechaDesde = req.query.fecha_desde || new Date().toISOString().split('T')[0];
                 let fechaHasta = req.query.fecha_hasta || fechaDesde;
                 for (const sedeNombre of sedes) {
-                    // Total servicios (órdenes finalizadas en el rango)
                     const totalServiciosRes = await client.query(
                         `SELECT COUNT(*) FROM public.orden WHERE sede = $1 AND fecha >= $2 AND fecha <= $3 AND estado != 'ANULADA'`,
                         [sedeNombre, fechaDesde, fechaHasta]
                     );
-                    // Operarios activos en la sede
                     const operariosActivosRes = await client.query(
                         `SELECT COUNT(*) FROM public.usuarios WHERE sede = $1 AND estado_operario = TRUE AND rol ILIKE 'operario'`,
                         [sedeNombre]
                     );
-                    // Comisión lavadero (60% de ventas en servicios en el rango)
                     const comisionRes = await client.query(
                         `SELECT COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado),0) as total FROM public.orden o JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden WHERE o.sede = $1 AND o.fecha >= $2 AND o.fecha <= $3 AND o.estado != 'ANULADA'`,
                         [sedeNombre, fechaDesde, fechaHasta]
                     );
                     const comision_lavadero = Math.round(Number(comisionRes.rows[0].total || 0) * 0.6);
-                    // Ventas mostrador en el rango
                     const ventasMostradorRes = await client.query(
                         `SELECT COALESCE(SUM(total),0) as total FROM public.venta_mostrador WHERE sede = $1 AND fecha >= $2 AND fecha <= $3`,
                         [sedeNombre, fechaDesde, fechaHasta]
                     );
                     const ventas_mostrador = Math.round(Number(ventasMostradorRes.rows[0].total || 0));
-                    // Ganancia total del rango
                     const ganancia_total_dia = comision_lavadero + ventas_mostrador;
                     metricas_sedes.push({
                         sede_nombre: sedeNombre,
@@ -68,7 +53,7 @@ export const getResumenDashboard = async (req, res) => {
                 }
             }
 
-            // Lógica original para ventas y top_servicios (puede quedarse igual)
+            // Ventas de órdenes (dia, semana, mes)
             let ventasQuery = `
                 SELECT 
                     COALESCE(SUM(CASE WHEN o.fecha = CURRENT_DATE THEN d.cantidad * d.precio_servicio_aplicado ELSE 0 END), 0) as ventas_dia,
@@ -88,6 +73,7 @@ export const getResumenDashboard = async (req, res) => {
             }
             const ventasResult = await client.query(ventasQuery, params);
 
+            // Top servicios del mes
             let topServiciosQuery = `
                 SELECT 
                     s.nombre_servicio,
@@ -110,11 +96,57 @@ export const getResumenDashboard = async (req, res) => {
             topServiciosQuery += ` GROUP BY s.nombre_servicio, s.tipo ORDER BY total_vendido DESC LIMIT 5`;
             const topServiciosResult = await client.query(topServiciosQuery, params2);
 
+            // ─────────────────────────────────────────────────────────────────
+            // NUEVO: Órdenes del día desglosadas por metodo_pago
+            // Permite sumar efectivo/transferencia de órdenes en el frontend
+            // junto con las ventas mostrador del mismo día
+            // ─────────────────────────────────────────────────────────────────
+            let ordenesDiaDetalleQuery = `
+                SELECT 
+                    COALESCE(o.metodo_pago, 'sin_especificar') as metodo_pago,
+                    COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total
+                FROM public.orden o
+                JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden
+                WHERE o.fecha = CURRENT_DATE
+                  AND o.estado != 'ANULADA'
+            `;
+            let paramsOrdenesDia = [];
+            if (!esAdminGlobal) {
+                ordenesDiaDetalleQuery += ' AND o.sede = $1';
+                paramsOrdenesDia.push(sedeUsuario);
+            } else if (sede) {
+                ordenesDiaDetalleQuery += ' AND o.sede = $1';
+                paramsOrdenesDia.push(sede);
+            }
+            ordenesDiaDetalleQuery += ' GROUP BY o.metodo_pago';
+            const ordenesDiaDetalleResult = await client.query(ordenesDiaDetalleQuery, paramsOrdenesDia);
+
+            // Ventas mostrador del día desglosadas por metodo_pago (sin cambios)
+            let detalleDiaQuery = `
+                SELECT v.metodo_pago, SUM(v.total) as total
+                FROM public.venta_mostrador v
+                WHERE v.fecha = CURRENT_DATE
+            `;
+            let detalleDiaParams = [];
+            if (!esAdminGlobal) {
+                detalleDiaQuery += ' AND v.sede = $1';
+                detalleDiaParams.push(sedeUsuario);
+            } else if (sede) {
+                detalleDiaQuery += ' AND v.sede = $1';
+                detalleDiaParams.push(sede);
+            }
+            detalleDiaQuery += ' GROUP BY v.metodo_pago';
+            const detalleDiaResult = await client.query(detalleDiaQuery, detalleDiaParams);
+
             res.json({
                 ventas: {
                     dia: parseFloat(ventasResult.rows[0].ventas_dia),
                     semana: parseFloat(ventasResult.rows[0].ventas_semana),
-                    mes: parseFloat(ventasResult.rows[0].ventas_mes)
+                    mes: parseFloat(ventasResult.rows[0].ventas_mes),
+                    // Ventas mostrador del día por metodo_pago (ya existía)
+                    detalle_dia: detalleDiaResult.rows,
+                    // ✅ NUEVO: Órdenes del día por metodo_pago
+                    ordenes_dia_detalle: ordenesDiaDetalleResult.rows
                 },
                 top_servicios: topServiciosResult.rows,
                 metricas_sedes: metricas_sedes.length > 0 ? metricas_sedes : undefined
@@ -126,6 +158,76 @@ export const getResumenDashboard = async (req, res) => {
     } catch (error) {
         console.error('Error obteniendo estadísticas:', error);
         res.status(500).json({ error: 'Error interno al calcular estadísticas' });
+    }
+};
+
+export const getReporteOperativo = async (req, res) => {
+    const { sede } = req.query;
+    try {
+        const client = await pool.connect();
+        try {
+            const totalOrdenesRes = await client.query(
+                `SELECT COUNT(*) FROM public.orden WHERE estado != 'ANULADA' AND ($1::varchar IS NULL OR sede = $1)`,
+                [sede || null]
+            );
+            const totalVentasRes = await client.query(
+                `SELECT COALESCE(SUM(total),0) as total FROM public.venta_mostrador WHERE ($1::varchar IS NULL OR sede = $1)`,
+                [sede || null]
+            );
+            const totalVentasSemanaRes = await client.query(
+                `SELECT COALESCE(SUM(total),0) as total FROM public.venta_mostrador WHERE fecha >= date_trunc('week', CURRENT_DATE) AND ($1::varchar IS NULL OR sede = $1)`,
+                [sede || null]
+            );
+            const totalVentasMesRes = await client.query(
+                `SELECT COALESCE(SUM(total),0) as total FROM public.venta_mostrador WHERE fecha >= date_trunc('month', CURRENT_DATE) AND ($1::varchar IS NULL OR sede = $1)`,
+                [sede || null]
+            );
+            const totalVentasCantidadRes = await client.query(
+                `SELECT COUNT(*) as cantidad FROM public.venta_mostrador WHERE ($1::varchar IS NULL OR sede = $1)`,
+                [sede || null]
+            );
+            const totalOrdenesDineroRes = await client.query(
+                `SELECT COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado),0) as total FROM public.orden o JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden WHERE o.estado != 'ANULADA' AND ($1::varchar IS NULL OR o.sede = $1)`,
+                [sede || null]
+            );
+            const totalInsumosRes = await client.query(
+                `SELECT COUNT(*) FROM public.inventario_producto WHERE ($1::varchar IS NULL OR sede = $1)`,
+                [sede || null]
+            );
+            const stockTotalRes = await client.query(
+                `SELECT COALESCE(SUM(cantidad),0) FROM public.inventario_producto WHERE ($1::varchar IS NULL OR sede = $1)`,
+                [sede || null]
+            );
+            const alertasStockRes = await client.query(
+                `SELECT COUNT(*) FROM public.inventario_producto WHERE cantidad <= stock_minimo AND ($1::varchar IS NULL OR sede = $1)`,
+                [sede || null]
+            );
+
+            res.json({
+                ventas: {
+                    total_ordenes: totalOrdenesRes.rows[0].count,
+                    total_ventas: totalVentasRes.rows[0].total || '0',
+                    total_ventas_semana: totalVentasSemanaRes.rows[0].total || '0',
+                    total_ventas_mes: totalVentasMesRes.rows[0].total || '0',
+                    total_ordenes_dinero: totalOrdenesDineroRes.rows[0].total || '0',
+                    total_ventas_cantidad: totalVentasCantidadRes.rows[0].cantidad || '0'
+                },
+                inventario: {
+                    total_insumos: totalInsumosRes.rows[0].count,
+                    stock_total: stockTotalRes.rows[0].coalesce || stockTotalRes.rows[0].sum || '0',
+                    alertas_stock: alertasStockRes.rows[0].count
+                },
+                pagos: {
+                    total_pagos: '0',
+                    total_pagado: '0'
+                }
+            });
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('Error en getReporteOperativo:', error);
+        res.status(500).json({ error: 'Error interno al obtener el reporte operativo' });
     }
 };
 
@@ -168,11 +270,8 @@ function toCSV(data) {
     return [header, ...rows].join('\n');
 }
 
-// Controlador para exportar reportes
 export const exportarReporte = async (req, res) => {
     const { tipo, formato } = req.query;
-    let query = '';
-    let join = '';
     let filename = `${tipo}_reporte.${formato}`;
     let data = [];
     let headers = null;
@@ -182,7 +281,7 @@ export const exportarReporte = async (req, res) => {
                 const { sede } = req.query;
                 const { rol, sede: sedeUsuario } = req.user;
                 const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
-                query = `SELECT o.id_orden, o.fecha, o.estado, d.cantidad, d.precio_servicio_aplicado, s.nombre_servicio FROM public.orden o JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden JOIN public.servicio s ON d.id_servicio = s.id_servicio`;
+                let query = `SELECT o.id_orden, o.fecha, o.estado, d.cantidad, d.precio_servicio_aplicado, s.nombre_servicio FROM public.orden o JOIN public.detalle_orden_venta d ON o.id_orden = d.id_orden JOIN public.servicio s ON d.id_servicio = s.id_servicio`;
                 let params = [];
                 if (!esAdminGlobal) {
                     query += ` WHERE o.sede = $1`;
@@ -199,7 +298,7 @@ export const exportarReporte = async (req, res) => {
                 const { sede } = req.query;
                 const { rol, sede: sedeUsuario } = req.user;
                 const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
-                query = `SELECT id_producto, nombre_producto, proveedor, categoria, ubicacion, costo, cantidad, stock_minimo, sede FROM public.inventario_producto`;
+                let query = `SELECT id_producto, nombre_producto, proveedor, categoria, ubicacion, costo, cantidad, stock_minimo, sede FROM public.inventario_producto`;
                 let params = [];
                 if (!esAdminGlobal) {
                     query += ` WHERE sede = $1`;
@@ -227,7 +326,7 @@ export const exportarReporte = async (req, res) => {
                 const { sede } = req.query;
                 const { rol, sede: sedeUsuario } = req.user;
                 const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
-                query = `SELECT p.id_pago, u.nombre AS nombre_operario, p.monto, p.metodo_pago, p.fecha_pago, p.observacion, p.sede FROM public.pago_operario p JOIN public.usuarios u ON p.id_operario = u.id_user`;
+                let query = `SELECT p.id_pago, u.nombre AS nombre_operario, p.monto, p.metodo_pago, p.fecha_pago, p.observacion, p.sede FROM public.pago_operario p JOIN public.usuarios u ON p.id_operario = u.id_user`;
                 let params = [];
                 if (!esAdminGlobal) {
                     query += ` WHERE p.sede = $1`;
@@ -253,7 +352,7 @@ export const exportarReporte = async (req, res) => {
                 const { sede } = req.query;
                 const { rol, sede: sedeUsuario } = req.user;
                 const esAdminGlobal = rol === 'SUPER_ADMIN' || rol === 'ADMIN';
-                query = `SELECT c.id_comision, c.id_orden, u.nombre AS nombre_operario, c.porcentaje_aplicado, c.monto_comision, c.estado, c.created_at FROM public.comision_orden_operario c JOIN public.usuarios u ON c.id_operario = u.id_user`;
+                let query = `SELECT c.id_comision, c.id_orden, u.nombre AS nombre_operario, c.porcentaje_aplicado, c.monto_comision, c.estado, c.created_at FROM public.comision_orden_operario c JOIN public.usuarios u ON c.id_operario = u.id_user`;
                 let params = [];
                 if (!esAdminGlobal) {
                     query += ` WHERE c.sede = $1`;
@@ -269,13 +368,12 @@ export const exportarReporte = async (req, res) => {
             default:
                 return res.status(400).json({ error: 'Tipo de reporte no soportado' });
         }
-        // No volver a ejecutar la consulta, ya se hizo arriba y data contiene los datos correctos
+
         if (formato === 'csv') {
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
             return res.send(toCSV(data));
         } else if (formato === 'excel' || formato === 'xlsx') {
-            // Exportación real a Excel usando exceljs
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Reporte');
             if (data.length > 0) {
@@ -290,46 +388,32 @@ export const exportarReporte = async (req, res) => {
             res.end();
             return;
         } else if (formato === 'pdf') {
-            // PDF con estilos avanzados
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="${tipo}_reporte.pdf"`);
-            // Cambia la orientación a landscape (horizontal)
             const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
             doc.pipe(res);
             const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-            // Cabecera negra (más alta y con saltos de línea automáticos)
             const headerHeight = 60;
             const headerY = doc.y;
             doc.rect(doc.page.margins.left, headerY, pageWidth, headerHeight).fill('#181B20');
             doc.fillColor('white').font('Helvetica-Bold').fontSize(24);
-            const title = `Reporte ${tipo.toUpperCase()}`;
-            doc.text(title, doc.page.margins.left + 10, headerY + 10, {
-                width: pageWidth - 20,
-                align: 'left',
-                continued: false
+            doc.text(`Reporte ${tipo.toUpperCase()}`, doc.page.margins.left + 10, headerY + 10, {
+                width: pageWidth - 20, align: 'left', continued: false
             });
             doc.fontSize(10).fillColor('white');
-            const fechaTexto = `Generado: ${new Date().toLocaleString()}`;
-            doc.text(fechaTexto, doc.page.margins.left + 10, headerY + 38, {
-                width: pageWidth - 20,
-                align: 'left',
-                continued: false
+            doc.text(`Generado: ${new Date().toLocaleString()}`, doc.page.margins.left + 10, headerY + 38, {
+                width: pageWidth - 20, align: 'left', continued: false
             });
             doc.y = headerY + headerHeight;
             doc.moveDown(0.5);
-            // Línea roja
             doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.margins.left + pageWidth, doc.y).lineWidth(4).stroke('#F71C1C');
             doc.moveDown(1);
             if (data.length > 0) {
-                // Usar headers si están definidos, si no usar las keys del primer objeto
                 let cols = headers || Object.keys(data[0]).map(k => ({ label: k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), property: k }));
-                // Validar que todas las propiedades de headers existan en los datos
                 cols = cols.filter(h => data[0].hasOwnProperty(h.property));
-                // Calcular anchos proporcionales
                 const totalWidth = cols.reduce((acc, h) => acc + (h.width || 1), 0);
                 const colWidths = cols.map(h => h.width ? Math.floor((h.width / totalWidth) * pageWidth) : Math.floor(pageWidth / cols.length));
                 let tableY = doc.y + 10;
-                // Encabezado rojo
                 doc.rect(doc.page.margins.left, tableY, pageWidth, 22).fill('#F71C1C');
                 doc.fillColor('white').font('Helvetica-Bold').fontSize(11);
                 let x = doc.page.margins.left;
@@ -337,7 +421,6 @@ export const exportarReporte = async (req, res) => {
                     doc.text(h.label, x + 4, tableY + 5, { width: colWidths[i] - 8, align: 'center', continued: false });
                     x += colWidths[i];
                 });
-                // Filas de datos
                 let rowY = tableY + 22;
                 data.forEach((row, idx) => {
                     doc.font('Helvetica').fontSize(10);
@@ -355,7 +438,6 @@ export const exportarReporte = async (req, res) => {
                     doc.fillColor('white').font('Helvetica').fontSize(10);
                     cols.forEach((h, i) => {
                         let text = String(row[h.property] ?? '');
-                        // Formato especial para la columna Fecha
                         if (h.property.toLowerCase().includes('fecha')) {
                             const date = new Date(text);
                             if (!isNaN(date.getTime())) {
@@ -370,13 +452,10 @@ export const exportarReporte = async (req, res) => {
                                 text = `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
                             }
                         }
-                        // Formato especial para columnas de costo/valor/monto/precio
                         const costoKeys = ['costo', 'precio', 'valor', 'monto', 'total', 'total_ventas', 'total_pagado', 'monto_comision', 'precio_servicio_aplicado'];
                         if (costoKeys.some(ck => h.property.toLowerCase().includes(ck))) {
                             const num = Number(text.replace(/[^\d.-]/g, ''));
-                            if (!isNaN(num)) {
-                                text = `$${num.toLocaleString('es-CO')}`;
-                            }
+                            if (!isNaN(num)) text = `$${num.toLocaleString('es-CO')}`;
                         }
                         const cellHeight = doc.heightOfString(text, { width: colWidths[i] - 8, align: 'center' });
                         const yOffset = rowY + 5 + ((maxCellHeight - cellHeight) / 2);

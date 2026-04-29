@@ -128,9 +128,24 @@
 
 .mini-kpi-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
-  min-width: 370px;
+  min-width: 0;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .mini-kpi-strip {
+    grid-template-columns: 1fr 1fr 1fr;
+    row-gap: 0.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .mini-kpi-strip {
+    grid-template-columns: 1fr;
+    row-gap: 0.5rem;
+  }
 }
 
 .mini-kpi {
@@ -581,4 +596,14 @@
     grid-template-columns: 1fr;
     gap: 0.3rem;
   }
+}
+
+#container-card-reports {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5em;
+  background-color: transparent;
+  border: none;
 }
