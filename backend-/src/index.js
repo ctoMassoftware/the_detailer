@@ -1,11 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import cron from 'node-cron'; 
 
 // 1. IMPORTACIONES DE CONFIGURACIÓN Y SCRIPTS
 import { pool } from './config/db.js';
 import { initDB } from './config/initDB.js'; 
 import { seedUsuarios } from './scripts/crearUsuarios.js';
+import { inactivarOperarios } from './scripts/inactivarOperarios9pm.js'; 
 
 // 2. IMPORTACIONES DE RUTAS
 import authRoutes from './routes/auth.routes.js';
@@ -17,7 +19,7 @@ import inventarioProductoRoutes from './routes/inventarioProducto.routes.js';
 import operarioRoutes from './routes/operario.routes.js';
 import rifaRoutes from './routes/rifa.routes.js';
 import estadisticasRoutes from './routes/estadisticas.routes.js';
-import ventaMostradorRoutes from './routes/ventaMostrador.routes.js'; // 👈 NUEVA RUTA MOSTRADOR
+import ventaMostradorRoutes from './routes/ventaMostrador.routes.js';
 
 // Configuración de variables de entorno
 dotenv.config();
@@ -55,7 +57,7 @@ app.use('/api/inventario-producto', inventarioProductoRoutes);
 app.use('/api/operarios', operarioRoutes);
 app.use('/api/rifas', rifaRoutes);
 app.use('/api/estadisticas', estadisticasRoutes);
-app.use('/api/venta-mostrador', ventaMostradorRoutes); // 👈 NUEVO ENDPOINT MOSTRADOR
+app.use('/api/venta-mostrador', ventaMostradorRoutes);
 
 const PORT = process.env.PORT || 3000;
 
@@ -69,10 +71,20 @@ const startServer = async () => {
         await pool.query('SELECT NOW()');
         console.log("✅ Base de datos conectada correctamente");
 
-        // Ejecutamos el seed para asegurar que existan los usuarios (Admin, Galán, Centenario)
+        // Ejecutamos el seed para asegurar que existan los usuarios
         console.log("🔄 Verificando usuarios iniciales...");
         await seedUsuarios(); 
         console.log("✅ Verificación de usuarios completada");
+
+        // NUEVO: CONFIGURAMOS EL CRON PARA LAS 9:00 PM HORA COLOMBIA
+        cron.schedule('0 21 * * *', async () => {
+            console.log("⏰ Ejecutando tarea programada: Inactivar operarios (9:00 PM)");
+            await inactivarOperarios();
+        }, {
+            scheduled: true,
+            timezone: "America/Bogota" // Fundamental para usar la hora local y no la del servidor
+        });
+        console.log("✅ CRON Job activado: Operarios se inactivarán automáticamente a las 9:00 PM");
 
         // Finalmente, levantamos el servidor
         app.listen(PORT, () => {
