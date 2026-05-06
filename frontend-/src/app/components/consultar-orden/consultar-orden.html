@@ -204,10 +204,10 @@
           <div class="form-group">
             <label>Tipo</label>
             <select [(ngModel)]="ordenSeleccionada.vehiculoTipo" [disabled]="!modoEdicion" class="input-dark">
-              <option value="automovil">Automóvil</option>
-              <option value="campero">Campero</option>
-              <option value="camioneta">Camioneta</option>
-              <option value="moto">Moto</option>
+              <option value="automovil">Moto</option>
+              <option value="campero">Automovil</option>
+              <option value="camioneta">Campero</option>
+              <option value="moto">Camioneta</option>
               <option value="otro">Otro</option>
             </select>
           </div>
@@ -293,7 +293,6 @@
             <label>Método de Pago</label>
             <select [(ngModel)]="ordenSeleccionada.metodoPago" [disabled]="!modoEdicion" class="input-dark">
               <option value="Efectivo">Efectivo</option>
-              <option value="Tarjeta">Tarjeta</option>
               <option value="Transferencia">Transferencia</option>
             </select>
           </div>
@@ -353,7 +352,7 @@
 
       <div class="factura-company-info">
         <div class="info-content">
-          <p class="info-bold">NIT 100002212-9</p>
+          <p class="info-bold">NIT 89.005.040-1</p>
           <p class="info-muted">Crr 18 #2-13 Armenia Q.</p>
           <p class="info-muted">3127736569</p>
         </div>
@@ -417,7 +416,6 @@
               <select [(ngModel)]="ordenSeleccionada.metodoPago" class="input-dark select-pago-factura"
                 (change)="resetCalculadora()">
                 <option value="Efectivo">Efectivo</option>
-                <option value="Tarjeta">Tarjeta</option>
                 <option value="Transferencia">Transferencia</option>
               </select>
             </div>
