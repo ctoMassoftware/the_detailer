@@ -1,102 +1,3 @@
-// Notificación: Orden lista SIN rifa (usa plantilla)
-export const enviarNotificacionOrdenListaSinRifa = async (nombre, telefono, placa, totalPagar) => {
-    let numeroDestino = telefono.replace(/\D/g, '');
-    if (!numeroDestino.startsWith('57')) {
-        numeroDestino = '57' + numeroDestino;
-    }
-
-    const safeNombre = (nombre || 'Cliente').trim();
-    const safePlaca = (placa || 'N/A').trim();
-    const safeTotal = totalPagar != null ? String(totalPagar) : '0';
-
-    // Log para verificar exactamente qué se envía
-    console.log('📤 Enviando orden lista sin rifa:', { safeNombre, safePlaca, safeTotal });
-    console.log('📋 contentVariables string:', JSON.stringify({ '1': safeNombre, '2': safePlaca, '3': safeTotal }));
-
-    try {
-        const response = await client.messages.create({
-            from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`,
-            contentSid: 'HX42d11753ef517ec4fabd1b30db4bcabd',
-            contentVariables: JSON.stringify({
-                '1': safeNombre,
-                '2': safePlaca,
-                '3': safeTotal
-            })
-        });
-        console.log('✅ Mensaje enviado:', response.sid);
-        return true;
-    } catch (error) {
-        console.error('❌ Error completo:', JSON.stringify({
-            message: error?.message,
-            code: error?.code,
-            status: error?.status,
-            details: error?.details,
-            moreInfo: error?.moreInfo
-        }));
-
-        // Fallback con body de texto plano (siempre funciona en WhatsApp aprobado)
-        try {
-            const response2 = await client.messages.create({
-                from: fromNumber,
-                to: `whatsapp:+${numeroDestino}`,
-                body: `👋 Hola ${safeNombre},\n\n🚗 Tu vehículo con placa ${safePlaca} está listo para recoger.\n\n💰 Total a pagar: $${safeTotal}\n\n¡Gracias por confiar en nosotros! 🙌`
-            });
-            console.log('✅ Fallback enviado:', response2.sid);
-            return true;
-        } catch (error2) {
-            console.error('❌ Error en fallback:', error2?.message);
-            return false;
-        }
-    }
-};
-
-// Notificación: Orden lista CON rifa (usa plantilla)
-export const enviarNotificacionOrdenListaConRifa = async (nombre, telefono, placa, totalPagar, numeroBoleta) => {
-    let numeroDestino = telefono.replace(/\D/g, '');
-    if (!numeroDestino.startsWith('57')) {
-        numeroDestino = '57' + numeroDestino;
-    }
-
-    const safeNombre = (nombre || 'Cliente').trim();
-    const safePlaca = (placa || 'N/A').trim();
-    const safeTotal = totalPagar != null ? String(totalPagar) : '0';
-    const safeBoleta = numeroBoleta != null ? String(numeroBoleta) : '000';
-
-    console.log('📤 Enviando orden lista con rifa:', { safeNombre, safePlaca, safeTotal, safeBoleta });
-
-    try {
-        const response = await client.messages.create({
-            from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`,
-            contentSid: 'HXe9cead84a192d3f2a2ed1e89631786fc',
-            contentVariables: JSON.stringify({
-                '1': safeNombre,
-                '2': safePlaca,
-                '3': safeTotal,
-                '4': safeBoleta
-            })
-        });
-        console.log('✅ Mensaje con rifa enviado:', response.sid);
-        return true;
-    } catch (error) {
-        console.error('❌ Error con contentSid:', error?.message);
-
-        // Fallback texto plano
-        try {
-            const response2 = await client.messages.create({
-                from: fromNumber,
-                to: `whatsapp:+${numeroDestino}`,
-                body: `👋 Hola ${safeNombre},\n\n🚗 Tu vehículo con placa ${safePlaca} está listo para recoger.\n\n💰 Total a pagar: $${safeTotal}\n\n🎟️ ¡The Detailer te premia!\nParticipas en nuestra rifa con la Lotería del Quindío con el número de boleta:\n👉 ${safeBoleta}\n\n¡Mucha suerte y gracias por confiar en nosotros! 🍀`
-            });
-            console.log('✅ Fallback con rifa enviado:', response2.sid);
-            return true;
-        } catch (error2) {
-            console.error('❌ Error en fallback:', error2?.message);
-            return false;
-        }
-    }
-};
 import twilio from 'twilio';
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -105,193 +6,279 @@ const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER;
 
 const client = twilio(accountSid, authToken);
 
+// Phone normalization: remove non-digits, add +57 if missing
+const normalizePhoneNumber = (phone) => {
+  let normalized = phone.replace(/\D/g, ''); // Remove all non-digits
+  if (!normalized.startsWith('57')) {
+    normalized = '57' + normalized;
+  }
+  return '+' + normalized; // Return with + prefix: +57XXXXXXXXXX
+};
+
+// Send via Kapso AI API
+const sendViaKapso = async (phoneNumber, mensaje) => {
+  const kapsoUrl = process.env.KAPSO_API_URL;
+  const kapsoPhoneId = process.env.KAPSO_PHONE_ID;
+  const kapsoApiKey = process.env.KAPSO_API_KEY;
+
+  // Check if Kapso is configured
+  if (!kapsoUrl || !kapsoPhoneId || !kapsoApiKey) {
+    console.log('[KAPSO] ❌ Kapso no configurado, saltando');
+    return { success: false, error: 'Kapso not configured' };
+  }
+
+  const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+  try {
+    console.log(`[KAPSO] 📤 Enviando a ${normalizedPhone}...`);
+
+    const response = await fetch(`${kapsoUrl}/${kapsoPhoneId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': kapsoApiKey
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: normalizedPhone,
+        type: 'text',
+        text: { body: mensaje }
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error(`[KAPSO] ❌ Error (${response.status}):`, data);
+      return { success: false, error: data.error?.message || 'Unknown error' };
+    }
+
+    const messageId = data.messages?.[0]?.id || 'unknown';
+    console.log(`[KAPSO] ✅ Enviado (messageId: ${messageId})`);
+    return { success: true, messageId };
+  } catch (error) {
+    console.error(`[KAPSO] ❌ Exception:`, error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send via Twilio (fallback)
+const sendViaTwilio = async (phoneNumber, mensaje) => {
+  const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+  try {
+    console.log(`[TWILIO] 📤 Enviando a ${normalizedPhone}...`);
+
+    const response = await client.messages.create({
+      from: fromNumber,
+      to: `whatsapp:${normalizedPhone}`,
+      body: mensaje
+    });
+
+    console.log(`[TWILIO] ✅ Enviado (sid: ${response.sid})`);
+    return { success: true, messageId: response.sid };
+  } catch (error) {
+    console.error(`[TWILIO] ❌ Exception:`, error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+// Orchestrate: try Kapso first, fallback to Twilio
+const sendMessageWithFallback = async (phoneNumber, mensaje) => {
+  // Try Kapso first
+  const kapsoResult = await sendViaKapso(phoneNumber, mensaje);
+  if (kapsoResult.success) {
+    return true;
+  }
+
+  // Fallback to Twilio
+  console.log('[FALLBACK] 🔄 Kapso falló, reintentando con Twilio...');
+  const twilioResult = await sendViaTwilio(phoneNumber, mensaje);
+  if (twilioResult.success) {
+    return true;
+  }
+
+  // Both failed
+  console.error('[FALLBACK] ❌ Ambos proveedores fallaron');
+  return false;
+};
+
 // 1. Notificación Inicio Servicio
 export const enviarNotificacionInicioServicio = async (nombre, telefono, placa) => {
-    let numeroDestino = telefono.replace(/\D/g, '');
-    if (!numeroDestino.startsWith('57')) {
-        numeroDestino = '57' + numeroDestino;
-    }
-    try {
-        // 1. Intentar con contentSid/contentVariables (API nueva)
-        const response = await client.messages.create({
-            from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`,
-            contentSid: 'HXc139efa91ee8a99b680683115fe01c47',
-            contentVariables: JSON.stringify({
-                '1': nombre,
-                '2': placa
-            })
-        });
-        console.log('Mensaje de WhatsApp (inicio, plantilla, contentSid) enviado:', response.sid);
-        return true;
-    } catch (error) {
-        console.error('Error enviando WhatsApp (inicio, contentSid):', error?.message || error, error);
-        // 2. Si falla, intentar con template (API clásica)
-        try {
-            const response2 = await client.messages.create({
-                from: fromNumber,
-                to: `whatsapp:+${numeroDestino}`,
-                template: {
-                    name: 'recepcion_orden',
-                    languageCode: 'es',
-                    components: [
-                        {
-                            type: 'body',
-                            parameters: [
-                                { type: 'text', text: nombre },
-                                { type: 'text', text: placa }
-                            ]
-                        }
-                    ]
-                }
-            });
-            console.log('Mensaje de WhatsApp (inicio, plantilla, template) enviado:', response2.sid);
-            return true;
-        } catch (error2) {
-            console.error('Error enviando WhatsApp (inicio, template):', error2?.message || error2, error2);
-            return false;
-        }
-    }
+  let numeroDestino = telefono.replace(/\D/g, '');
+  if (!numeroDestino.startsWith('57')) {
+    numeroDestino = '57' + numeroDestino;
+  }
+
+  const safeNombre = (nombre || 'Cliente').trim();
+  const safePlaca = (placa || 'N/A').trim();
+
+  const mensaje = `
+👋 Hola ${safeNombre},
+
+🚗 Hemos recibido tu vehículo con placa ${safePlaca}.
+
+Trabajaremos en tu orden lo más rápido posible.
+
+¡Gracias por confiar en nosotros! 🙌`;
+
+  return await sendMessageWithFallback(numeroDestino, mensaje);
 };
 
-// 2. Notificación cuando hay boleta de rifa
+// 2. Notificación: Orden lista SIN rifa
+export const enviarNotificacionOrdenListaSinRifa = async (nombre, telefono, placa, totalPagar) => {
+  let numeroDestino = telefono.replace(/\D/g, '');
+  if (!numeroDestino.startsWith('57')) {
+    numeroDestino = '57' + numeroDestino;
+  }
+
+  const safeNombre = (nombre || 'Cliente').trim();
+  const safePlaca = (placa || 'N/A').trim();
+  const safeTotal = totalPagar != null ? String(totalPagar) : '0';
+
+  const mensaje = `
+👋 Hola ${safeNombre},
+
+🚗 Tu vehículo con placa ${safePlaca} está listo para recoger.
+
+💰 Total a pagar: $${safeTotal}
+
+¡Gracias por confiar en nosotros! 🙌`;
+
+  return await sendMessageWithFallback(numeroDestino, mensaje);
+};
+
+// 3. Notificación: Orden lista CON rifa
+export const enviarNotificacionOrdenListaConRifa = async (nombre, telefono, placa, totalPagar, numeroBoleta) => {
+  let numeroDestino = telefono.replace(/\D/g, '');
+  if (!numeroDestino.startsWith('57')) {
+    numeroDestino = '57' + numeroDestino;
+  }
+
+  const safeNombre = (nombre || 'Cliente').trim();
+  const safePlaca = (placa || 'N/A').trim();
+  const safeTotal = totalPagar != null ? String(totalPagar) : '0';
+  const safeBoleta = numeroBoleta != null ? String(numeroBoleta) : '000';
+
+  const mensaje = `
+👋 Hola ${safeNombre},
+
+🚗 Tu vehículo con placa ${safePlaca} está listo para recoger.
+
+💰 Total a pagar: $${safeTotal}
+
+🎟️ ¡The Detailer te premia!
+Participas en nuestra rifa con la Lotería del Quindío con el número de boleta:
+👉 ${safeBoleta}
+
+¡Mucha suerte y gracias por confiar en nosotros! 🍀`;
+
+  return await sendMessageWithFallback(numeroDestino, mensaje);
+};
+
+// 4. Notificación cuando hay boleta de rifa (Orden Terminada)
 export const enviarNotificacionOrdenTerminada = async (nombre, telefono, placa, numeroBoleta, totalPagar) => {
-    try {
-        let numeroDestino = telefono.replace(/\D/g, '');
-        if (!numeroDestino.startsWith('57')) {
-            numeroDestino = '57' + numeroDestino;
-        }
+  let numeroDestino = telefono.replace(/\D/g, '');
+  if (!numeroDestino.startsWith('57')) {
+    numeroDestino = '57' + numeroDestino;
+  }
 
-        const mensaje = `
-👋 Hola *${nombre}*, 
+  const safeNombre = (nombre || 'Cliente').trim();
+  const safePlaca = (placa || 'N/A').trim();
+  const safeBoleta = numeroBoleta != null ? String(numeroBoleta) : '000';
+  const safeTotal = totalPagar != null ? String(totalPagar) : '0';
 
-🚗 Tu vehículo con placa *${placa}* está listo.
+  const mensaje = `
+👋 Hola ${safeNombre},
 
-💰 *Resumen del servicio:*
-Total a pagar: $${totalPagar}
+🚗 Tu vehículo con placa ${safePlaca} está listo.
 
-🎟️ *¡The Detailer!*
+💰 Resumen del servicio:
+Total a pagar: $${safeTotal}
+
+🎟️ ¡The Detailer!
 Como agradecimiento, participas en nuestra rifa con el número de boleta:
-👉 *${numeroBoleta}*
+👉 ${safeBoleta}
 
-¡Gracias por confiar en nosotros! 
-`;
+¡Gracias por confiar en nosotros!`;
 
-        const response = await client.messages.create({
-            body: mensaje,
-            from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`
-        });
-
-        console.log('Mensaje de WhatsApp enviado:', response.sid);
-        return true;
-    } catch (error) {
-        console.error('Error enviando WhatsApp:', error);
-        return false;
-    }
+  return await sendMessageWithFallback(numeroDestino, mensaje);
 };
 
-// 3. Notificación simple sin rifa
+// 5. Notificación simple sin rifa
 export const enviarNotificacionSimple = async (nombre, telefono, placa, totalPagar) => {
-    try {
-        let numeroDestino = telefono.replace(/\D/g, '');
-        if (!numeroDestino.startsWith('57')) {
-            numeroDestino = '57' + numeroDestino;
-        }
+  let numeroDestino = telefono.replace(/\D/g, '');
+  if (!numeroDestino.startsWith('57')) {
+    numeroDestino = '57' + numeroDestino;
+  }
 
-        const mensaje = `
-👋 Hola *${nombre}*, 
+  const safeNombre = (nombre || 'Cliente').trim();
+  const safePlaca = (placa || 'N/A').trim();
+  const safeTotal = totalPagar != null ? String(totalPagar) : '0';
 
-🚗 Tu vehículo con placa *${placa}* está listo para recoger.
+  const mensaje = `
+👋 Hola ${safeNombre},
 
-💰 *Resumen del servicio:*
-Total a pagar: $${totalPagar}
+🚗 Tu vehículo con placa ${safePlaca} está listo para recoger.
 
-¡Gracias por confiar en nosotros! 🙌
-`;
+💰 Resumen del servicio:
+Total a pagar: $${safeTotal}
 
-        const response = await client.messages.create({
-            body: mensaje,
-            from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`
-        });
+¡Gracias por confiar en nosotros! 🙌`;
 
-        console.log('Mensaje de WhatsApp (simple) enviado:', response.sid);
-        return true;
-    } catch (error) {
-        console.error('Error enviando WhatsApp:', error);
-        return false;
-    }
+  return await sendMessageWithFallback(numeroDestino, mensaje);
 };
 
-// 4. Notificación de modificación de orden
+// 6. Notificación de modificación de orden
 export const enviarNotificacionModificacion = async (nombre, telefono, placa, totalPagar) => {
-    try {
-        let numeroDestino = telefono.replace(/\D/g, '');
-        if (!numeroDestino.startsWith('57')) {
-            numeroDestino = '57' + numeroDestino;
-        }
+  let numeroDestino = telefono.replace(/\D/g, '');
+  if (!numeroDestino.startsWith('57')) {
+    numeroDestino = '57' + numeroDestino;
+  }
 
-        const mensaje = `
-👋 Hola *${nombre}*, 
+  const safeNombre = (nombre || 'Cliente').trim();
+  const safePlaca = (placa || 'N/A').trim();
+  const safeTotal = totalPagar != null ? String(totalPagar) : '0';
 
-📝 Tu orden ha sido *actualizada*.
+  const mensaje = `
+👋 Hola ${safeNombre},
 
-🚗 Vehículo: Placa *${placa}*
+📝 Tu orden ha sido actualizada.
 
-💰 *Nuevo total:* $${totalPagar}
+🚗 Vehículo: Placa ${safePlaca}
 
-Si tienes alguna pregunta, contáctanos. ¡Gracias! 🙌
-`;
+💰 Nuevo total: $${safeTotal}
 
-        const response = await client.messages.create({
-            body: mensaje,
-            from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`
-        });
+Si tienes alguna pregunta, contáctanos. ¡Gracias! 🙌`;
 
-        console.log('Mensaje de WhatsApp (modificación) enviado:', response.sid);
-        return true;
-    } catch (error) {
-        console.error('Error enviando WhatsApp:', error);
-        return false;
-    }
+  return await sendMessageWithFallback(numeroDestino, mensaje);
 };
 
-// 5. NUEVO: Notificación Venta de Mostrador
+// 7. Notificación Venta de Mostrador
 export const enviarReciboMostrador = async (nombre, telefono, sede, totalPagar, productos) => {
-    try {
-        let numeroDestino = telefono.replace(/\D/g, '');
-        if (!numeroDestino.startsWith('57')) {
-            numeroDestino = '57' + numeroDestino;
-        }
+  let numeroDestino = telefono.replace(/\D/g, '');
+  if (!numeroDestino.startsWith('57')) {
+    numeroDestino = '57' + numeroDestino;
+  }
 
-        let listaProductos = productos.map(p => `- ${p.cantidad}x ${p.nombre_producto}`).join('\n');
+  const safeNombre = (nombre || 'Cliente').trim();
+  const safeSede = (sede || 'The Detailer').trim();
+  const safeTotal = totalPagar != null ? String(totalPagar) : '0';
 
-        const mensaje = `
-🛍️ *Venta Confirmada* - The Detailer
-📍 Sede: *${sede}*
+  let listaProductos = productos.map(p => `- ${p.cantidad}x ${p.nombre_producto}`).join('\n');
 
-Hola *${nombre || 'Cliente'}*, gracias por tu compra en mostrador.
+  const mensaje = `
+🛍️ Venta Confirmada - The Detailer
+📍 Sede: ${safeSede}
 
-🛒 *Detalle:*
+Hola ${safeNombre}, gracias por tu compra en mostrador.
+
+🛒 Detalle:
 ${listaProductos}
 
-💰 *Total Pagado:* $${totalPagar}
+💰 Total Pagado: $${safeTotal}
 
-¡Vuelve pronto! 🙌
-`;
+¡Vuelve pronto! 🙌`;
 
-        const response = await client.messages.create({
-            body: mensaje,
-            from: fromNumber,
-            to: `whatsapp:+${numeroDestino}`
-        });
-
-        console.log(`Recibo mostrador enviado a ${telefono} (Sede: ${sede}) - SID: ${response.sid}`);
-        return true;
-    } catch (error) {
-        console.error('Error enviando WhatsApp (Mostrador):', error);
-        return false;
-    }
+  return await sendMessageWithFallback(numeroDestino, mensaje);
 };
