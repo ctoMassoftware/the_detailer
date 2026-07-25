@@ -1,7 +1,27 @@
 import { pool } from './db.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const runMigrations = async () => {
+    try {
+        const migrationPath = path.join(__dirname, '../database/migrations/add_message_audit_table.sql');
+        const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+        await pool.query(migrationSQL);
+        console.log('✓ Migrations completed successfully');
+    } catch (error) {
+        console.error('Error running migrations:', error.message);
+    }
+};
 
 export const initDB = async () => {
     console.log("🔄 Verificando tablas en la base de datos...");
+
+    // Run migrations first
+    await runMigrations();
 
     const sql = `
         -- 1. TABLA USUARIOS

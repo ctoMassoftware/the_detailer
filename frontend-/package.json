@@ -30,6 +30,8 @@
     "@angular/router": "^20.3.0",
     "@ngneat/tailwind": "^7.0.3",
     "@types/three": "^0.182.0",
+    "canvg": "^4.0.3",
+    "dompurify": "^3.4.12",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "rxjs": "~7.8.0",

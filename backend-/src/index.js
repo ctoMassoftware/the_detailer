@@ -20,6 +20,7 @@ import rifaRoutes from './routes/rifa.routes.js';
 import estadisticasRoutes from './routes/estadisticas.routes.js';
 import ventaMostradorRoutes from './routes/ventaMostrador.routes.js'; // 👈 NUEVA RUTA MOSTRADOR
 import testRoutes from './routes/test.routes.js'; // 👈 RUTA DE PRUEBA WHATSAPP
+import messagesRouter from './routes/messages.routes.js';
 
 // Configuración de variables de entorno
 dotenv.config();
@@ -68,6 +69,7 @@ app.use('/api/rifas', rifaRoutes);
 app.use('/api/estadisticas', estadisticasRoutes);
 app.use('/api/venta-mostrador', ventaMostradorRoutes); // 👈 NUEVO ENDPOINT MOSTRADOR
 app.use('/api/test', testRoutes); // 👈 ENDPOINT DE PRUEBA WHATSAPP
+app.use('/api/messages', messagesRouter);
 
 const PORT = process.env.PORT || 3000;
 
