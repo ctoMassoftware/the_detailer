@@ -4,8 +4,9 @@ import dotenv from 'dotenv';
 
 // 1. IMPORTACIONES DE CONFIGURACIÓN Y SCRIPTS
 import { pool } from './config/db.js';
-import { initDB } from './config/initDB.js'; 
+import { initDB } from './config/initDB.js';
 import { seedUsuarios } from './scripts/crearUsuarios.js';
+import { validateTwilioConfig } from './config/twilio.config.js';
 
 // 2. IMPORTACIONES DE RUTAS
 import authRoutes from './routes/auth.routes.js';
@@ -18,9 +19,19 @@ import operarioRoutes from './routes/operario.routes.js';
 import rifaRoutes from './routes/rifa.routes.js';
 import estadisticasRoutes from './routes/estadisticas.routes.js';
 import ventaMostradorRoutes from './routes/ventaMostrador.routes.js'; // 👈 NUEVA RUTA MOSTRADOR
+import testRoutes from './routes/test.routes.js'; // 👈 RUTA DE PRUEBA WHATSAPP
 
 // Configuración de variables de entorno
 dotenv.config();
+
+// Validate configuration on startup
+try {
+  validateTwilioConfig();
+  console.log('✓ Twilio configuration validated');
+} catch (error) {
+  console.error('✗ Configuration Error:', error.message);
+  process.exit(1);
+}
 
 const app = express();
 
@@ -56,6 +67,7 @@ app.use('/api/operarios', operarioRoutes);
 app.use('/api/rifas', rifaRoutes);
 app.use('/api/estadisticas', estadisticasRoutes);
 app.use('/api/venta-mostrador', ventaMostradorRoutes); // 👈 NUEVO ENDPOINT MOSTRADOR
+app.use('/api/test', testRoutes); // 👈 ENDPOINT DE PRUEBA WHATSAPP
 
 const PORT = process.env.PORT || 3000;
 
