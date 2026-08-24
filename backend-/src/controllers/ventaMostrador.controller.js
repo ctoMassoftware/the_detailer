@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-import { enviarReciboMostrador } from '../services/whatsapp.service.js'; // Ajusta la ruta a tu service
+import { enviarReciboMostrador } from '../services/notificaciones.service.js';
 
 export const registrarVentaMostrador = async (req, res) => {
     const { id: id_user_vendedor, sede } = req.user; 

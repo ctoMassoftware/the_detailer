@@ -3,14 +3,69 @@ import {
   enviarNotificacionInicioServicio,
   enviarNotificacionSimple,
   enviarReciboMostrador
-} from '../services/whatsapp.service.js';
+} from '../services/notificaciones.service.js';
 
 const router = Router();
 
-// Endpoint de prueba para enviar mensaje de WhatsApp
+// Endpoint de prueba para enviar notificaciones (SMS/WhatsApp)
+router.post('/enviar-notificacion', async (req, res) => {
+  try {
+    const {
+      telefono,
+      nombre = 'Cliente',
+      total = 0,
+      tipo = 'simple',
+      canal = 'sms'
+    } = req.body;
+
+    if (!telefono) {
+      return res.status(400).json({ error: 'El teléfono es requerido' });
+    }
+
+    let resultado;
+    const metadata = { canal };
+
+    if (tipo === 'inicio') {
+      resultado = await enviarNotificacionInicioServicio(nombre, telefono, total, metadata);
+    } else if (tipo === 'recibo') {
+      resultado = await enviarReciboMostrador(
+        nombre,
+        telefono,
+        'Servicio de Detallado',
+        total,
+        metadata
+      );
+    } else {
+      resultado = await enviarNotificacionSimple(telefono, 'Mensaje de prueba', metadata);
+    }
+
+    if (resultado?.success) {
+      res.json({
+        success: true,
+        mensaje: 'Notificación enviada exitosamente',
+        tipo,
+        canal,
+        telefono,
+        nombre
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: resultado?.error || 'No se pudo enviar la notificación'
+      });
+    }
+  } catch (error) {
+    console.error('Error al enviar notificación:', error);
+    res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
+// Legacy endpoint para compatibilidad
 router.post('/enviar-whatsapp', async (req, res) => {
   try {
-    const { telefono, nombre = 'Cliente', placa = 'TEST', total = 0, tipo = 'simple' } = req.body;
+    const { telefono, nombre = 'Cliente', total = 0, tipo = 'simple' } = req.body;
 
     if (!telefono) {
       return res.status(400).json({ error: 'El teléfono es requerido' });
@@ -19,15 +74,20 @@ router.post('/enviar-whatsapp', async (req, res) => {
     let resultado;
 
     if (tipo === 'inicio') {
-      resultado = await enviarNotificacionInicioServicio(nombre, telefono, placa);
+      resultado = await enviarNotificacionInicioServicio(nombre, telefono, total, { canal: 'whatsapp' });
     } else if (tipo === 'recibo') {
-      const productos = [{ cantidad: 1, nombre_producto: 'Servicio de Detallado' }];
-      resultado = await enviarReciboMostrador(nombre, telefono, 'The Detailer', total, productos);
+      resultado = await enviarReciboMostrador(
+        nombre,
+        telefono,
+        'Servicio de Detallado',
+        total,
+        { canal: 'whatsapp' }
+      );
     } else {
-      resultado = await enviarNotificacionSimple(nombre, telefono, placa, total);
+      resultado = await enviarNotificacionSimple(telefono, 'Mensaje de prueba', { canal: 'whatsapp' });
     }
 
-    if (resultado) {
+    if (resultado?.success) {
       res.json({
         success: true,
         mensaje: 'Mensaje enviado exitosamente',
@@ -38,7 +98,7 @@ router.post('/enviar-whatsapp', async (req, res) => {
     } else {
       res.status(500).json({
         success: false,
-        error: 'No se pudo enviar el mensaje'
+        error: resultado?.error || 'No se pudo enviar el mensaje'
       });
     }
   } catch (error) {
