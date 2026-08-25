@@ -185,9 +185,14 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
 /**
  * Format notification message for order with detailed tracking
  */
-const formatOrderNotification = (clientName, message, total, additionalInfo = '') => {
+const formatOrderNotification = (clientName, message, total, additionalInfo = '', placa = '') => {
   let fullMessage = `¡Hola ${clientName}! 👋\n`;
   fullMessage += `━━━━━━━━━━━━━━━━━━━\n`;
+
+  if (placa) {
+    fullMessage += `🚗 Placa: ${placa}\n`;
+  }
+
   fullMessage += `${message}\n`;
 
   if (total) {
@@ -200,18 +205,19 @@ const formatOrderNotification = (clientName, message, total, additionalInfo = ''
 
   fullMessage += `\n━━━━━━━━━━━━━━━━━━━\n`;
   fullMessage += `📍 The Detailer\n`;
-  fullMessage += `⏰ Horario: Lunes-Viernes 8am-6pm`;
+  fullMessage += `⏰ Horario: Lunes-Domingo 7am-6pm`;
 
   return fullMessage.trim();
 };
 
 // EXPORTED NOTIFICATION FUNCTIONS
-export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, metadata = {}, credentials = null) => {
+export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, placa = '', metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '✅ Tu orden ha sido RECIBIDA\nEstatus: EN PROCESO',
     total,
-    '⏳ Nos comunicaremos cuando esté lista.\n¡Gracias por confiar en nosotros! 🙏'
+    '⏳ Nos comunicaremos cuando esté lista.\n¡Gracias por confiar en nosotros! 🙏',
+    placa
   );
 
   return sendViaSMS(telefono, mensaje, {
@@ -220,12 +226,13 @@ export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, 
   }, credentials);
 };
 
-export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, metadata = {}, credentials = null) => {
+export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, placa = '', metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '🎉 ¡Tu vehículo está LISTO!\nEstatus: DISPONIBLE PARA RECOGER',
     total,
-    '📋 Descarga tu recibo adjunto\n🏪 Ven a recoger tu orden\n¡Gracias por tu preferencia! 👌'
+    '📋 Descarga tu recibo adjunto\n🏪 Ven a recoger tu orden\n¡Gracias por tu preferencia! 👌',
+    placa
   );
 
   return sendViaSMS(telefono, mensaje, {
@@ -234,12 +241,13 @@ export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreClient
   }, credentials);
 };
 
-export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, metadata = {}, credentials = null) => {
+export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, placa = '', metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '¡Tu vehículo está listo!',
     total,
-    `Tu número de rifa: ${numeroRifa}\n\nPor favor dirígete a recoger tu orden.\n¡Gracias por tu preferencia!`
+    `Tu número de rifa: ${numeroRifa}\n\nPor favor dirígete a recoger tu orden.\n¡Gracias por tu preferencia!`,
+    placa
   );
 
   return sendViaSMS(telefono, mensaje, {
@@ -248,12 +256,13 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
   }, credentials);
 };
 
-export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, metadata = {}, credentials = null) => {
+export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '✨ ¡Tu orden ha sido FINALIZADA!\nEstatus: COMPLETADO Y LISTO',
     total,
-    '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊'
+    '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊',
+    placa
   );
 
   return sendViaSMS(telefono, mensaje, {
