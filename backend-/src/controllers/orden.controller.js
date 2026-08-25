@@ -320,8 +320,13 @@ export const updateOrden = async (req, res) => {
     await client.query("COMMIT");
 
     // 📱 DISPARAR NOTIFICACIÓN AUTOMÁTICA SI CAMBIÓ EL ESTADO
-    if (estadoAnterior && estado && estadoAnterior !== estado) {
-      console.log(`[NOTIFICACIÓN AUTOMÁTICA] Estado cambió: ${estadoAnterior} → ${estado}`);
+    console.log(`📊 updateOrden debug:`);
+    console.log(`   estadoAnterior: "${estadoAnterior}" (${typeof estadoAnterior})`);
+    console.log(`   estado (nuevo): "${estado}" (${typeof estado})`);
+    console.log(`   ¿Son diferentes? ${estadoAnterior !== estado}`);
+
+    if (estadoAnterior && estado !== undefined && estadoAnterior !== estado) {
+      console.log(`✅ [NOTIFICACIÓN AUTOMÁTICA] Estado cambió: ${estadoAnterior} → ${estado}`);
       console.log(`🧢 Datos para notificación: tipo=${tipoVehiculoActual}, cascos=${cantidadCascosActual}`);
 
       const ordenDatos = {
@@ -341,6 +346,11 @@ export const updateOrden = async (req, res) => {
       ).catch(err => {
         console.error('⚠️ Error enviando notificación automática:', err);
       });
+    } else {
+      console.log(`⚠️ NO se envió SMS:`);
+      if (!estadoAnterior) console.log(`   - estadoAnterior es vacío`);
+      if (estado === undefined) console.log(`   - estado es undefined`);
+      if (estadoAnterior === estado) console.log(`   - estados iguales: ${estadoAnterior}`);
     }
 
     res.json({ message: "Orden actualizada correctamente" });
