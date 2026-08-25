@@ -95,7 +95,8 @@ export const enviarNotificacionPorModificacion = async (
   telefono,
   nombre,
   detallesCambio,
-  metadata = {}
+  metadata = {},
+  credentials = null
 ) => {
   try {
     console.log(`✉️ Enviando SMS: Modificación de orden a ${telefono}`);
@@ -103,7 +104,8 @@ export const enviarNotificacionPorModificacion = async (
       telefono,
       nombre,
       detallesCambio,
-      { tipo: 'modificacion_orden', ...metadata }
+      { tipo: 'modificacion_orden', ...metadata },
+      credentials
     );
   } catch (error) {
     console.error('❌ Error enviando notificación de modificación:', error.message);

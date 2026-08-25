@@ -338,10 +338,9 @@ export const deleteOrden = async (req, res) => {
 };
 
 export const notificarOrdenLista = async (req, res) => {
-  const { nombre, telefono, placa, total } = req.body;
-  console.log('[DEBUG] notificarOrdenLista params:', { nombre, telefono, placa, total });
+  const { nombre, telefono, total } = req.body;
   try {
-    await enviarNotificacionOrdenListaSinRifa(nombre, telefono, placa, total);
+    await enviarNotificacionOrdenListaSinRifa(telefono, nombre, total);
     res.json({ message: "Notificación enviada" });
   } catch (error) {
     console.error("Error enviando notificación:", error);
@@ -350,9 +349,9 @@ export const notificarOrdenLista = async (req, res) => {
 };
 
 export const notificarModificacion = async (req, res) => {
-  const { nombre, telefono, placa, total } = req.body;
+  const { nombre, telefono, mensaje } = req.body;
   try {
-    await enviarNotificacionModificacion(nombre, telefono, placa, total);
+    await enviarNotificacionModificacion(telefono, nombre, mensaje);
     res.json({ message: "Notificación de modificación enviada" });
   } catch (error) {
     console.error("Error enviando notificación:", error);
