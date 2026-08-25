@@ -648,7 +648,7 @@ export class ConsultarOrden implements OnInit {
 
       this.rifaService.registrarBoleta(boletaData).subscribe({
         next: () => {
-          this.procesarImpressionOSMS();
+          procesarImpresionOSMS();
           guardarCambioEstadoFinal(`Orden completada y Boleta #${this.numeroBoletaRifa} registrada.`);
         },
         error: (err) => {
