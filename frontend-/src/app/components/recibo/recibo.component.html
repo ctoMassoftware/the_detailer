@@ -103,7 +103,7 @@
     <!-- Estado -->
     <div class="estado-section">
       <p><strong>Estado del Servicio:</strong></p>
-      <div [ngClass]="'estado ' + (orden.estado | lowercase | replace:' ':'-')">
+      <div [ngClass]="'estado ' + formatEstado(orden.estado)">
         {{ orden.estado }}
       </div>
     </div>

@@ -104,4 +104,8 @@ export class ReciboComponent implements OnInit {
   obtenerTotal(servicios: any[]): number {
     return servicios?.reduce((sum, s) => sum + (s.subtotal || 0), 0) || 0;
   }
+
+  formatEstado(estado: string): string {
+    return estado.toLowerCase().replace(/ /g, '-');
+  }
 }
