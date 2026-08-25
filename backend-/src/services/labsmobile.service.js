@@ -165,18 +165,24 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}) => {
 };
 
 /**
- * Format notification message for order
+ * Format notification message for order with detailed tracking
  */
 const formatOrderNotification = (clientName, message, total, additionalInfo = '') => {
-  let fullMessage = `¡Hola ${clientName}!\n\n${message}\n`;
+  let fullMessage = `¡Hola ${clientName}! 👋\n`;
+  fullMessage += `━━━━━━━━━━━━━━━━━━━\n`;
+  fullMessage += `${message}\n`;
 
   if (total) {
-    fullMessage += `\nValor total: $${total.toLocaleString('es-CO')}\n`;
+    fullMessage += `\n💰 Valor total: $${total.toLocaleString('es-CO')}\n`;
   }
 
   if (additionalInfo) {
     fullMessage += `\n${additionalInfo}`;
   }
+
+  fullMessage += `\n━━━━━━━━━━━━━━━━━━━\n`;
+  fullMessage += `📍 The Detailer\n`;
+  fullMessage += `⏰ Horario: Lunes-Viernes 8am-6pm`;
 
   return fullMessage.trim();
 };
@@ -185,9 +191,9 @@ const formatOrderNotification = (clientName, message, total, additionalInfo = ''
 export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, metadata = {}) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
-    'Tu orden ha sido recibida y está en proceso.',
+    '✅ Tu orden ha sido RECIBIDA\nEstatus: EN PROCESO',
     total,
-    '¡Gracias por confiar en nosotros!'
+    '⏳ Nos comunicaremos cuando esté lista.\n¡Gracias por confiar en nosotros! 🙏'
   );
 
   return sendViaSMS(telefono, mensaje, {
@@ -199,9 +205,9 @@ export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, 
 export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, metadata = {}) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
-    '¡Tu vehículo está listo!',
+    '🎉 ¡Tu vehículo está LISTO!\nEstatus: DISPONIBLE PARA RECOGER',
     total,
-    'Por favor dirígete a recoger tu orden.\n¡Gracias por tu preferencia!'
+    '📋 Descarga tu recibo adjunto\n🏪 Ven a recoger tu orden\n¡Gracias por tu preferencia! 👌'
   );
 
   return sendViaSMS(telefono, mensaje, {
@@ -227,9 +233,9 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
 export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, metadata = {}) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
-    '¡Tu orden ha sido finalizada y tu vehículo está listo para recoger!',
+    '✨ ¡Tu orden ha sido FINALIZADA!\nEstatus: COMPLETADO Y LISTO',
     total,
-    '¡Esperamos verte pronto!'
+    '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊'
   );
 
   return sendViaSMS(telefono, mensaje, {
