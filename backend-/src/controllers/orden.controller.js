@@ -147,7 +147,9 @@ export const createOrden = async (req, res) => {
       enviarNotificacionInicioServicio(
         telefono_cliente,
         nombre_cliente,
-        0
+        0,
+        placa_vehiculo,
+        idOrden
       ).catch((err) => {
         console.error("Error enviando SMS de ingreso:", err);
       });

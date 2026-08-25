@@ -39,6 +39,8 @@ router.post('/reenviar-sms/:idOrden', async (req, res) => {
           orden.telefono_cliente,
           orden.nombre_cliente,
           orden.total,
+          orden.placa_vehiculo,
+          idOrden,
           { orderId: idOrden, reenvio: true }
         );
         break;
@@ -49,6 +51,8 @@ router.post('/reenviar-sms/:idOrden', async (req, res) => {
           orden.telefono_cliente,
           orden.nombre_cliente,
           orden.total,
+          orden.placa_vehiculo,
+          idOrden,
           { orderId: idOrden, reenvio: true }
         );
         break;
@@ -62,6 +66,7 @@ router.post('/reenviar-sms/:idOrden', async (req, res) => {
           orden.placa_vehiculo,
           orden.tipo_vehiculo,
           orden.cantidad_cascos || 0,
+          idOrden,
           { orderId: idOrden, reenvio: true }
         );
         break;
@@ -192,6 +197,7 @@ router.post('/prueba-cascos', async (req, res) => {
       placa || 'ABC123',
       tipoVehiculo || 'CARRO',
       cantidadCascos || 0,
+      '9999', // numeroOrden de prueba
       { tipo: 'prueba_cascos' }
     );
 

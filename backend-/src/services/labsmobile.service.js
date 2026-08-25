@@ -185,9 +185,13 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
 /**
  * Format notification message for order with detailed tracking
  */
-const formatOrderNotification = (clientName, message, total, additionalInfo = '', placa = '') => {
+const formatOrderNotification = (clientName, message, total, additionalInfo = '', placa = '', numeroOrden = '') => {
   let fullMessage = `¡Hola ${clientName}! 👋\n`;
   fullMessage += `━━━━━━━━━━━━━━━━━━━\n`;
+
+  if (numeroOrden) {
+    fullMessage += `📋 Orden #${numeroOrden}\n`;
+  }
 
   if (placa) {
     fullMessage += `🚗 Placa: ${placa}\n`;
@@ -211,13 +215,14 @@ const formatOrderNotification = (clientName, message, total, additionalInfo = ''
 };
 
 // EXPORTED NOTIFICATION FUNCTIONS
-export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, placa = '', metadata = {}, credentials = null) => {
+export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '✅ Tu orden ha sido RECIBIDA\nEstatus: EN PROCESO',
     total,
     '⏳ Nos comunicaremos cuando esté lista.\n¡Gracias por confiar en nosotros! 🙏',
-    placa
+    placa,
+    numeroOrden
   );
 
   return sendViaSMS(telefono, mensaje, {
@@ -226,13 +231,14 @@ export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, 
   }, credentials);
 };
 
-export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, placa = '', metadata = {}, credentials = null) => {
+export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '🎉 ¡Tu vehículo está LISTO!\nEstatus: DISPONIBLE PARA RECOGER',
     total,
     '📋 Descarga tu recibo adjunto\n🏪 Ven a recoger tu orden\n¡Gracias por tu preferencia! 👌',
-    placa
+    placa,
+    numeroOrden
   );
 
   return sendViaSMS(telefono, mensaje, {
@@ -241,13 +247,14 @@ export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreClient
   }, credentials);
 };
 
-export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, placa = '', metadata = {}, credentials = null) => {
+export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '¡Tu vehículo está listo!',
     total,
     `Tu número de rifa: ${numeroRifa}\n\nPor favor dirígete a recoger tu orden.\n¡Gracias por tu preferencia!`,
-    placa
+    placa,
+    numeroOrden
   );
 
   return sendViaSMS(telefono, mensaje, {
@@ -256,29 +263,33 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
   }, credentials);
 };
 
-export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, metadata = {}, credentials = null) => {
+export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, numeroOrden = '', metadata = {}, credentials = null) => {
   // Generar mensaje personalizado según tipo de vehículo
   let mensajeAdicional = '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊\n\n💫 Pronto te esperaremos para seguir cuidando tu vehículo';
 
-  console.log(`🧢 enviarNotificacionOrdenTerminada - tipo: "${tipoVehiculo}" (${typeof tipoVehiculo}), cascos: ${cantidadCascos} (${typeof cantidadCascos})`);
+  console.log(`🧢 enviarNotificacionOrdenTerminada`);
+  console.log(`   Orden: ${numeroOrden}`);
+  console.log(`   Tipo vehículo: "${tipoVehiculo}" (${typeof tipoVehiculo})`);
+  console.log(`   Cantidad cascos: ${cantidadCascos} (${typeof cantidadCascos})`);
 
   // Solo para MOTOS: agregar información de cascos dejados
-  if (tipoVehiculo && tipoVehiculo.toUpperCase().includes('MOTO') && cantidadCascos > 0) {
-    console.log(`✅ Agregando mensaje de cascos para MOTO`);
+  // Verificar si contiene "MOTO" de manera flexible
+  const esMoto = tipoVehiculo && String(tipoVehiculo).toUpperCase().includes('MOTO');
+
+  if (esMoto && Number(cantidadCascos) > 0) {
+    console.log(`✅ AGREGANDO MENSAJE DE CASCOS - Es MOTO y tiene ${cantidadCascos} cascos`);
     mensajeAdicional += `\n🧢 Recuerda recoger los ${cantidadCascos} casco${cantidadCascos > 1 ? 's' : ''} que dejaste`;
   } else {
-    if (!tipoVehiculo) console.log(`⚠️ tipoVehiculo es vacío`);
-    if (!tipoVehiculo?.toUpperCase().includes('MOTO')) console.log(`⚠️ No es MOTO, es: ${tipoVehiculo}`);
-    if (cantidadCascos <= 0) console.log(`⚠️ cantidad_cascos es 0 o menor: ${cantidadCascos}`);
+    console.log(`⚠️ NO agregar cascos - esMoto: ${esMoto}, cantidadCascos: ${cantidadCascos}`);
   }
-  // Para carros: sin mensaje de cascos
 
   const mensaje = formatOrderNotification(
     nombreCliente,
     '✨ ¡Tu orden ha sido FINALIZADA!\nEstatus: COMPLETADO Y LISTO',
     total,
     mensajeAdicional,
-    placa
+    placa,
+    numeroOrden
   );
 
   return sendViaSMS(telefono, mensaje, {

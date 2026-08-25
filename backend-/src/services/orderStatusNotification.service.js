@@ -44,6 +44,7 @@ export const enviarNotificacionPorCambioEstado = async (
           valorTotal,
           numeroRifa,
           placa_vehiculo,
+          id_orden,
           { orderId: id_orden, tipo: 'estado_lista_rifa' },
           credentials
         );
@@ -55,6 +56,7 @@ export const enviarNotificacionPorCambioEstado = async (
         nombre_cliente,
         valorTotal,
         placa_vehiculo,
+        id_orden,
         { orderId: id_orden, tipo: 'estado_lista' },
         credentials
       );
@@ -71,6 +73,7 @@ export const enviarNotificacionPorCambioEstado = async (
         placa_vehiculo,
         tipo_vehiculo,
         cantidad_cascos,
+        id_orden,
         { orderId: id_orden, tipo: 'orden_completada' },
         credentials
       );
