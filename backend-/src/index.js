@@ -22,6 +22,7 @@ import ventaMostradorRoutes from './routes/ventaMostrador.routes.js'; // 👈 NU
 import testRoutes from './routes/test.routes.js'; // 👈 RUTA DE PRUEBA WHATSAPP
 import messagesRouter from './routes/messages.routes.js';
 import notificacionesRoutes from './routes/notificaciones.routes.js'; // 👈 RUTA DE NOTIFICACIONES AUTOMÁTICAS
+import smsRoutes from './routes/sms.routes.js'; // 👈 RUTA DE SMS DINÁMICO
 
 // Configuración de variables de entorno
 dotenv.config();
@@ -78,6 +79,7 @@ app.use('/api/venta-mostrador', ventaMostradorRoutes); // 👈 NUEVO ENDPOINT MO
 app.use('/api/test', testRoutes); // 👈 ENDPOINT DE PRUEBA WHATSAPP
 app.use('/api/messages', messagesRouter);
 app.use('/api/notificaciones', notificacionesRoutes); // 👈 ENDPOINT DE NOTIFICACIONES AUTOMÁTICAS
+app.use('/api/sms', smsRoutes); // 👈 ENDPOINT DE SMS DINÁMICO
 
 const PORT = process.env.PORT || 3000;
 
