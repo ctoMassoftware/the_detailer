@@ -11,7 +11,86 @@ router.use((req, res, next) => {
 });
 
 /**
- * Descargar recibo PDF con token seguro
+ * Obtener datos del recibo en JSON
+ * GET /api/recibos/datos/:token?placa=ABC123
+ */
+router.get('/datos/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { placa } = req.query;
+
+    console.log(`📥 ENDPOINT DATOS RECIBO - Solicitud recibida`);
+    console.log(`   Token: ${token ? token.substring(0, 20) + '...' : 'NO'}`);
+    console.log(`   Placa: ${placa || 'NO'}`);
+
+    // Validar token
+    const orden = await validarTokenRecibo(token, placa);
+    console.log(`   Validación: ${orden ? '✅ EXITOSA' : '❌ FALLÓ'}`);
+
+    if (!orden) {
+      return res.status(401).json({
+        error: 'Token inválido, expirado o ya descargado'
+      });
+    }
+
+    // Obtener datos completos de la orden
+    const result = await pool.query(
+      `SELECT
+        o.*,
+        COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total_orden,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'servicio', s.nombre_servicio,
+              'cantidad', d.cantidad,
+              'precio_unitario', d.precio_servicio_aplicado,
+              'subtotal', (d.cantidad * d.precio_servicio_aplicado)
+            )
+          ) FILTER (WHERE d.id_servicio IS NOT NULL),
+          '[]'::json
+        ) as lista_servicios
+       FROM orden o
+       LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
+       LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
+       WHERE o.id_orden = $1
+       GROUP BY o.id_orden`,
+      [orden.id_orden]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Orden no encontrada' });
+    }
+
+    const ordenData = result.rows[0];
+
+    // 📥 Registrar descarga (solo cuando acceden, no cuando solo obtienen datos)
+    const ipCliente = req.ip || req.connection.remoteAddress;
+    await marcarTokenComoDescargado(token, ipCliente);
+
+    // Retornar JSON con todos los datos
+    res.json({
+      success: true,
+      orden: {
+        id_orden: ordenData.id_orden,
+        fecha: ordenData.fecha,
+        nombre_cliente: ordenData.nombre_cliente,
+        placa_vehiculo: ordenData.placa_vehiculo,
+        marca_vehiculo: ordenData.marca_vehiculo,
+        modelo_vehiculo: ordenData.modelo_vehiculo,
+        total: ordenData.total_orden,
+        estado: ordenData.estado,
+        servicios: ordenData.lista_servicios
+      }
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo datos de recibo:', error);
+    res.status(500).json({ error: 'Error obteniendo recibo' });
+  }
+});
+
+/**
+ * Descargar recibo como HTML (legacy - para compatibilidad)
  * GET /api/recibos/descargar/:token?placa=ABC123
  */
 router.get('/descargar/:token', async (req, res) => {
