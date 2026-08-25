@@ -263,14 +263,23 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
   }, credentials);
 };
 
-export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, numeroOrden = '', metadata = {}, credentials = null) => {
+export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, numeroOrden = '', tokenRecibo = '', metadata = {}, credentials = null) => {
   // Generar mensaje personalizado según tipo de vehículo
-  let mensajeAdicional = '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊\n\n💫 Pronto te esperaremos para seguir cuidando tu vehículo';
+  let mensajeAdicional = '🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊\n\n💫 Pronto te esperaremos para seguir cuidando tu vehículo';
 
   console.log(`🧢 enviarNotificacionOrdenTerminada`);
   console.log(`   Orden: ${numeroOrden}`);
   console.log(`   Tipo vehículo: "${tipoVehiculo}" (${typeof tipoVehiculo})`);
   console.log(`   Cantidad cascos: ${cantidadCascos} (${typeof cantidadCascos})`);
+  console.log(`   Token recibo: ${tokenRecibo ? '✓ Generado' : '✗ No generado'}`);
+
+  // 📥 Agregar link de descarga de recibo si hay token
+  if (tokenRecibo) {
+    const linkDescarga = `https://www.the-detailer.co/recibos/descargar/${tokenRecibo}?placa=${placa}`;
+    mensajeAdicional = `📋 Descarga tu recibo:\n${linkDescarga}\n\n${mensajeAdicional}`;
+  } else {
+    mensajeAdicional = `📋 Descarga tu recibo\n${mensajeAdicional}`;
+  }
 
   // Solo para MOTOS: agregar información de cascos dejados
   // Verificar si contiene "MOTO" de manera flexible

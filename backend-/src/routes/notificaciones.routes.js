@@ -59,6 +59,8 @@ router.post('/reenviar-sms/:idOrden', async (req, res) => {
 
       case 'completada':
         const { enviarNotificacionOrdenTerminada } = await import('../services/notificationRouter.service.js');
+        const { generarTokenRecibo } = await import('../services/reciboToken.service.js');
+        const tokenRecibo = await generarTokenRecibo(idOrden, orden.placa_vehiculo);
         resultado = await enviarNotificacionOrdenTerminada(
           orden.telefono_cliente,
           orden.nombre_cliente,
@@ -67,6 +69,7 @@ router.post('/reenviar-sms/:idOrden', async (req, res) => {
           orden.tipo_vehiculo,
           orden.cantidad_cascos || 0,
           idOrden,
+          tokenRecibo,
           { orderId: idOrden, reenvio: true }
         );
         break;
@@ -190,6 +193,9 @@ router.post('/prueba-cascos', async (req, res) => {
     console.log(`   Tipo: ${tipoVehiculo || 'N/A'}`);
     console.log(`   Cascos: ${cantidadCascos || 0}`);
 
+    const { generarTokenRecibo } = await import('../services/reciboToken.service.js');
+    const tokenRecibo = await generarTokenRecibo(9999, placa || 'ABC123');
+
     const resultado = await enviarNotificacionOrdenTerminada(
       telefono,
       nombre,
@@ -198,6 +204,7 @@ router.post('/prueba-cascos', async (req, res) => {
       tipoVehiculo || 'CARRO',
       cantidadCascos || 0,
       '9999', // numeroOrden de prueba
+      tokenRecibo,
       { tipo: 'prueba_cascos' }
     );
 
