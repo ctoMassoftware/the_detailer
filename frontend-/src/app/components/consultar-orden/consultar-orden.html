@@ -525,18 +525,21 @@
           <label style="margin-bottom: 0.5rem; color: white; display:block; font-weight: 600;">¿Cómo desea enviar el recibo?</label>
           <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-              <input type="checkbox" [checked]="preferenciaRecibo.includes('VIRTUAL')"
-                (change)="onPreferenciaReciboChange('VIRTUAL', $event)"
+              <input type="checkbox" [checked]="preferenciaRecibo.includes('SMS')"
+                (change)="onPreferenciaReciboChange('SMS', $event)"
                 style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
-              Virtual (WhatsApp)
+              📱 SMS (Link de descarga)
             </label>
             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
               <input type="checkbox" [checked]="preferenciaRecibo.includes('FISICO')"
                 (change)="onPreferenciaReciboChange('FISICO', $event)"
                 style="accent-color: #fd0100; width: 1.2rem; height: 1.2rem;">
-              Físico (Impresora)
+              🖨️ Físico (Impresora)
             </label>
           </div>
+          <p style="font-size: 0.85rem; color: #9ca3af; margin-top: 0.75rem;">
+            💡 SMS: Recibimos tu teléfono y te enviamos un link para descargar tu recibo en PDF.
+          </p>
         </div>
 
       </div>

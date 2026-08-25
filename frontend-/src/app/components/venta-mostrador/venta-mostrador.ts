@@ -19,20 +19,11 @@ export class VentaMostrador implements OnInit {
       // Permitir solo una selección, pero si el usuario selecciona ambas, ambas quedan activas
       onPreferenciaReciboChange(tipo: string, event: any) {
         if (event.target.checked) {
-          // Si selecciona una y la otra ya está, permite ambas
           if (!this.preferenciaRecibo.includes(tipo)) {
             this.preferenciaRecibo.push(tipo);
           }
         } else {
-          // Si desmarca, elimina solo esa
           this.preferenciaRecibo = this.preferenciaRecibo.filter(t => t !== tipo);
-        }
-        // Si el usuario selecciona una, la otra se desmarca automáticamente (solo si no quiere ambas)
-        if (this.preferenciaRecibo.length === 2) return;
-        if (tipo === 'VIRTUAL' && event.target.checked) {
-          this.preferenciaRecibo = ['VIRTUAL'];
-        } else if (tipo === 'FISICO' && event.target.checked) {
-          this.preferenciaRecibo = ['FISICO'];
         }
       }
     // Permite que ambos checkboxes puedan estar desmarcados. Validación solo al confirmar.
@@ -124,7 +115,7 @@ export class VentaMostrador implements OnInit {
   mostrarRifa: boolean = false;
   facturaActual: any = {};
   
-  preferenciaRecibo: string[] = ['VIRTUAL'];
+  preferenciaRecibo: string[] = ['SMS'];
 
   numeroBoletaRifa: string = '';
   datosRifaActiva: any = {
@@ -247,7 +238,7 @@ export class VentaMostrador implements OnInit {
   }
 
   abrirFactura() {
-      this.preferenciaRecibo = ['VIRTUAL'];
+      this.preferenciaRecibo = ['SMS'];
     if (this.carrito.length === 0) {
       this.mostrarMensaje('El carrito está vacío.', 'error');
       return;
@@ -346,8 +337,8 @@ export class VentaMostrador implements OnInit {
       this.mostrarMensaje('Debe seleccionar al menos una opción de recibo (Virtual o Físico).', 'error');
       return;
     }
-    if (this.preferenciaRecibo.includes('VIRTUAL') && !this.facturaActual.celular && this.facturaActual.celular !== 'No registrado') {
-      this.mostrarMensaje('Para el recibo virtual es obligatorio el número de WhatsApp.', 'error');
+    if (this.preferenciaRecibo.includes('SMS') && !this.facturaActual.celular && this.facturaActual.celular !== 'No registrado') {
+      this.mostrarMensaje('Para el recibo por SMS es obligatorio el número de teléfono.', 'error');
       return;
     }
 

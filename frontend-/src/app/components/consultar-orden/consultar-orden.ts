@@ -105,12 +105,6 @@ export class ConsultarOrden implements OnInit {
     } else {
       this.preferenciaRecibo = this.preferenciaRecibo.filter(t => t !== tipo);
     }
-    if (this.preferenciaRecibo.length === 2) return;
-    if (tipo === 'VIRTUAL' && event.target.checked) {
-      this.preferenciaRecibo = ['VIRTUAL'];
-    } else if (tipo === 'FISICO' && event.target.checked) {
-      this.preferenciaRecibo = ['FISICO'];
-    }
   }
 
   metodoImpresionFacturaOrden: 'WINDOWS' | 'RAWBT' = 'RAWBT';
@@ -133,7 +127,7 @@ export class ConsultarOrden implements OnInit {
   mostrarRifa: boolean = false;
   modoEdicion: boolean = false;
 
-  preferenciaRecibo: string[] = ['VIRTUAL'];
+  preferenciaRecibo: string[] = ['SMS'];
 
   // VARIABLES CALCULADORA
   montoRecibido: number | null = null;
@@ -594,7 +588,7 @@ export class ConsultarOrden implements OnInit {
 
   enviarFactura() {
     if (!this.preferenciaRecibo || this.preferenciaRecibo.length === 0) {
-      Swal.fire('Atención', 'Debe seleccionar al menos una opción de recibo (Virtual o Físico).', 'warning');
+      Swal.fire('Atención', 'Debe seleccionar al menos una opción de recibo (SMS o Físico).', 'warning');
       return;
     }
     if (this.mostrarRifa && (!this.numeroBoletaRifa || this.numeroBoletaRifa.length !== 3 || isNaN(Number(this.numeroBoletaRifa)))) {
@@ -610,7 +604,7 @@ export class ConsultarOrden implements OnInit {
       Swal.fire('Completado', mensajeAlerta, 'success');
     };
 
-    const procesarImpresionOWhatsapp = () => {
+    const procesarImpresionOSMS = () => {
       if (this.preferenciaRecibo.includes('FISICO')) {
         const datosTicket = {
           numero: this.ordenSeleccionada.numero,
@@ -627,9 +621,9 @@ export class ConsultarOrden implements OnInit {
         };
         this.impresoraService.imprimirTicket(datosTicket, 'ORDEN', 'RAWBT');
       }
-      if (this.preferenciaRecibo.includes('VIRTUAL') && !this.mostrarRifa) {
+      if (this.preferenciaRecibo.includes('SMS')) {
         if (!this.ordenSeleccionada.celular) {
-          Swal.fire('Atención', 'El cliente no tiene número de celular para enviar el WhatsApp.', 'warning');
+          Swal.fire('Atención', 'El cliente no tiene número de celular para enviar el SMS con link de descarga.', 'warning');
           return;
         }
         const notifData = {
@@ -662,7 +656,7 @@ export class ConsultarOrden implements OnInit {
         }
       });
     } else {
-      procesarImpresionOWhatsapp();
+      procesarImpresionOSMS();
       guardarCambioEstadoFinal('Orden completada exitosamente.');
     }
   }
