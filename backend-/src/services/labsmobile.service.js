@@ -260,9 +260,16 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
   // Generar mensaje personalizado según tipo de vehículo
   let mensajeAdicional = '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊\n\n💫 Pronto te esperaremos para seguir cuidando tu vehículo';
 
+  console.log(`🧢 enviarNotificacionOrdenTerminada - tipo: "${tipoVehiculo}" (${typeof tipoVehiculo}), cascos: ${cantidadCascos} (${typeof cantidadCascos})`);
+
   // Solo para MOTOS: agregar información de cascos dejados
   if (tipoVehiculo && tipoVehiculo.toUpperCase().includes('MOTO') && cantidadCascos > 0) {
+    console.log(`✅ Agregando mensaje de cascos para MOTO`);
     mensajeAdicional += `\n🧢 Recuerda recoger los ${cantidadCascos} casco${cantidadCascos > 1 ? 's' : ''} que dejaste`;
+  } else {
+    if (!tipoVehiculo) console.log(`⚠️ tipoVehiculo es vacío`);
+    if (!tipoVehiculo?.toUpperCase().includes('MOTO')) console.log(`⚠️ No es MOTO, es: ${tipoVehiculo}`);
+    if (cantidadCascos <= 0) console.log(`⚠️ cantidad_cascos es 0 o menor: ${cantidadCascos}`);
   }
   // Para carros: sin mensaje de cascos
 

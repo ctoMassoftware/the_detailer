@@ -246,12 +246,14 @@ export const updateOrden = async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // OBTENER ESTADO ANTERIOR ANTES DE ACTUALIZAR
-    const estadoAnteriorResult = await client.query(
-      `SELECT estado FROM public.orden WHERE id_orden = $1`,
+    // OBTENER DATOS ACTUALES DE LA ORDEN ANTES DE ACTUALIZAR
+    const ordenActualResult = await client.query(
+      `SELECT estado, tipo_vehiculo, cantidad_cascos FROM public.orden WHERE id_orden = $1`,
       [id]
     );
-    const estadoAnterior = estadoAnteriorResult.rows[0]?.estado;
+    const estadoAnterior = ordenActualResult.rows[0]?.estado;
+    const tipoVehiculoActual = ordenActualResult.rows[0]?.tipo_vehiculo || tipo_vehiculo;
+    const cantidadCascosActual = ordenActualResult.rows[0]?.cantidad_cascos || cantidad_cascos;
 
     // OBTENER TOTAL ACTUAL DE LA ORDEN
     const totalResult = await client.query(
@@ -297,13 +299,14 @@ export const updateOrden = async (req, res) => {
     // 📱 DISPARAR NOTIFICACIÓN AUTOMÁTICA SI CAMBIÓ EL ESTADO
     if (estadoAnterior && estado && estadoAnterior !== estado) {
       console.log(`[NOTIFICACIÓN AUTOMÁTICA] Estado cambió: ${estadoAnterior} → ${estado}`);
+      console.log(`🧢 Datos para notificación: tipo=${tipoVehiculoActual}, cascos=${cantidadCascosActual}`);
 
       const ordenDatos = {
         nombre_cliente,
         telefono_cliente,
         placa_vehiculo,
-        tipo_vehiculo,
-        cantidad_cascos,
+        tipo_vehiculo: tipoVehiculoActual,
+        cantidad_cascos: cantidadCascosActual,
         valorTotal: valorTotalActual,
         id_orden: id
       };

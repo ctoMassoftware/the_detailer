@@ -63,6 +63,7 @@ export const enviarNotificacionPorCambioEstado = async (
     // ✅ LISTA → FINALIZADO/FINALIZADA/COMPLETADO (flexible con estado)
     if (estadoAnterior === 'Lista' && estadoNuevo && estadoNuevo.toLowerCase().includes('finaliz')) {
       console.log(`✉️ Enviando SMS: Orden COMPLETADA a ${telefono_cliente}`);
+      console.log(`📊 Datos extraídos: tipo_vehiculo="${tipo_vehiculo}", cantidad_cascos=${cantidad_cascos}`);
       return await enviarNotificacionOrdenTerminada(
         telefono_cliente,
         nombre_cliente,
