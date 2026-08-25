@@ -302,6 +302,8 @@ export const updateOrden = async (req, res) => {
         nombre_cliente,
         telefono_cliente,
         placa_vehiculo,
+        tipo_vehiculo,
+        cantidad_cascos,
         valorTotal: valorTotalActual,
         id_orden: id
       };

@@ -256,12 +256,27 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
   }, credentials);
 };
 
-export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', metadata = {}, credentials = null) => {
+export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, metadata = {}, credentials = null) => {
+  // Generar mensaje personalizado según tipo de vehículo
+  let mensajeAdicional = '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊\n\n💫 Pronto te esperaremos para seguir cuidando tu vehículo';
+
+  // Si es MOTO, agregar información de cascos
+  if (tipoVehiculo && tipoVehiculo.toUpperCase().includes('MOTO')) {
+    if (cantidadCascos > 0) {
+      mensajeAdicional += `\n🧢 Recuerda recoger los ${cantidadCascos} casco${cantidadCascos > 1 ? 's' : ''} que dejaste`;
+    } else {
+      mensajeAdicional += `\n🧢 Recuerda recoger tu casco`;
+    }
+  } else {
+    // Para carros o vehículos normales
+    mensajeAdicional += `\n🧢 Recuerda recoger tu casco`;
+  }
+
   const mensaje = formatOrderNotification(
     nombreCliente,
     '✨ ¡Tu orden ha sido FINALIZADA!\nEstatus: COMPLETADO Y LISTO',
     total,
-    '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊\n\n💫 Pronto te esperaremos para seguir cuidando tu vehículo\n🧢 Recuerda recoger tu casco',
+    mensajeAdicional,
     placa
   );
 

@@ -17,7 +17,7 @@ export const enviarNotificacionPorCambioEstado = async (
   numeroRifa = null,
   credentials = null
 ) => {
-  const { nombre_cliente, telefono_cliente, placa_vehiculo, valorTotal, id_orden } = ordenDatos;
+  const { nombre_cliente, telefono_cliente, placa_vehiculo, tipo_vehiculo, cantidad_cascos, valorTotal, id_orden } = ordenDatos;
 
   // Validar datos mínimos
   if (!nombre_cliente || !telefono_cliente || !placa_vehiculo || !valorTotal) {
@@ -68,6 +68,8 @@ export const enviarNotificacionPorCambioEstado = async (
         nombre_cliente,
         valorTotal,
         placa_vehiculo,
+        tipo_vehiculo,
+        cantidad_cascos,
         { orderId: id_orden, tipo: 'orden_completada' },
         credentials
       );
