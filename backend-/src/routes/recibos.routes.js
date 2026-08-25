@@ -70,10 +70,9 @@ router.get('/descargar/:token', async (req, res) => {
     const ipCliente = req.ip || req.connection.remoteAddress;
     await marcarTokenComoDescargado(token, ipCliente);
 
-    // Retornar como descarga con nombre = placa del vehículo
-    const nombreArchivo = `${ordenData.placa_vehiculo || 'recibo'}.html`;
+    // 📄 Retornar HTML para visualizar en la página (no descargar)
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
+    // NO usar Content-Disposition: attachment para que se muestre en la página
     res.send(html);
 
   } catch (error) {
@@ -96,10 +95,24 @@ const generarHTMLRecibo = (orden) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recibo - The Detailer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    .toolbar { text-align: center; margin-bottom: 20px; }
+    .btn-descargar {
+      background: #2c3e50;
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .btn-descargar:hover { background: #34495e; }
     .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    @media print { .toolbar { display: none; } }
     .header { text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }
     .header h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
     .header p { color: #7f8c8d; font-size: 14px; }
@@ -121,7 +134,11 @@ const generarHTMLRecibo = (orden) => {
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="toolbar">
+    <button class="btn-descargar" onclick="descargarPDF()">📥 Descargar como PDF</button>
+  </div>
+
+  <div class="container" id="recibo">
     <div class="header">
       <h1>🚗 The Detailer</h1>
       <p>Recibo de Orden de Servicio</p>
@@ -186,6 +203,21 @@ const generarHTMLRecibo = (orden) => {
       </p>
     </div>
   </div>
+
+  <script>
+    function descargarPDF() {
+      const elemento = document.getElementById('recibo');
+      const opt = {
+        margin: 10,
+        filename: '${orden.placa_vehiculo || 'recibo'}.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+      };
+
+      html2pdf().set(opt).from(elemento).save();
+    }
+  </script>
 </body>
 </html>
   `;
