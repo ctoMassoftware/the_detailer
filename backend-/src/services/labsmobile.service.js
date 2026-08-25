@@ -275,7 +275,7 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
 
   // 📥 Agregar link de descarga de recibo si hay token
   if (tokenRecibo) {
-    const linkDescarga = `https://www.the-detailer.co/recibos/descargar/${tokenRecibo}?placa=${placa}`;
+    const linkDescarga = `https://the-detailer.co/recibos/descargar/${tokenRecibo}?placa=${placa}`;
     console.log(`📥 Agregando link de descarga: ${linkDescarga.substring(0, 60)}...`);
     mensajeAdicional = `📋 Descarga tu recibo:\n${linkDescarga}\n\n${mensajeAdicional}`;
   } else {
