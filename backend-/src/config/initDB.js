@@ -210,6 +210,16 @@ export const initDB = async () => {
             placa_vehiculo VARCHAR(20),
             numero_boleta VARCHAR(10)
         );
+
+        -- 13. CONFIGURACIÓN LABSMOBILE
+        CREATE TABLE IF NOT EXISTS config_labsmobile (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(255) NOT NULL,
+            api_token VARCHAR(255) NOT NULL,
+            sender VARCHAR(50) NOT NULL DEFAULT 'DETAILER',
+            activo BOOLEAN DEFAULT TRUE,
+            actualizado_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     `;
 
     try {
@@ -252,6 +262,26 @@ export const initDB = async () => {
             }
         }
         console.log("✅ Columnas de servicio, sedes, semaforización y zona horaria verificadas.");
+
+        // SEED: CONFIGURACIÓN LABSMOBILE
+        try {
+            const existingConfig = await pool.query('SELECT * FROM config_labsmobile WHERE activo = true LIMIT 1');
+            if (existingConfig.rows.length === 0) {
+                await pool.query(
+                    `INSERT INTO config_labsmobile (username, api_token, sender, activo)
+                     VALUES ($1, $2, $3, true)
+                     ON CONFLICT DO NOTHING`,
+                    [
+                        process.env.LABSMOBILE_USERNAME || 'cto@massoftware.co',
+                        process.env.LABSMOBILE_API_TOKEN || 'fbmU0QMy227xlc1VDGop6jbcbOkG70Yb',
+                        process.env.LABSMOBILE_SENDER || 'The Detailer'
+                    ]
+                );
+                console.log("✅ Credenciales LabsMobile configuradas en BD");
+            }
+        } catch (error) {
+            console.warn("⚠️ Error configurando LabsMobile en BD:", error.message);
+        }
 
         // LIMPIEZA DE DATOS PARA EL DASHBOARD
         // Convierte los nulos y 'GLOBAL' a 'GALAN' en las tablas principales

@@ -1,5 +1,6 @@
 import https from 'https';
 import { logMessage } from './messageLogger.service.js';
+import { getLabsMobileCredentialsFromDB, resolveCredentials } from './labsmobileConfig.service.js';
 
 // Phone number normalization for LabsMobile
 const normalizarNumeroTelefonico = (numero) => {
@@ -40,7 +41,7 @@ const normalizarNumeroTelefonico = (numero) => {
  * @returns {Promise<{success: boolean, subid?: string, error?: Error}>}
  */
 const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = null) => {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     try {
       const numeroNormalizado = normalizarNumeroTelefonico(toNumber);
       if (!numeroNormalizado) {
@@ -49,13 +50,18 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
         return;
       }
 
-      // Usar credenciales proporcionadas o fallback a variables de entorno
-      const username = credentials?.username || process.env.LABSMOBILE_USERNAME;
-      const apiToken = credentials?.apiToken || process.env.LABSMOBILE_API_TOKEN;
-      const sender = credentials?.sender || process.env.LABSMOBILE_SENDER || 'DETAILER';
+      // Obtener credenciales de BD
+      const dbCredentials = await getLabsMobileCredentialsFromDB();
+
+      // Resolver credenciales: parámetro → BD → variables de entorno
+      const resolvedCreds = resolveCredentials(credentials, dbCredentials);
+
+      const username = resolvedCreds?.username;
+      const apiToken = resolvedCreds?.apiToken;
+      const sender = resolvedCreds?.sender || 'DETAILER';
 
       if (!username || !apiToken) {
-        console.error('Missing LabsMobile credentials');
+        console.error('❌ Missing LabsMobile credentials (no credentials in parameters, database, or environment)');
         resolve({ success: false, error: 'Missing LabsMobile credentials' });
         return;
       }
