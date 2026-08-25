@@ -42,7 +42,7 @@ export const historialGanadores = async (req, res) => {
   }
 };
 import { pool } from '../config/db.js';
-import { enviarNotificacionOrdenTerminada } from '../services/notificaciones.service.js';
+import { enviarNotificacionOrdenTerminada } from '../services/notificationRouter.service.js';
 
 export const crearRifa = async (req, res) => {
   const { fecha, descripcion_premios, encargado } = req.body;

@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-import { enviarReciboMostrador } from '../services/notificaciones.service.js';
+import { enviarReciboMostrador } from '../services/notificationRouter.service.js';
 
 export const registrarVentaMostrador = async (req, res) => {
     const { id: id_user_vendedor, sede } = req.user; 

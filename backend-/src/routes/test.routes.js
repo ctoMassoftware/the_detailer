@@ -2,20 +2,20 @@ import { Router } from 'express';
 import {
   enviarNotificacionInicioServicio,
   enviarNotificacionSimple,
-  enviarReciboMostrador
-} from '../services/notificaciones.service.js';
+  enviarReciboMostrador,
+  getCurrentChannel
+} from '../services/notificationRouter.service.js';
 
 const router = Router();
 
-// Endpoint de prueba para enviar notificaciones (SMS/WhatsApp)
+// Endpoint de prueba para enviar notificaciones (SMS/WhatsApp por defecto)
 router.post('/enviar-notificacion', async (req, res) => {
   try {
     const {
       telefono,
       nombre = 'Cliente',
       total = 0,
-      tipo = 'simple',
-      canal = 'sms'
+      tipo = 'simple'
     } = req.body;
 
     if (!telefono) {
@@ -23,20 +23,18 @@ router.post('/enviar-notificacion', async (req, res) => {
     }
 
     let resultado;
-    const metadata = { canal };
 
     if (tipo === 'inicio') {
-      resultado = await enviarNotificacionInicioServicio(nombre, telefono, total, metadata);
+      resultado = await enviarNotificacionInicioServicio(nombre, telefono, total);
     } else if (tipo === 'recibo') {
       resultado = await enviarReciboMostrador(
         nombre,
         telefono,
         'Servicio de Detallado',
-        total,
-        metadata
+        total
       );
     } else {
-      resultado = await enviarNotificacionSimple(telefono, 'Mensaje de prueba', metadata);
+      resultado = await enviarNotificacionSimple(telefono, 'Mensaje de prueba');
     }
 
     if (resultado?.success) {
@@ -44,7 +42,7 @@ router.post('/enviar-notificacion', async (req, res) => {
         success: true,
         mensaje: 'Notificación enviada exitosamente',
         tipo,
-        canal,
+        canal: getCurrentChannel(),
         telefono,
         nombre
       });
@@ -62,51 +60,14 @@ router.post('/enviar-notificacion', async (req, res) => {
   }
 });
 
-// Legacy endpoint para compatibilidad
-router.post('/enviar-whatsapp', async (req, res) => {
-  try {
-    const { telefono, nombre = 'Cliente', total = 0, tipo = 'simple' } = req.body;
-
-    if (!telefono) {
-      return res.status(400).json({ error: 'El teléfono es requerido' });
-    }
-
-    let resultado;
-
-    if (tipo === 'inicio') {
-      resultado = await enviarNotificacionInicioServicio(nombre, telefono, total, { canal: 'whatsapp' });
-    } else if (tipo === 'recibo') {
-      resultado = await enviarReciboMostrador(
-        nombre,
-        telefono,
-        'Servicio de Detallado',
-        total,
-        { canal: 'whatsapp' }
-      );
-    } else {
-      resultado = await enviarNotificacionSimple(telefono, 'Mensaje de prueba', { canal: 'whatsapp' });
-    }
-
-    if (resultado?.success) {
-      res.json({
-        success: true,
-        mensaje: 'Mensaje enviado exitosamente',
-        tipo,
-        telefono,
-        nombre
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: resultado?.error || 'No se pudo enviar el mensaje'
-      });
-    }
-  } catch (error) {
-    console.error('Error al enviar mensaje:', error);
-    res.status(500).json({
-      error: error.message
-    });
-  }
+// Endpoint para verificar el canal activo
+router.get('/notificacion-canal', (req, res) => {
+  res.json({
+    canal_activo: getCurrentChannel(),
+    opciones_disponibles: ['sms', 'whatsapp'],
+    sms_descripcion: 'LabsMobile SMS',
+    whatsapp_descripcion: 'Twilio WhatsApp'
+  });
 });
 
 export default router;

@@ -28,7 +28,7 @@ import {
   enviarNotificacionSimple,
   enviarNotificacionModificacion,
   enviarNotificacionOrdenListaSinRifa
-} from "../services/notificaciones.service.js";
+} from "../services/notificationRouter.service.js";
 
 // ✅ Limpia la hora recibida del frontend a formato "HH:mm"
 // El frontend ya manda la hora en Bogotá (hora local del navegador), NO hay que convertir

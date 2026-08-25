@@ -1,0 +1,264 @@
+import https from 'https';
+import { logMessage } from './messageLogger.service.js';
+
+// Phone number normalization for LabsMobile
+const normalizarNumeroTelefonico = (numero) => {
+  if (!numero) return null;
+
+  // Remove spaces, dashes, parentheses
+  let limpio = numero.replace(/[\s\-()]/g, '');
+
+  // If it starts with 3, add +57 (Colombia)
+  if (limpio.startsWith('3') && !limpio.startsWith('+')) {
+    limpio = '+57' + limpio;
+  }
+
+  // If it starts with +573, it's already correct
+  if (limpio.startsWith('+573')) {
+    return limpio;
+  }
+
+  // If it starts with 573, add +
+  if (limpio.startsWith('573')) {
+    return '+' + limpio;
+  }
+
+  // For other formats, return as-is with +
+  if (!limpio.startsWith('+')) {
+    limpio = '+' + limpio;
+  }
+
+  return limpio;
+};
+
+/**
+ * Send SMS via LabsMobile API
+ * @param {string} toNumber - Recipient number (will be normalized)
+ * @param {string} messageBody - Message content
+ * @param {Object} metadata - Additional metadata for logging
+ * @returns {Promise<{success: boolean, subid?: string, error?: Error}>}
+ */
+const sendViaSMS = async (toNumber, messageBody, metadata = {}) => {
+  return new Promise((resolve) => {
+    try {
+      const numeroNormalizado = normalizarNumeroTelefonico(toNumber);
+      if (!numeroNormalizado) {
+        console.error('Invalid phone number:', toNumber);
+        resolve({ success: false, error: 'Invalid phone number' });
+        return;
+      }
+
+      // Prepare LabsMobile API request
+      const data = JSON.stringify({
+        message: messageBody,
+        tpoa: process.env.LABSMOBILE_SENDER || 'DETAILER',
+        recipient: [
+          {
+            msisdn: numeroNormalizado
+          }
+        ]
+      });
+
+      const auth = Buffer.from(
+        `${process.env.LABSMOBILE_USERNAME}:${process.env.LABSMOBILE_API_TOKEN}`
+      ).toString('base64');
+
+      const options = {
+        hostname: 'api.labsmobile.com',
+        port: 443,
+        path: '/json/send',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(data),
+          'Authorization': `Basic ${auth}`
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let responseData = '';
+
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+
+        res.on('end', async () => {
+          try {
+            const response = JSON.parse(responseData);
+
+            if (response.code === '0') {
+              // Success
+              await logMessage({
+                phoneNumber: numeroNormalizado,
+                messageBody,
+                status: 'success',
+                twilioSid: response.subid, // Use subid from LabsMobile
+                notificationType: metadata.type,
+                userId: metadata.userId,
+                orderId: metadata.orderId
+              });
+
+              console.log(`✓ SMS sent via LabsMobile to ${numeroNormalizado} (SubID: ${response.subid})`);
+              resolve({ success: true, subid: response.subid });
+            } else {
+              // Error response
+              const errorMsg = response.message || 'Unknown error';
+              await logMessage({
+                phoneNumber: numeroNormalizado,
+                messageBody,
+                status: 'failed',
+                errorDetails: {
+                  code: response.code,
+                  message: errorMsg
+                },
+                notificationType: metadata.type,
+                userId: metadata.userId,
+                orderId: metadata.orderId
+              });
+
+              console.error(`✗ LabsMobile failed for ${numeroNormalizado}: [${response.code}] ${errorMsg}`);
+              resolve({ success: false, error: errorMsg });
+            }
+          } catch (parseError) {
+            console.error('Error parsing LabsMobile response:', parseError.message);
+            await logMessage({
+              phoneNumber: numeroNormalizado,
+              messageBody,
+              status: 'failed',
+              errorDetails: {
+                message: 'Failed to parse response',
+                details: parseError.message
+              },
+              notificationType: metadata.type,
+              userId: metadata.userId,
+              orderId: metadata.orderId
+            });
+            resolve({ success: false, error: parseError });
+          }
+        });
+      });
+
+      req.on('error', async (error) => {
+        console.error('✗ LabsMobile request failed:', error.message);
+        await logMessage({
+          phoneNumber: numeroNormalizado,
+          messageBody,
+          status: 'failed',
+          errorDetails: {
+            message: error.message,
+            details: error.toString()
+          },
+          notificationType: metadata.type,
+          userId: metadata.userId,
+          orderId: metadata.orderId
+        });
+        resolve({ success: false, error });
+      });
+
+      req.write(data);
+      req.end();
+    } catch (error) {
+      console.error('✗ SMS send error:', error.message);
+      resolve({ success: false, error });
+    }
+  });
+};
+
+/**
+ * Format notification message for order
+ */
+const formatOrderNotification = (clientName, message, total, additionalInfo = '') => {
+  let fullMessage = `¡Hola ${clientName}!\n\n${message}\n`;
+
+  if (total) {
+    fullMessage += `\nValor total: $${total.toLocaleString('es-CO')}\n`;
+  }
+
+  if (additionalInfo) {
+    fullMessage += `\n${additionalInfo}`;
+  }
+
+  return fullMessage.trim();
+};
+
+// EXPORTED NOTIFICATION FUNCTIONS
+export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, metadata = {}) => {
+  const mensaje = formatOrderNotification(
+    nombreCliente,
+    'Tu orden ha sido recibida y está en proceso.',
+    total,
+    '¡Gracias por confiar en nosotros!'
+  );
+
+  return sendViaSMS(telefono, mensaje, {
+    type: 'orden_inicio',
+    ...metadata
+  });
+};
+
+export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, metadata = {}) => {
+  const mensaje = formatOrderNotification(
+    nombreCliente,
+    '¡Tu vehículo está listo!',
+    total,
+    'Por favor dirígete a recoger tu orden.\n¡Gracias por tu preferencia!'
+  );
+
+  return sendViaSMS(telefono, mensaje, {
+    type: 'orden_lista_sin_rifa',
+    ...metadata
+  });
+};
+
+export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, metadata = {}) => {
+  const mensaje = formatOrderNotification(
+    nombreCliente,
+    '¡Tu vehículo está listo!',
+    total,
+    `Tu número de rifa: ${numeroRifa}\n\nPor favor dirígete a recoger tu orden.\n¡Gracias por tu preferencia!`
+  );
+
+  return sendViaSMS(telefono, mensaje, {
+    type: 'orden_lista_con_rifa',
+    ...metadata
+  });
+};
+
+export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, metadata = {}) => {
+  const mensaje = formatOrderNotification(
+    nombreCliente,
+    '¡Tu orden ha sido finalizada y tu vehículo está listo para recoger!',
+    total,
+    '¡Esperamos verte pronto!'
+  );
+
+  return sendViaSMS(telefono, mensaje, {
+    type: 'orden_terminada',
+    ...metadata
+  });
+};
+
+export const enviarNotificacionSimple = async (telefono, mensaje, metadata = {}) => {
+  return sendViaSMS(telefono, mensaje, {
+    type: 'notificacion_simple',
+    ...metadata
+  });
+};
+
+export const enviarNotificacionModificacion = async (telefono, nombreCliente, detallesCambio, metadata = {}) => {
+  const mensaje = `¡Hola ${nombreCliente}!\n\nTu orden ha sido modificada:\n\n${detallesCambio}\n\nSi tienes dudas, no dudes en contactarnos.`;
+
+  return sendViaSMS(telefono, mensaje, {
+    type: 'orden_modificacion',
+    ...metadata
+  });
+};
+
+export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}) => {
+  const mensaje = `¡Hola ${nombreCliente}!\n\nGracias por tu compra.\n\n${detallesRecibo}\n\nTotal: $${total.toLocaleString('es-CO')}\n\n¡Esperamos verte pronto!`;
+
+  return sendViaSMS(telefono, mensaje, {
+    type: 'recibo_mostrador',
+    ...metadata
+  });
+};
