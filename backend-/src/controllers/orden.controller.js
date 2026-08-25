@@ -248,11 +248,19 @@ export const updateOrden = async (req, res) => {
 
     // OBTENER ESTADO ANTERIOR ANTES DE ACTUALIZAR
     const estadoAnteriorResult = await client.query(
-      'SELECT estado, valor_total FROM public.orden WHERE id_orden = $1',
+      `SELECT estado FROM public.orden WHERE id_orden = $1`,
       [id]
     );
     const estadoAnterior = estadoAnteriorResult.rows[0]?.estado;
-    const valorTotalAnterior = estadoAnteriorResult.rows[0]?.valor_total;
+
+    // OBTENER TOTAL ACTUAL DE LA ORDEN
+    const totalResult = await client.query(
+      `SELECT COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total
+       FROM public.detalle_orden_venta d
+       WHERE d.id_orden = $1`,
+      [id]
+    );
+    const valorTotalActual = totalResult.rows[0]?.total || 0;
 
     const updateQuery = `
       UPDATE public.orden SET
@@ -294,7 +302,7 @@ export const updateOrden = async (req, res) => {
         nombre_cliente,
         telefono_cliente,
         placa_vehiculo,
-        valorTotal: valorTotalAnterior || 0,
+        valorTotal: valorTotalActual,
         id_orden: id
       };
 
