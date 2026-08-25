@@ -235,7 +235,7 @@ export const updateOrden = async (req, res) => {
     cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
     placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
     metodo_pago, caja, id_user_encargado, estado,
-    fecha, hora, notas, servicios
+    fecha, hora, notas, servicios, deja_casco = false, cantidad_cascos = 0
   } = req.body;
 
   // ✅ El frontend ya manda hora en Bogotá, solo limpiamos el formato
@@ -267,14 +267,14 @@ export const updateOrden = async (req, res) => {
         cedula_cliente = $1, nombre_cliente = $2, correo_cliente = $3, telefono_cliente = $4, direccion_cliente = $5,
         placa_vehiculo = $6, marca_vehiculo = $7, modelo_vehiculo = $8, tipo_vehiculo = $9,
         metodo_pago = $10, caja = $11, id_user_encargado = $12, estado = $13,
-        fecha = $14, hora = $15, notas = $16
-      WHERE id_orden = $17
+        fecha = $14, hora = $15, notas = $16, deja_casco = $17, cantidad_cascos = $18
+      WHERE id_orden = $19
     `;
     const values = [
       cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
       placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
       metodo_pago, caja, id_user_encargado, estado,
-      fecha, horaFinal, notas, id
+      fecha, horaFinal, notas, deja_casco, cantidad_cascos, id
     ];
 
     await client.query(updateQuery, values);

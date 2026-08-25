@@ -260,17 +260,11 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
   // Generar mensaje personalizado según tipo de vehículo
   let mensajeAdicional = '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊\n\n💫 Pronto te esperaremos para seguir cuidando tu vehículo';
 
-  // Si es MOTO, agregar información de cascos
-  if (tipoVehiculo && tipoVehiculo.toUpperCase().includes('MOTO')) {
-    if (cantidadCascos > 0) {
-      mensajeAdicional += `\n🧢 Recuerda recoger los ${cantidadCascos} casco${cantidadCascos > 1 ? 's' : ''} que dejaste`;
-    } else {
-      mensajeAdicional += `\n🧢 Recuerda recoger tu casco`;
-    }
-  } else {
-    // Para carros o vehículos normales
-    mensajeAdicional += `\n🧢 Recuerda recoger tu casco`;
+  // Solo para MOTOS: agregar información de cascos dejados
+  if (tipoVehiculo && tipoVehiculo.toUpperCase().includes('MOTO') && cantidadCascos > 0) {
+    mensajeAdicional += `\n🧢 Recuerda recoger los ${cantidadCascos} casco${cantidadCascos > 1 ? 's' : ''} que dejaste`;
   }
+  // Para carros: sin mensaje de cascos
 
   const mensaje = formatOrderNotification(
     nombreCliente,
