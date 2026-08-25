@@ -237,7 +237,7 @@ export const updateOrden = async (req, res) => {
     cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
     placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
     metodo_pago, caja, id_user_encargado, estado,
-    fecha, hora, notas, servicios, deja_casco = false, cantidad_cascos = 0
+    fecha, hora, notas, servicios, deja_casco, cantidad_cascos
   } = req.body;
 
   // ✅ El frontend ya manda hora en Bogotá, solo limpiamos el formato
@@ -255,7 +255,10 @@ export const updateOrden = async (req, res) => {
     );
     const estadoAnterior = ordenActualResult.rows[0]?.estado;
     const tipoVehiculoActual = ordenActualResult.rows[0]?.tipo_vehiculo || tipo_vehiculo;
-    const cantidadCascosActual = ordenActualResult.rows[0]?.cantidad_cascos || cantidad_cascos;
+    // ✅ Si el frontend NO envía cantidad_cascos, mantener el valor actual de la BD
+    const cantidadCascosActual = cantidad_cascos !== undefined && cantidad_cascos !== null
+      ? cantidad_cascos
+      : (ordenActualResult.rows[0]?.cantidad_cascos || 0);
 
     // OBTENER TOTAL ACTUAL DE LA ORDEN
     const totalResult = await client.query(
@@ -266,20 +269,38 @@ export const updateOrden = async (req, res) => {
     );
     const valorTotalActual = totalResult.rows[0]?.total || 0;
 
-    const updateQuery = `
+    // ✅ Construir UPDATE dinámicamente: solo incluir cantidad_cascos y deja_casco si se envían
+    let updateQuery = `
       UPDATE public.orden SET
         cedula_cliente = $1, nombre_cliente = $2, correo_cliente = $3, telefono_cliente = $4, direccion_cliente = $5,
         placa_vehiculo = $6, marca_vehiculo = $7, modelo_vehiculo = $8, tipo_vehiculo = $9,
         metodo_pago = $10, caja = $11, id_user_encargado = $12, estado = $13,
-        fecha = $14, hora = $15, notas = $16, deja_casco = $17, cantidad_cascos = $18
-      WHERE id_orden = $19
-    `;
+        fecha = $14, hora = $15, notas = $16`;
     const values = [
       cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
       placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
       metodo_pago, caja, id_user_encargado, estado,
-      fecha, horaFinal, notas, deja_casco, cantidad_cascos, id
+      fecha, horaFinal, notas
     ];
+
+    let paramIndex = values.length + 1;
+
+    // ✅ Solo actualizar deja_casco si viene en el request
+    if (deja_casco !== undefined && deja_casco !== null) {
+      updateQuery += `, deja_casco = $${paramIndex}`;
+      values.push(deja_casco);
+      paramIndex++;
+    }
+
+    // ✅ Solo actualizar cantidad_cascos si viene en el request
+    if (cantidad_cascos !== undefined && cantidad_cascos !== null) {
+      updateQuery += `, cantidad_cascos = $${paramIndex}`;
+      values.push(cantidad_cascos);
+      paramIndex++;
+    }
+
+    updateQuery += ` WHERE id_orden = $${paramIndex}`;
+    values.push(id);
 
     await client.query(updateQuery, values);
 
