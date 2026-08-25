@@ -21,6 +21,7 @@ import estadisticasRoutes from './routes/estadisticas.routes.js';
 import ventaMostradorRoutes from './routes/ventaMostrador.routes.js'; // 👈 NUEVA RUTA MOSTRADOR
 import testRoutes from './routes/test.routes.js'; // 👈 RUTA DE PRUEBA WHATSAPP
 import messagesRouter from './routes/messages.routes.js';
+import notificacionesRoutes from './routes/notificaciones.routes.js'; // 👈 RUTA DE NOTIFICACIONES AUTOMÁTICAS
 
 // Configuración de variables de entorno
 dotenv.config();
@@ -76,6 +77,7 @@ app.use('/api/estadisticas', estadisticasRoutes);
 app.use('/api/venta-mostrador', ventaMostradorRoutes); // 👈 NUEVO ENDPOINT MOSTRADOR
 app.use('/api/test', testRoutes); // 👈 ENDPOINT DE PRUEBA WHATSAPP
 app.use('/api/messages', messagesRouter);
+app.use('/api/notificaciones', notificacionesRoutes); // 👈 ENDPOINT DE NOTIFICACIONES AUTOMÁTICAS
 
 const PORT = process.env.PORT || 3000;
 

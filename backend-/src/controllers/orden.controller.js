@@ -29,6 +29,7 @@ import {
   enviarNotificacionModificacion,
   enviarNotificacionOrdenListaSinRifa
 } from "../services/notificationRouter.service.js";
+import { enviarNotificacionPorCambioEstado } from "../services/orderStatusNotification.service.js";
 
 // ✅ Limpia la hora recibida del frontend a formato "HH:mm"
 // El frontend ya manda la hora en Bogotá (hora local del navegador), NO hay que convertir
@@ -244,6 +245,15 @@ export const updateOrden = async (req, res) => {
 
   try {
     await client.query("BEGIN");
+
+    // OBTENER ESTADO ANTERIOR ANTES DE ACTUALIZAR
+    const estadoAnteriorResult = await client.query(
+      'SELECT estado, valor_total FROM public.orden WHERE id_orden = $1',
+      [id]
+    );
+    const estadoAnterior = estadoAnteriorResult.rows[0]?.estado;
+    const valorTotalAnterior = estadoAnteriorResult.rows[0]?.valor_total;
+
     const updateQuery = `
       UPDATE public.orden SET
         cedula_cliente = $1, nombre_cliente = $2, correo_cliente = $3, telefono_cliente = $4, direccion_cliente = $5,
@@ -275,6 +285,28 @@ export const updateOrden = async (req, res) => {
       }
     }
     await client.query("COMMIT");
+
+    // 📱 DISPARAR NOTIFICACIÓN AUTOMÁTICA SI CAMBIÓ EL ESTADO
+    if (estadoAnterior && estado && estadoAnterior !== estado) {
+      console.log(`[NOTIFICACIÓN AUTOMÁTICA] Estado cambió: ${estadoAnterior} → ${estado}`);
+
+      const ordenDatos = {
+        nombre_cliente,
+        telefono_cliente,
+        placa_vehiculo,
+        valorTotal: valorTotalAnterior || 0,
+        id_orden: id
+      };
+
+      enviarNotificacionPorCambioEstado(
+        estadoAnterior,
+        estado,
+        ordenDatos
+      ).catch(err => {
+        console.error('⚠️ Error enviando notificación automática:', err);
+      });
+    }
+
     res.json({ message: "Orden actualizada correctamente" });
   } catch (error) {
     await client.query("ROLLBACK");
