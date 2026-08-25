@@ -36,9 +36,10 @@ const normalizarNumeroTelefonico = (numero) => {
  * @param {string} toNumber - Recipient number (will be normalized)
  * @param {string} messageBody - Message content
  * @param {Object} metadata - Additional metadata for logging
+ * @param {Object} credentials - Optional credentials (username, apiToken, sender)
  * @returns {Promise<{success: boolean, subid?: string, error?: Error}>}
  */
-const sendViaSMS = async (toNumber, messageBody, metadata = {}) => {
+const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = null) => {
   return new Promise((resolve) => {
     try {
       const numeroNormalizado = normalizarNumeroTelefonico(toNumber);
@@ -48,10 +49,21 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}) => {
         return;
       }
 
+      // Usar credenciales proporcionadas o fallback a variables de entorno
+      const username = credentials?.username || process.env.LABSMOBILE_USERNAME;
+      const apiToken = credentials?.apiToken || process.env.LABSMOBILE_API_TOKEN;
+      const sender = credentials?.sender || process.env.LABSMOBILE_SENDER || 'DETAILER';
+
+      if (!username || !apiToken) {
+        console.error('Missing LabsMobile credentials');
+        resolve({ success: false, error: 'Missing LabsMobile credentials' });
+        return;
+      }
+
       // Prepare LabsMobile API request
       const data = JSON.stringify({
         message: messageBody,
-        tpoa: process.env.LABSMOBILE_SENDER || 'DETAILER',
+        tpoa: sender,
         recipient: [
           {
             msisdn: numeroNormalizado
@@ -60,7 +72,7 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}) => {
       });
 
       const auth = Buffer.from(
-        `${process.env.LABSMOBILE_USERNAME}:${process.env.LABSMOBILE_API_TOKEN}`
+        `${username}:${apiToken}`
       ).toString('base64');
 
       const options = {
@@ -188,7 +200,7 @@ const formatOrderNotification = (clientName, message, total, additionalInfo = ''
 };
 
 // EXPORTED NOTIFICATION FUNCTIONS
-export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, metadata = {}) => {
+export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '✅ Tu orden ha sido RECIBIDA\nEstatus: EN PROCESO',
@@ -199,10 +211,10 @@ export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_inicio',
     ...metadata
-  });
+  }, credentials);
 };
 
-export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, metadata = {}) => {
+export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '🎉 ¡Tu vehículo está LISTO!\nEstatus: DISPONIBLE PARA RECOGER',
@@ -213,10 +225,10 @@ export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreClient
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_lista_sin_rifa',
     ...metadata
-  });
+  }, credentials);
 };
 
-export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, metadata = {}) => {
+export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '¡Tu vehículo está listo!',
@@ -227,10 +239,10 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_lista_con_rifa',
     ...metadata
-  });
+  }, credentials);
 };
 
-export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, metadata = {}) => {
+export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, metadata = {}, credentials = null) => {
   const mensaje = formatOrderNotification(
     nombreCliente,
     '✨ ¡Tu orden ha sido FINALIZADA!\nEstatus: COMPLETADO Y LISTO',
@@ -241,30 +253,30 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_terminada',
     ...metadata
-  });
+  }, credentials);
 };
 
-export const enviarNotificacionSimple = async (telefono, mensaje, metadata = {}) => {
+export const enviarNotificacionSimple = async (telefono, mensaje, metadata = {}, credentials = null) => {
   return sendViaSMS(telefono, mensaje, {
     type: 'notificacion_simple',
     ...metadata
-  });
+  }, credentials);
 };
 
-export const enviarNotificacionModificacion = async (telefono, nombreCliente, detallesCambio, metadata = {}) => {
+export const enviarNotificacionModificacion = async (telefono, nombreCliente, detallesCambio, metadata = {}, credentials = null) => {
   const mensaje = `¡Hola ${nombreCliente}!\n\nTu orden ha sido modificada:\n\n${detallesCambio}\n\nSi tienes dudas, no dudes en contactarnos.`;
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_modificacion',
     ...metadata
-  });
+  }, credentials);
 };
 
-export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}) => {
+export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}, credentials = null) => {
   const mensaje = `¡Hola ${nombreCliente}!\n\nGracias por tu compra.\n\n${detallesRecibo}\n\nTotal: $${total.toLocaleString('es-CO')}\n\n¡Esperamos verte pronto!`;
 
   return sendViaSMS(telefono, mensaje, {
     type: 'recibo_mostrador',
     ...metadata
-  });
+  }, credentials);
 };

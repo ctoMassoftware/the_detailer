@@ -12,39 +12,39 @@ const getNotificationService = () => {
   return labsmobileService;
 };
 
-export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, metadata = {}) => {
+export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, metadata = {}, credentials = null) => {
   const service = getNotificationService();
-  return service.enviarNotificacionInicioServicio(telefono, nombreCliente, total, metadata);
+  return service.enviarNotificacionInicioServicio(telefono, nombreCliente, total, metadata, credentials);
 };
 
-export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, metadata = {}) => {
+export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, metadata = {}, credentials = null) => {
   const service = getNotificationService();
-  return service.enviarNotificacionOrdenListaSinRifa(telefono, nombreCliente, total, metadata);
+  return service.enviarNotificacionOrdenListaSinRifa(telefono, nombreCliente, total, metadata, credentials);
 };
 
-export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, metadata = {}) => {
+export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, metadata = {}, credentials = null) => {
   const service = getNotificationService();
-  return service.enviarNotificacionOrdenListaConRifa(telefono, nombreCliente, total, numeroRifa, metadata);
+  return service.enviarNotificacionOrdenListaConRifa(telefono, nombreCliente, total, numeroRifa, metadata, credentials);
 };
 
-export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, metadata = {}) => {
+export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, metadata = {}, credentials = null) => {
   const service = getNotificationService();
-  return service.enviarNotificacionOrdenTerminada(telefono, nombreCliente, total, metadata);
+  return service.enviarNotificacionOrdenTerminada(telefono, nombreCliente, total, metadata, credentials);
 };
 
-export const enviarNotificacionSimple = async (telefono, mensaje, metadata = {}) => {
+export const enviarNotificacionSimple = async (telefono, mensaje, metadata = {}, credentials = null) => {
   const service = getNotificationService();
-  return service.enviarNotificacionSimple(telefono, mensaje, metadata);
+  return service.enviarNotificacionSimple(telefono, mensaje, metadata, credentials);
 };
 
-export const enviarNotificacionModificacion = async (telefono, nombreCliente, detallesCambio, metadata = {}) => {
+export const enviarNotificacionModificacion = async (telefono, nombreCliente, detallesCambio, metadata = {}, credentials = null) => {
   const service = getNotificationService();
-  return service.enviarNotificacionModificacion(telefono, nombreCliente, detallesCambio, metadata);
+  return service.enviarNotificacionModificacion(telefono, nombreCliente, detallesCambio, metadata, credentials);
 };
 
-export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}) => {
+export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}, credentials = null) => {
   const service = getNotificationService();
-  return service.enviarReciboMostrador(telefono, nombreCliente, detallesRecibo, total, metadata);
+  return service.enviarReciboMostrador(telefono, nombreCliente, detallesRecibo, total, metadata, credentials);
 };
 
 export const getCurrentChannel = () => NOTIFICATION_CHANNEL;

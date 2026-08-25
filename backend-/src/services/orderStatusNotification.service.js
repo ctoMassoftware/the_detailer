@@ -14,7 +14,8 @@ export const enviarNotificacionPorCambioEstado = async (
   estadoAnterior,
   estadoNuevo,
   ordenDatos,
-  numeroRifa = null
+  numeroRifa = null,
+  credentials = null
 ) => {
   const { nombre_cliente, telefono_cliente, placa_vehiculo, valorTotal, id_orden } = ordenDatos;
 
@@ -37,7 +38,8 @@ export const enviarNotificacionPorCambioEstado = async (
         telefono_cliente,
         nombre_cliente,
         valorTotal,
-        { orderId: id_orden, tipo: 'estado_lista' }
+        { orderId: id_orden, tipo: 'estado_lista' },
+        credentials
       );
     }
 
@@ -49,7 +51,8 @@ export const enviarNotificacionPorCambioEstado = async (
         nombre_cliente,
         valorTotal,
         numeroRifa,
-        { orderId: id_orden, tipo: 'estado_lista_rifa' }
+        { orderId: id_orden, tipo: 'estado_lista_rifa' },
+        credentials
       );
     }
 
@@ -60,7 +63,8 @@ export const enviarNotificacionPorCambioEstado = async (
         telefono_cliente,
         nombre_cliente,
         valorTotal,
-        { orderId: id_orden, tipo: 'orden_completada' }
+        { orderId: id_orden, tipo: 'orden_completada' },
+        credentials
       );
     }
 
@@ -71,7 +75,8 @@ export const enviarNotificacionPorCambioEstado = async (
         telefono_cliente,
         nombre_cliente,
         '❌ Tu orden ha sido CANCELADA.\nSi tienes dudas, contáctanos.',
-        { orderId: id_orden, tipo: 'orden_cancelada' }
+        { orderId: id_orden, tipo: 'orden_cancelada' },
+        credentials
       );
     }
 
