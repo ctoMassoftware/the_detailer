@@ -11,6 +11,7 @@ import { GestionOperarios } from './components/gestion-operarios/gestion-operari
 import { CombosServicios } from './components/combos-servicios/combos-servicios';
 import { VentaMostrador } from './components/venta-mostrador/venta-mostrador';
 import { CuadernoRecibos } from './components/cuaderno-recibos/cuaderno-recibos'; // 👈 NUEVA IMPORTACIÓN
+import { ReciboComponent } from './components/recibo/recibo.component'; // 👈 RECIBOS
 import { authGuard } from './guards/auth.guard';
 import { Landing } from './components/landing/landing';
 
@@ -20,6 +21,7 @@ export const routes: Routes = [
   // ==========================================
   { path: '', component: Landing, pathMatch: 'full' },
   { path: 'login', component: Login },
+  { path: 'recibos/:token', component: ReciboComponent }, // 👈 RECIBOS CON TOKEN
 
   // ==========================================
   // RUTAS OPERATIVAS (Acceso para Operarios y Admins)

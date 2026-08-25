@@ -1,0 +1,124 @@
+<div class="recibo-container">
+  <!-- Header con botones -->
+  <div class="recibo-header">
+    <h1>📄 Tu Recibo</h1>
+    <div class="botones">
+      <button class="btn-descargar" (click)="descargarPDF()" [disabled]="!orden">
+        📥 Descargar PDF
+      </button>
+      <button class="btn-volver" (click)="volver()">
+        ← Volver
+      </button>
+    </div>
+  </div>
+
+  <!-- Indicador de carga -->
+  <div *ngIf="cargando" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando recibo...</p>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div *ngIf="error && !cargando" class="error-box">
+    <p>❌ {{ error }}</p>
+    <button class="btn-reintentar" (click)="obtenerRecibo()">Reintentar</button>
+  </div>
+
+  <!-- Recibo -->
+  <div *ngIf="orden && !cargando" id="recibo-contenido" class="recibo">
+    <!-- Header del recibo -->
+    <div class="recibo-header-content">
+      <div class="empresa">
+        <h2>🚗 The Detailer</h2>
+        <p>Recibo de Orden de Servicio</p>
+      </div>
+      <div class="numero-orden">
+        <span class="label">Orden #</span>
+        <span class="numero">{{ orden.id_orden }}</span>
+      </div>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
+    <!-- Información del cliente y vehículo -->
+    <div class="info-grid">
+      <div class="info-box">
+        <strong>👤 Cliente</strong>
+        <p>{{ orden.nombre_cliente }}</p>
+      </div>
+
+      <div class="info-box">
+        <strong>📅 Fecha</strong>
+        <p>{{ obtenerFecha(orden.fecha) }}</p>
+      </div>
+
+      <div class="info-box">
+        <strong>🚗 Placa del Vehículo</strong>
+        <p class="placa">{{ orden.placa_vehiculo }}</p>
+      </div>
+
+      <div class="info-box">
+        <strong>🏎️ Vehículo</strong>
+        <p>{{ orden.marca_vehiculo }} {{ orden.modelo_vehiculo }}</p>
+      </div>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
+    <!-- Servicios realizados -->
+    <div class="servicios-section">
+      <h3>✨ Servicios Realizados</h3>
+
+      <table class="servicios-table">
+        <thead>
+          <tr>
+            <th>Servicio</th>
+            <th class="cantidad">Cantidad</th>
+            <th class="precio">Precio Unitario</th>
+            <th class="subtotal">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let servicio of orden.servicios" class="servicio-row">
+            <td>{{ servicio.servicio }}</td>
+            <td class="cantidad">{{ servicio.cantidad }}</td>
+            <td class="precio">${{ servicio.precio_unitario.toLocaleString('es-CO') }}</td>
+            <td class="subtotal">${{ servicio.subtotal.toLocaleString('es-CO') }}</td>
+          </tr>
+
+          <!-- Fila de total -->
+          <tr class="total-row">
+            <td colspan="3" class="label-total">TOTAL:</td>
+            <td class="monto-total">${{ orden.total.toLocaleString('es-CO') }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
+    <!-- Estado -->
+    <div class="estado-section">
+      <p><strong>Estado del Servicio:</strong></p>
+      <div [ngClass]="'estado ' + (orden.estado | lowercase | replace:' ':'-')">
+        {{ orden.estado }}
+      </div>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
+    <!-- Footer -->
+    <div class="recibo-footer">
+      <p>📍 The Detailer</p>
+      <p>⏰ Lunes-Domingo 7am-6pm</p>
+      <p class="gracias">Gracias por confiar en nosotros 🙏</p>
+      <p class="disclaimer">Este recibo fue generado digitalmente.<br>Para cualquier duda, contáctanos.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
