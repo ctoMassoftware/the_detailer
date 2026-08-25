@@ -4,6 +4,12 @@ import { pool } from '../config/db.js';
 
 const router = Router();
 
+// 🔍 Middleware de debugging - registra todas las solicitudes
+router.use((req, res, next) => {
+  console.log(`📍 GET /api/recibos${req.path}`);
+  next();
+});
+
 /**
  * Descargar recibo PDF con token seguro
  * GET /api/recibos/descargar/:token?placa=ABC123
@@ -13,8 +19,13 @@ router.get('/descargar/:token', async (req, res) => {
     const { token } = req.params;
     const { placa } = req.query;
 
+    console.log(`📥 ENDPOINT RECIBOS - Solicitud recibida`);
+    console.log(`   Token: ${token ? token.substring(0, 20) + '...' : 'NO'}`);
+    console.log(`   Placa: ${placa || 'NO'}`);
+
     // Validar token
     const orden = await validarTokenRecibo(token, placa);
+    console.log(`   Validación: ${orden ? '✅ EXITOSA' : '❌ FALLÓ'}`);
 
     if (!orden) {
       return res.status(401).json({
