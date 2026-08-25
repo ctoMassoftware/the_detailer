@@ -1,9 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-recibo',
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './recibo.component.html',
   styleUrls: ['./recibo.component.css']
 })
