@@ -271,13 +271,15 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
   console.log(`   Orden: ${numeroOrden}`);
   console.log(`   Tipo vehículo: "${tipoVehiculo}" (${typeof tipoVehiculo})`);
   console.log(`   Cantidad cascos: ${cantidadCascos} (${typeof cantidadCascos})`);
-  console.log(`   Token recibo: ${tokenRecibo ? '✓ Generado' : '✗ No generado'}`);
+  console.log(`   Token recibo: ${tokenRecibo ? `✓ ${tokenRecibo.substring(0, 20)}...` : '✗ No recibido'}`);
 
   // 📥 Agregar link de descarga de recibo si hay token
   if (tokenRecibo) {
     const linkDescarga = `https://www.the-detailer.co/recibos/descargar/${tokenRecibo}?placa=${placa}`;
+    console.log(`📥 Agregando link de descarga: ${linkDescarga.substring(0, 60)}...`);
     mensajeAdicional = `📋 Descarga tu recibo:\n${linkDescarga}\n\n${mensajeAdicional}`;
   } else {
+    console.log(`⚠️ NO se agrega link - tokenRecibo es vacío`);
     mensajeAdicional = `📋 Descarga tu recibo\n${mensajeAdicional}`;
   }
 

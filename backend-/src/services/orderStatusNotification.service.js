@@ -69,7 +69,9 @@ export const enviarNotificacionPorCambioEstado = async (
       console.log(`📊 Datos extraídos: tipo_vehiculo="${tipo_vehiculo}", cantidad_cascos=${cantidad_cascos}`);
 
       // 📥 Generar token para descarga de recibo
+      console.log(`📥 Generando token para orden ${id_orden}, placa: ${placa_vehiculo}`);
       const tokenRecibo = await generarTokenRecibo(id_orden, placa_vehiculo);
+      console.log(`📥 Token generado: ${tokenRecibo ? '✓ SÍ' : '✗ NO'}`);
 
       return await enviarNotificacionOrdenTerminada(
         telefono_cliente,
