@@ -41,7 +41,8 @@ const allowedOrigins = [
     'https://thedetailer-produccion.netlify.app',
     'http://localhost:4200',
     'https://www.the-detailer.co',
-    'https://the-detailer.co'
+    'https://the-detailer.co',
+    'http://the-detailer.co'
 ];
 
 app.use(cors({
@@ -50,10 +51,15 @@ app.use(cors({
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.warn(`CORS rechazado para origen: ${origin}`);
             callback(new Error('No permitido por CORS'));
         }
     },
-    optionsSuccessStatus: 200
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    optionsSuccessStatus: 200,
+    maxAge: 3600
 }));
 app.use(express.json());
 
