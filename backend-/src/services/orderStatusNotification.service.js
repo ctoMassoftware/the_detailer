@@ -31,9 +31,24 @@ export const enviarNotificacionPorCambioEstado = async (
     // RECIBIDA → PROCESO (Sin cambio de estado visible, ya se envía al crear)
     // Solo se envía una vez al crear la orden en createOrden()
 
-    // PROCESO → LISTA (Sin Rifa)
-    if (estadoAnterior !== 'Lista' && estadoNuevo === 'Lista' && !numeroRifa) {
-      console.log(`✉️ Enviando SMS: Orden LISTA (sin rifa) a ${telefono_cliente}`);
+    // ✅ CUALQUIER ESTADO → LISTA (Con o sin Rifa)
+    if (estadoAnterior !== 'Lista' && estadoNuevo === 'Lista') {
+      console.log(`✉️ Enviando SMS: Orden LISTA a ${telefono_cliente}`);
+
+      // Si hay rifa, usar plantilla con rifa
+      if (numeroRifa) {
+        console.log(`   Con rifa #${numeroRifa}`);
+        return await enviarNotificacionOrdenListaConRifa(
+          telefono_cliente,
+          nombre_cliente,
+          valorTotal,
+          numeroRifa,
+          { orderId: id_orden, tipo: 'estado_lista_rifa' },
+          credentials
+        );
+      }
+
+      // Sin rifa, usar plantilla normal
       return await enviarNotificacionOrdenListaSinRifa(
         telefono_cliente,
         nombre_cliente,
@@ -43,21 +58,8 @@ export const enviarNotificacionPorCambioEstado = async (
       );
     }
 
-    // PROCESO → LISTA (Con Rifa)
-    if (estadoAnterior !== 'Lista' && estadoNuevo === 'Lista' && numeroRifa) {
-      console.log(`✉️ Enviando SMS: Orden LISTA con rifa #${numeroRifa} a ${telefono_cliente}`);
-      return await enviarNotificacionOrdenListaConRifa(
-        telefono_cliente,
-        nombre_cliente,
-        valorTotal,
-        numeroRifa,
-        { orderId: id_orden, tipo: 'estado_lista_rifa' },
-        credentials
-      );
-    }
-
-    // LISTA → FINALIZADA
-    if (estadoAnterior === 'Lista' && estadoNuevo === 'Orden finalizada') {
+    // ✅ LISTA → FINALIZADO/FINALIZADA/COMPLETADO (flexible con estado)
+    if (estadoAnterior === 'Lista' && estadoNuevo && estadoNuevo.toLowerCase().includes('finaliz')) {
       console.log(`✉️ Enviando SMS: Orden COMPLETADA a ${telefono_cliente}`);
       return await enviarNotificacionOrdenTerminada(
         telefono_cliente,
@@ -68,8 +70,8 @@ export const enviarNotificacionPorCambioEstado = async (
       );
     }
 
-    // PROCESO → CANCELADA
-    if (estadoNuevo === 'Cancelada') {
+    // ✅ CANCELACIÓN (Cualquier estado → Cancelada)
+    if (estadoNuevo && estadoNuevo.toLowerCase().includes('cancel')) {
       console.log(`✉️ Enviando SMS: Orden CANCELADA a ${telefono_cliente}`);
       return await enviarNotificacionModificacion(
         telefono_cliente,
@@ -80,6 +82,7 @@ export const enviarNotificacionPorCambioEstado = async (
       );
     }
 
+    console.warn(`⚠️ Transición no reconocida: ${estadoAnterior} → ${estadoNuevo}`);
     return { success: false, error: 'Transición de estado no reconocida' };
 
   } catch (error) {
