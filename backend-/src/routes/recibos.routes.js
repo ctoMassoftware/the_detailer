@@ -59,9 +59,10 @@ router.get('/descargar/:token', async (req, res) => {
     const ipCliente = req.ip || req.connection.remoteAddress;
     await marcarTokenComoDescargado(token, ipCliente);
 
-    // Retornar como descarga
+    // Retornar como descarga con nombre = placa del vehículo
+    const nombreArchivo = `${ordenData.placa_vehiculo || 'recibo'}.html`;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="recibo_${ordenData.id_orden}.html"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
     res.send(html);
 
   } catch (error) {
