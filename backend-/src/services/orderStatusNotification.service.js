@@ -36,7 +36,6 @@ export const enviarNotificacionPorCambioEstado = async (
       return await enviarNotificacionOrdenListaSinRifa(
         telefono_cliente,
         nombre_cliente,
-        placa_vehiculo,
         valorTotal,
         { orderId: id_orden, tipo: 'estado_lista' }
       );
@@ -48,7 +47,6 @@ export const enviarNotificacionPorCambioEstado = async (
       return await enviarNotificacionOrdenListaConRifa(
         telefono_cliente,
         nombre_cliente,
-        placa_vehiculo,
         valorTotal,
         numeroRifa,
         { orderId: id_orden, tipo: 'estado_lista_rifa' }
@@ -61,7 +59,6 @@ export const enviarNotificacionPorCambioEstado = async (
       return await enviarNotificacionOrdenTerminada(
         telefono_cliente,
         nombre_cliente,
-        placa_vehiculo,
         valorTotal,
         { orderId: id_orden, tipo: 'orden_completada' }
       );

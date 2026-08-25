@@ -142,14 +142,14 @@ export const createOrden = async (req, res) => {
 
     await client.query("COMMIT");
 
-    // WHATSAPP DE BIENVENIDA
+    // 📱 SMS DE BIENVENIDA
     if (telefono_cliente && nombre_cliente && placa_vehiculo) {
       enviarNotificacionInicioServicio(
-        nombre_cliente,
         telefono_cliente,
-        placa_vehiculo
+        nombre_cliente,
+        0
       ).catch((err) => {
-        console.error("Error enviando WhatsApp de ingreso:", err);
+        console.error("Error enviando SMS de ingreso:", err);
       });
     }
 

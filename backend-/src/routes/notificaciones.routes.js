@@ -36,8 +36,8 @@ router.post('/reenviar-sms/:idOrden', async (req, res) => {
       case 'inicio':
         const { enviarNotificacionInicioServicio } = await import('../services/notificationRouter.service.js');
         resultado = await enviarNotificacionInicioServicio(
-          orden.nombre_cliente,
           orden.telefono_cliente,
+          orden.nombre_cliente,
           orden.total,
           { orderId: idOrden, reenvio: true }
         );
@@ -46,9 +46,8 @@ router.post('/reenviar-sms/:idOrden', async (req, res) => {
       case 'lista':
         const { enviarNotificacionOrdenListaSinRifa } = await import('../services/notificationRouter.service.js');
         resultado = await enviarNotificacionOrdenListaSinRifa(
-          orden.nombre_cliente,
           orden.telefono_cliente,
-          orden.placa_vehiculo,
+          orden.nombre_cliente,
           orden.total,
           { orderId: idOrden, reenvio: true }
         );
@@ -57,9 +56,8 @@ router.post('/reenviar-sms/:idOrden', async (req, res) => {
       case 'completada':
         const { enviarNotificacionOrdenTerminada } = await import('../services/notificationRouter.service.js');
         resultado = await enviarNotificacionOrdenTerminada(
-          orden.nombre_cliente,
           orden.telefono_cliente,
-          orden.placa_vehiculo,
+          orden.nombre_cliente,
           orden.total,
           { orderId: idOrden, reenvio: true }
         );
