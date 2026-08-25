@@ -220,6 +220,19 @@ export const initDB = async () => {
             activo BOOLEAN DEFAULT TRUE,
             actualizado_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        -- 14. TOKENS DE DESCARGA DE RECIBOS (SEGURIDAD)
+        CREATE TABLE IF NOT EXISTS recibo_token (
+            id SERIAL PRIMARY KEY,
+            id_orden INTEGER NOT NULL REFERENCES orden(id_orden) ON DELETE CASCADE,
+            placa_vehiculo VARCHAR(20) NOT NULL,
+            token_hash VARCHAR(255) NOT NULL UNIQUE,
+            creado_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expira_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours'),
+            descargado_at TIMESTAMP,
+            ip_descarga VARCHAR(45),
+            activo BOOLEAN DEFAULT TRUE
+        );
     `;
 
     try {
