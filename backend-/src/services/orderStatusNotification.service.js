@@ -29,8 +29,17 @@ export const enviarNotificacionPorCambioEstado = async (
   console.log(`📱 Cambio de estado: ${estadoAnterior} → ${estadoNuevo}`);
 
   try {
-    // RECIBIDA → PROCESO (Sin cambio de estado visible, ya se envía al crear)
-    // Solo se envía una vez al crear la orden en createOrden()
+    // ✅ CUALQUIER ESTADO → PROCESO (Sin ser Proceso aún)
+    if (estadoNuevo && estadoNuevo.toLowerCase().includes('proceso') && !estadoAnterior?.toLowerCase().includes('proceso')) {
+      console.log(`✉️ Enviando SMS: Orden EN PROCESO a ${telefono_cliente}`);
+      return await enviarNotificacionModificacion(
+        telefono_cliente,
+        nombre_cliente,
+        '⏳ Tu orden está EN PROCESO.\nNos comunicaremos cuando esté lista.\n¡Gracias por tu paciencia! 🙏',
+        { orderId: id_orden, tipo: 'estado_proceso' },
+        credentials
+      );
+    }
 
     // ✅ CUALQUIER ESTADO → LISTA (Con o sin Rifa)
     if (estadoAnterior !== 'Lista' && estadoNuevo === 'Lista') {
