@@ -261,7 +261,7 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
     nombreCliente,
     '✨ ¡Tu orden ha sido FINALIZADA!\nEstatus: COMPLETADO Y LISTO',
     total,
-    '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊',
+    '📋 Descarga tu recibo\n🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊\n\n💫 Pronto te esperaremos para seguir cuidando tu vehículo\n🧢 Recuerda recoger tu casco',
     placa
   );
 
