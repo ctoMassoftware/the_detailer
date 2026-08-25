@@ -275,9 +275,10 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
 
   // 📥 Agregar link de descarga de recibo si hay token
   if (tokenRecibo) {
-    const linkDescarga = `https://the-detailer.co/recibos/descargar/${tokenRecibo}?placa=${placa}`;
-    console.log(`📥 Agregando link de descarga: ${linkDescarga.substring(0, 60)}...`);
-    mensajeAdicional = `📋 Descarga tu recibo:\n${linkDescarga}\n\n${mensajeAdicional}`;
+    // 🔗 Link apunta a la página del frontend (no al API directamente)
+    const linkRecibo = `https://the-detailer.co/recibos/${tokenRecibo}?placa=${placa}`;
+    console.log(`📥 Link de recibo: ${linkRecibo.substring(0, 60)}...`);
+    mensajeAdicional = `📋 Descarga tu recibo:\n${linkRecibo}\n\n${mensajeAdicional}`;
   } else {
     console.log(`⚠️ NO se agrega link - tokenRecibo es vacío`);
     mensajeAdicional = `📋 Descarga tu recibo\n${mensajeAdicional}`;
