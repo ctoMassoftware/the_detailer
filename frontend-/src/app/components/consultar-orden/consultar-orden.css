@@ -366,6 +366,131 @@ input[type="date"] {
   color: white;
 }
 
+/* ═════════════════════════════════════════════════════════════
+   🎨 ENTERPRISE-GRADE DROPDOWN - Professional UI Design System
+   ═════════════════════════════════════════════════════════════ */
+
+/* RESET: Limpiar estilos anteriores conflictivos */
+.estado-select {
+  width: 114%;
+  max-width: 200px;
+  height: 48px;
+  padding: 0 16px;
+  margin: 0;
+
+  font-family: 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 48px;
+
+  color: #ffffff;
+  border: 2px solid;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  appearance: none;
+
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='2.5'%3E%3Cpolyline points='2 5 8 11 14 5'%3E%3C/polyline%3E%3C/svg%3E");
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ═ ESTADO 1: En proceso (Gris Azulado) ═ */
+.estado-select.bg-proceso {
+  background-color: #64748b;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.estado-select.bg-proceso:hover {
+  background-color: #475569;
+  border-color: #334155;
+  box-shadow: 0 6px 16px rgba(71, 85, 105, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.estado-select.bg-proceso:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.2), 0 4px 12px rgba(71, 85, 105, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ═ ESTADO 2: Orden lista (Verde Vibrante) ═ */
+.estado-select.bg-lista {
+  background-color: #10b981;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.estado-select.bg-lista:hover {
+  background-color: #059669;
+  border-color: #047857;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.estado-select.bg-lista:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2), 0 4px 12px rgba(16, 185, 129, 0.35), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ═ ESTADO 3: Cancelada (Rojo Intenso) ═ */
+.estado-select.bg-cancelada {
+  background-color: #ef4444;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.estado-select.bg-cancelada:hover {
+  background-color: #dc2626;
+  border-color: #b91c1c;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.estado-select.bg-cancelada:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2), 0 4px 12px rgba(239, 68, 68, 0.35), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ═ ESTADO 4: Orden finalizada (Ámbar/Naranja) ═ */
+.estado-select.bg-finalizada {
+  background-color: #f59e0b;
+  border-color: #d97706;
+  color: #ffffff;
+}
+
+.estado-select.bg-finalizada:hover {
+  background-color: #d97706;
+  border-color: #b45309;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.estado-select.bg-finalizada:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2), 0 4px 12px rgba(245, 158, 11, 0.35), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ═ ESTADO: Disabled ═ */
+.estado-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: none !important;
+}
+
+/* ═ OPCIONES DEL DROPDOWN ═ */
+.estado-select option {
+  padding: 12px 16px;
+  margin: 4px 0;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+}
+
 .action-buttons {
   display: flex;
   justify-content: center;
