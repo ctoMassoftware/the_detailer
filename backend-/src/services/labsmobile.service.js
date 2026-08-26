@@ -33,6 +33,38 @@ const normalizarNumeroTelefonico = (numero) => {
 };
 
 /**
+ * ✅ CRITICAL: Validar que SMS sea ≤160 caracteres
+ * @param {string} mensaje - Contenido del SMS
+ * @returns {Object} {valid: boolean, charCount: number, error?: string}
+ */
+export const validarSMS = (mensaje) => {
+  const MAX_CHARS = 160;
+  const charCount = mensaje ? mensaje.length : 0;
+
+  if (!mensaje) {
+    return {
+      valid: false,
+      charCount: 0,
+      error: 'Mensaje vacío'
+    };
+  }
+
+  if (charCount > MAX_CHARS) {
+    return {
+      valid: false,
+      charCount,
+      error: `SMS muy largo: ${charCount} caracteres (máx: ${MAX_CHARS})`
+    };
+  }
+
+  return {
+    valid: true,
+    charCount,
+    error: null
+  };
+};
+
+/**
  * Send SMS via LabsMobile API
  * @param {string} toNumber - Recipient number (will be normalized)
  * @param {string} messageBody - Message content
@@ -50,10 +82,15 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
         return;
       }
 
-      // Validar longitud del mensaje
-      if (messageBody.length > 160) {
-        console.warn(`⚠️ SMS EXCEDE 160 CARACTERES: ${messageBody.length} chars - se enviará en ${Math.ceil(messageBody.length / 160)} mensajes`);
+      // ✅ CRITICAL: Validar que SMS sea ≤160 caracteres
+      const validacion = validarSMS(messageBody);
+      if (!validacion.valid) {
+        console.error(`❌ ${validacion.error}`);
+        resolve({ success: false, error: validacion.error });
+        return;
       }
+      console.log(`✅ SMS válido: ${validacion.charCount} caracteres (máx: 160)`);
+      logMessage('SMS', messageBody, { charCount: validacion.charCount, status: 'VALIDADO' });
 
       // Obtener credenciales de BD
       const dbCredentials = await getLabsMobileCredentialsFromDB();

@@ -1,8 +1,10 @@
 
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { Nav } from "../../shared/nav/nav";
 import { ServicioService } from '../../services/servicio.service';
 import { OrdenService } from '../../services/orden.service';
@@ -16,7 +18,8 @@ import { RifaService } from '../../services/rifa.service';
   templateUrl: './crear-orden.html',
   styleUrls: ['./crear-orden.css']
 })
-export class CrearOrdenComponent implements OnInit {
+export class CrearOrdenComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
     // --- Autocompletar clientes/placas para el input de nombre_cliente ---
     sugerenciasClientes: any[] = [];
     buscandoCliente = false;
@@ -26,7 +29,7 @@ export class CrearOrdenComponent implements OnInit {
       const valor = input?.value || '';
       if (valor.length >= 2) {
         this.buscandoCliente = true;
-        this.ordenService.buscarClientesPlacas(valor).subscribe({
+        this.ordenService.buscarClientesPlacas(valor).pipe(takeUntil(this.destroy$)).subscribe({
           next: (res: any[]) => {
             this.sugerenciasClientes = res;
             this.buscandoCliente = false;
@@ -130,7 +133,8 @@ export class CrearOrdenComponent implements OnInit {
 
   itemsSeleccionados: any[] = [];
   total: number = 0;
-  
+  cargandoOrden: boolean = false;
+
   mostrarAlerta: boolean = false;
   mensajeAlerta: string = '';
   tipoAlerta: 'success' | 'error' = 'success';
@@ -148,7 +152,7 @@ export class CrearOrdenComponent implements OnInit {
   }
 
   cargarRifas() {
-    this.rifaService.getTodasRifas().subscribe({
+    this.rifaService.getTodasRifas().pipe(takeUntil(this.destroy$)).subscribe({
       next: (rifas: any[]) => {
         this.rifasDisponibles = rifas || [];
       },
@@ -240,7 +244,7 @@ export class CrearOrdenComponent implements OnInit {
   }
 
   cargarOperarios() {
-    this.operarioService.getOperarios().subscribe({
+    this.operarioService.getOperarios().pipe(takeUntil(this.destroy$)).subscribe({
       next: (data: any[]) => {
         this.tecnicos = data.filter(tech => tech.estado_operario === true);
       },
@@ -272,7 +276,7 @@ export class CrearOrdenComponent implements OnInit {
   }
 
   cargarServicios() {
-    this.servicioService.getServicios().subscribe({
+    this.servicioService.getServicios().pipe(takeUntil(this.destroy$)).subscribe({
       next: (data) => {
         const listaCompleta = data.map((item: any) => ({
           ...item,
@@ -490,11 +494,16 @@ export class CrearOrdenComponent implements OnInit {
       cliente: payload.nombre_cliente
     });
 
-    this.ordenService.createOrden(payload).subscribe({
+    // ⏳ Activar spinner
+    this.cargandoOrden = true;
+
+    this.ordenService.createOrden(payload).pipe(takeUntil(this.destroy$)).subscribe({
       next: (resp) => {
+        this.cargandoOrden = false;
         this.mostrarMensaje('Orden creada exitosamente', 'success');
       },
       error: (err) => {
+        this.cargandoOrden = false;
         console.error(err);
         this.mostrarMensaje('Error al guardar la orden.', 'error');
       }
@@ -512,5 +521,11 @@ export class CrearOrdenComponent implements OnInit {
     if (this.tipoAlerta === 'success') {
       this.router.navigate(['/consultar-orden']);
     }
+  }
+
+  // ✅ Limpiar subscripciones al destruir componente
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }
