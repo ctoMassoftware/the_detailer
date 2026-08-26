@@ -232,14 +232,11 @@ export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, 
 };
 
 export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
-  const mensaje = formatOrderNotification(
-    nombreCliente,
-    '🎉 ¡Tu vehículo está LISTO!\nEstatus: DISPONIBLE PARA RECOGER',
-    total,
-    '📋 Descarga tu recibo adjunto\n🏪 Ven a recoger tu orden\n¡Gracias por tu preferencia! 👌',
-    placa,
-    numeroOrden
-  );
+  // Mensaje conciso para Orden Lista (cabe en 1-2 SMS)
+  const linkRecibo = `https://the-detailer.co/recibos?placa=${placa}`;
+  const mensaje = `¡Hola ${nombreCliente}! 🎉\n¡Tu orden #${numeroOrden} está LISTA!\n🚗 Placa: ${placa}\n💰 Total: $${total?.toLocaleString?.('es-CO') || total}\n\n📋 Ver recibo: ${linkRecibo}\n\n🏪 The Detailer | Lunes-Domingo 7am-6pm`;
+
+  console.log(`📊 SMS Orden Lista - Caracteres: ${mensaje.length} (máx recomendado: 160)`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_lista_sin_rifa',
