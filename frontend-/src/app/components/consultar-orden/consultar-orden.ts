@@ -152,7 +152,8 @@ export class ConsultarOrden implements OnInit {
 
   numeroBoletaRifa: string = '';
   rifaActiva: boolean = false;
-  rifaSeleccionada: boolean = false;
+  rifaSeleccionada: boolean = true; // ✅ Por defecto "No" está seleccionado
+  opcionRifaSeleccionada: boolean | null = false; // false = "No", true = "Sí", null = sin seleccionar
   datosRifaActiva: any = {
     id_evento: null,
     fecha_sorteo: '',
@@ -591,7 +592,8 @@ export class ConsultarOrden implements OnInit {
     this.mostrarFactura = true;
     this.mostrarModal = false;
     this.mostrarRifa = false;
-    this.rifaSeleccionada = false; // ✅ Reset: botón deshabilitado hasta seleccionar Sí/No
+    this.rifaSeleccionada = true; // ✅ Botón habilitado (por defecto "No" está seleccionado)
+    this.opcionRifaSeleccionada = false; // ✅ Por defecto: "No" seleccionado
     this.metodoImpresionFacturaOrden = 'WINDOWS';
     this.numeroBoletaRifa = '';
     this.cargarRifaActiva();
@@ -688,7 +690,8 @@ export class ConsultarOrden implements OnInit {
     this.ordenService.updateOrden(this.ordenSeleccionada.id_orden_db, datosUpdate).subscribe({
       next: (response) => {
         console.log('✅ Rifa asignada exitosamente');
-        this.rifaSeleccionada = true; // ✅ Habilita botón "Completar Orden"
+        this.opcionRifaSeleccionada = true; // ✅ "Sí" está seleccionado
+        this.rifaSeleccionada = true;
         this.mostrarRifa = true;
         this.cargarNumerosRifa();
         Swal.fire('Éxito', 'Rifa asignada. Selecciona el número de boleta.', 'success');
@@ -703,7 +706,8 @@ export class ConsultarOrden implements OnInit {
   rechazarRifa() {
     this.mostrarRifa = false;
     this.numeroBoletaRifa = '';
-    this.rifaSeleccionada = true; // ✅ Habilita botón "Completar Orden" cuando se rechaza rifa
+    this.opcionRifaSeleccionada = false; // ✅ "No" está seleccionado
+    this.rifaSeleccionada = true; // ✅ Habilita botón "Completar Orden"
   }
 
   cargarNumerosRifa() {

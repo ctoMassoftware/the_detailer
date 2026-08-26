@@ -459,12 +459,18 @@
           <div class="rifa-buttons">
             <button
               class="btn-rifa-yes"
+              [class.selected]="opcionRifaSeleccionada === true"
               [disabled]="!rifaActiva"
               [title]="rifaActiva ? 'Aceptar rifa' : 'No hay rifa activa en este momento'"
               (click)="aceptarRifa()">
               Sí
             </button>
-            <button class="btn-rifa-no" (click)="rechazarRifa()">No</button>
+            <button
+              class="btn-rifa-no"
+              [class.selected]="opcionRifaSeleccionada === false"
+              (click)="rechazarRifa()">
+              No
+            </button>
           </div>
         </div>
 
