@@ -61,11 +61,15 @@
                 <td>{{ orden.operario }}</td>
                 <td class="fecha-col">{{ orden.fecha }}</td>
                 <td>
-                  <app-estado-dropdown
-                    [value]="orden.estado"
-                    [isDisabled]="orden.estado === 'Orden finalizada' || !puedeModificarOrden(orden)"
-                    (valueChange)="onEstadoChange($event, orden)">
-                  </app-estado-dropdown>
+                  <select class="estado-select-native"
+                    [disabled]="orden.estado === 'Orden finalizada' || !puedeModificarOrden(orden)"
+                    [(ngModel)]="orden.estado"
+                    (change)="verificarCambioEstado(orden)">
+                    <option value="Proceso">En proceso</option>
+                    <option value="Lista">Orden lista</option>
+                    <option value="Orden finalizada">Orden finalizada</option>
+                    <option value="Cancelada">Cancelada</option>
+                  </select>
                 </td>
                 <td>
                   <div class="action-buttons">

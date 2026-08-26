@@ -1498,3 +1498,60 @@ input[type="date"] {
     background-color: #555;
     box-shadow: none;
 }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* NATIVE SELECT - Styled */
+/* ═══════════════════════════════════════════════════════════ */
+.estado-select-native {
+  width: 114%;
+  max-width: 200px;
+  height: 48px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  background-color: #64748b;
+  border: 2px solid #475569;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5'%3E%3Cpolyline points='2 5 8 11 14 5'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  padding-right: 2.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.estado-select-native:hover:not(:disabled) {
+  background-color: #475569;
+  border-color: #334155;
+  box-shadow: 0 6px 16px rgba(71, 85, 105, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.estado-select-native:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.2), 0 4px 12px rgba(71, 85, 105, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.estado-select-native:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.estado-select-native option {
+  padding: 12px 16px;
+  margin: 4px 0;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: #2d2d3d;
+  color: #ffffff;
+}

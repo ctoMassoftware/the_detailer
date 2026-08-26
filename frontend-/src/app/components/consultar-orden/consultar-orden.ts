@@ -8,7 +8,6 @@ import { OperarioService } from '../../services/operario.service';
 import { RifaService } from '../../services/rifa.service';
 import { ServicioService } from '../../services/servicio.service';
 import { ImpresoraService } from '../../services/impresora.service';
-import { EstadoDropdownComponent } from './estado-dropdown.component';
 import Swal from 'sweetalert2';
 
 interface Orden {
@@ -42,7 +41,7 @@ interface Orden {
 @Component({
   selector: 'app-consultar-orden',
   standalone: true,
-  imports: [Nav, CommonModule, FormsModule, EstadoDropdownComponent],
+  imports: [Nav, CommonModule, FormsModule],
   templateUrl: './consultar-orden.html',
   styleUrls: ['./consultar-orden.css']
 })
@@ -460,12 +459,6 @@ export class ConsultarOrden implements OnInit {
     } else {
       this.ejecutarUpdateEstado(orden);
     }
-  }
-
-  onEstadoChange(nuevoEstado: string, orden: Orden) {
-    console.log(`📤 onEstadoChange: ${orden.estado} → ${nuevoEstado}`);
-    orden.estado = nuevoEstado;
-    this.verificarCambioEstado(orden);
   }
 
   private ejecutarUpdateEstado(orden: any) {
