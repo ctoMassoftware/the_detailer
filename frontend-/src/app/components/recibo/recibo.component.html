@@ -137,12 +137,15 @@
     <div class="separator"></div>
 
     <!-- Información de Boleta/Rifa (si existe) -->
-    <div *ngIf="orden.numero_rifa || orden.cantidad_cascos" class="rifa-section">
+    <div *ngIf="orden.numero_rifa || orden.cantidad_cascos || orden.metodoPago" class="rifa-section">
       <h3>📋 Información Adicional</h3>
       <div class="rifa-info">
-        <div *ngIf="orden.numero_rifa" class="rifa-item">
-          <strong>🎟️ Boleta Rifa:</strong>
-          <span class="rifa-numero">{{ orden.numero_rifa }}</span>
+        <div *ngIf="orden.numero_rifa" class="rifa-item rifa-participacion">
+          <strong>🎟️ Participación Rifa:</strong>
+          <div class="rifa-details">
+            <span class="rifa-numero">Boleta #{{ orden.numero_rifa }}</span>
+            <span *ngIf="orden.rifa_premio" class="rifa-premio">🏆 {{ orden.rifa_premio }}</span>
+          </div>
         </div>
         <div *ngIf="orden.cantidad_cascos && orden.cantidad_cascos > 0" class="rifa-item">
           <strong>🧢 Cascos a Recoger:</strong>

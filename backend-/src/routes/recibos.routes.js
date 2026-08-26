@@ -42,7 +42,7 @@ router.get('/por-placa/:placa', async (req, res) => {
       return res.status(400).json({ error: 'Placa inválida' });
     }
 
-    // Obtener todas las órdenes de esa placa (case-insensitive)
+    // Obtener todas las órdenes de esa placa (case-insensitive) + info de rifa
     const result = await pool.query(
       `SELECT
         o.*,
@@ -57,12 +57,15 @@ router.get('/por-placa/:placa', async (req, res) => {
             )
           ) FILTER (WHERE d.id_servicio IS NOT NULL),
           '[]'::json
-        ) as lista_servicios
+        ) as lista_servicios,
+        er.descripcion_premios as rifa_premio
        FROM orden o
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
+       LEFT JOIN rifa r ON o.id_boleta = r.id_boleta
+       LEFT JOIN evento_rifa er ON r.id_evento_rifa = er.id_evento
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
-       GROUP BY o.id_orden
+       GROUP BY o.id_orden, er.descripcion_premios
        ORDER BY o.id_orden DESC`,
       [placa]
     );
@@ -90,6 +93,7 @@ router.get('/por-placa/:placa', async (req, res) => {
       estado: row.estado,
       cantidad_cascos: row.cantidad_cascos || 0,
       numero_rifa: row.numero_rifa,
+      rifa_premio: row.rifa_premio,  // Premio de la rifa si participa
       metodoPago: row.metodo_pago,
       notas: row.notas,
       servicios: row.lista_servicios
