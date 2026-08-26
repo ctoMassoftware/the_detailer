@@ -47,15 +47,15 @@ export const validarTokenRecibo = async (token, placa = null) => {
       .update(token)
       .digest('hex');
 
-    // Buscar token válido
+    // Buscar token válido - NO requiere que descargado_at sea NULL
+    // Solo verifica que esté activo y no expirado
     const result = await pool.query(
       `SELECT rt.id_orden, rt.placa_vehiculo, o.nombre_cliente, o.correo_cliente
        FROM recibo_token rt
        JOIN orden o ON rt.id_orden = o.id_orden
        WHERE rt.token_hash = $1
          AND rt.activo = true
-         AND rt.expira_at > CURRENT_TIMESTAMP
-         AND rt.descargado_at IS NULL`,
+         AND rt.expira_at > CURRENT_TIMESTAMP`,
       [tokenHash]
     );
 
@@ -80,7 +80,7 @@ export const validarTokenRecibo = async (token, placa = null) => {
 };
 
 /**
- * Marcar token como descargado
+ * Registrar descarga (solo la primera vez)
  * @param {string} token
  * @param {string} ipCliente
  * @returns {Promise<boolean>}
@@ -92,17 +92,20 @@ export const marcarTokenComoDescargado = async (token, ipCliente = null) => {
       .update(token)
       .digest('hex');
 
+    // Solo marcar si no está descargado aún (primera vez)
     await pool.query(
       `UPDATE recibo_token
-       SET descargado_at = CURRENT_TIMESTAMP, ip_descarga = $1
+       SET descargado_at = COALESCE(descargado_at, CURRENT_TIMESTAMP),
+           ip_descarga = COALESCE(ip_descarga, $1),
+           descargas_count = COALESCE(descargas_count, 0) + 1
        WHERE token_hash = $2`,
       [ipCliente, tokenHash]
     );
 
-    console.log('✓ Descarga registrada');
+    console.log('✓ Descarga registrada (token sigue siendo válido)');
     return true;
   } catch (error) {
-    console.error('❌ Error marcando descarga:', error.message);
+    console.error('❌ Error registrando descarga:', error.message);
     return false;
   }
 };
