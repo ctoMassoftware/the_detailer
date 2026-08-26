@@ -4,6 +4,16 @@ import { pool } from '../config/db.js';
 
 const router = Router();
 
+// Formatear fecha sin conversión de zona horaria
+function formatearFecha(fecha) {
+  if (!fecha) return null;
+  const d = new Date(fecha);
+  const anio = d.getUTCFullYear();
+  const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dia = String(d.getUTCDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+}
+
 /**
  * Health check y diagnostics
  * GET /api/recibos/health
@@ -84,7 +94,7 @@ router.get('/por-placa/:placa', async (req, res) => {
 
     const ordenes = result.rows.map(row => ({
       id_orden: row.id_orden,
-      fecha: row.fecha,
+      fecha: formatearFecha(row.fecha),
       hora: row.hora,
       nombre_cliente: row.nombre_cliente,
       cedula_cliente: row.cedula_cliente,
@@ -339,7 +349,7 @@ router.get('/datos/:token', async (req, res) => {
       success: true,
       orden: {
         id_orden: ordenData.id_orden,
-        fecha: ordenData.fecha,
+        fecha: formatearFecha(ordenData.fecha),
         nombre_cliente: ordenData.nombre_cliente,
         placa_vehiculo: ordenData.placa_vehiculo,
         marca_vehiculo: ordenData.marca_vehiculo,
@@ -431,7 +441,9 @@ router.get('/descargar/:token', async (req, res) => {
  * Generar HTML del recibo (puede convertirse a PDF con librería externa)
  */
 const generarHTMLRecibo = (orden) => {
-  const fecha = new Date(orden.fecha).toLocaleDateString('es-CO');
+  const fechaStr = formatearFecha(orden.fecha);
+  const [anio, mes, dia] = fechaStr.split('-');
+  const fecha = `${dia}/${mes}/${anio}`;
   const total = orden.total_orden || 0;
 
   return `
