@@ -10,8 +10,10 @@ import {
   eliminarRifa,
   elegirGanador,
   historialGanadores,
-  actualizarRifa
-} from '../controllers/rifa.controller.js';
+  actualizarRifa,
+  asignarBoletaAOrden,
+  getBoletasDisponibles
+} from '../controllers/rifa.controller.secured.js';
 import { verifyToken } from '../controllers/auth.controller.js';
 
 const router = Router();
@@ -31,6 +33,12 @@ router.get('/historial-ganadores', verifyToken, historialGanadores);
 
 // Actualizar rifa
 router.put('/:id', verifyToken, actualizarRifa);
+
+// Asignar boleta a orden (NUEVO - SEGURIZADO)
+router.post('/asignar-boleta', verifyToken, asignarBoletaAOrden);
+
+// Obtener boletas disponibles
+router.get('/disponibles/:id_evento', verifyToken, getBoletasDisponibles);
 
 router.delete('/eliminar/:id', verifyToken, eliminarRifa);
 
