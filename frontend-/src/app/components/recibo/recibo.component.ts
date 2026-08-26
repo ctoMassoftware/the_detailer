@@ -40,11 +40,14 @@ export class ReciboComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
-      this.placa = params['placa'] || '';
-      this.route.params.subscribe(params => {
-        this.token = params['token'] || '';
+    // Combinar ambas subscripciones: route params + query params
+    this.route.params.subscribe(params => {
+      this.token = params['token'] || '';
 
+      this.route.queryParams.subscribe(queryParams => {
+        this.placa = queryParams['placa'] || '';
+
+        // Cargar basado en token o placa
         if (this.token) {
           this.modo = 'token';
           this.obtenerRecibo();
