@@ -198,4 +198,14 @@ export class ReciboComponent implements OnInit {
   formatEstado(estado: string): string {
     return estado.toLowerCase().replace(/ /g, '-');
   }
+
+  obtenerEmojiVehiculo(tipo: string): string {
+    if (!tipo) return '🚗';
+    const tipoLower = tipo.toLowerCase();
+    if (tipoLower.includes('moto')) return '🏍️';
+    if (tipoLower.includes('camioneta')) return '🛻';
+    if (tipoLower.includes('campero')) return '🚙';
+    if (tipoLower.includes('automovil')) return '🚗';
+    return '🚗';
+  }
 }
