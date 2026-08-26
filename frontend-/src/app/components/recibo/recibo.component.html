@@ -29,9 +29,16 @@
     </button>
   </div>
 
-  <!-- Selector de órdenes (si hay múltiples) -->
-  <div *ngIf="modo === 'placa' && ordenes.length > 1 && !cargando" class="ordenes-selector">
-    <h2>Selecciona una orden para ver detalles:</h2>
+  <!-- Botón para ver otras órdenes (si hay múltiples) -->
+  <div *ngIf="modo === 'placa' && ordenes.length > 1 && !cargando" class="ver-ordenes-btn">
+    <button (click)="toggleTodasLasOrdenes()" class="btn-ver-ordenes">
+      {{ mostrarTodasLasOrdenes ? '← Ocultar otras órdenes' : `📋 Ver otras ${ordenes.length - 1} orden(es)` }}
+    </button>
+  </div>
+
+  <!-- Selector de órdenes (expandible) -->
+  <div *ngIf="modo === 'placa' && ordenes.length > 1 && mostrarTodasLasOrdenes && !cargando" class="ordenes-selector">
+    <h2>Otras órdenes para {{ placa }}:</h2>
     <div class="ordenes-grid">
       <button
         *ngFor="let ord of ordenes"

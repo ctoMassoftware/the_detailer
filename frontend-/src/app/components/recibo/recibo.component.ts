@@ -32,6 +32,7 @@ export class ReciboComponent implements OnInit {
   cargando: boolean = true;
   error: string = '';
   modo: 'token' | 'placa' = 'token';
+  mostrarTodasLasOrdenes: boolean = false;  // Toggle para mostrar selector
 
   constructor(
     private route: ActivatedRoute,
@@ -210,5 +211,9 @@ export class ReciboComponent implements OnInit {
     if (tipoLower.includes('campero')) return '🚙';
     if (tipoLower.includes('automovil')) return '🚗';
     return '🚗';
+  }
+
+  toggleTodasLasOrdenes(): void {
+    this.mostrarTodasLasOrdenes = !this.mostrarTodasLasOrdenes;
   }
 }

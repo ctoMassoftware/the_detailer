@@ -514,6 +514,35 @@
   }
 }
 
+.ver-ordenes-btn {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-ver-ordenes {
+  background: linear-gradient(135deg, #fd0100 0%, #cc0000 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(253, 1, 0, 0.3);
+}
+
+.btn-ver-ordenes:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(253, 1, 0, 0.4);
+}
+
+.btn-ver-ordenes:active {
+  transform: translateY(0);
+}
+
 @media (max-width: 768px) {
   .recibo {
     padding: 20px;
