@@ -345,6 +345,11 @@ export const updateOrden = async (req, res) => {
       const hora_final = (hora && hora !== '') ? limpiarHora(hora) : ordenActual.hora;
       const notas_final = notas !== undefined ? notas : ordenActual.notas;
 
+      // Debug: Log si estado no fue enviado
+      if (estado === undefined) {
+        console.log(`ℹ️ updateOrden: estado no enviado, usando valor actual: ${ordenActual.estado}`);
+      }
+
     await client.query("BEGIN");
     const estadoAnterior = ordenActual.estado;
     const tipoVehiculoActual = tipo_final;

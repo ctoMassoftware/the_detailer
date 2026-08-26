@@ -684,7 +684,8 @@ export class ConsultarOrden implements OnInit {
     console.log(`📤 [ACEPTAR RIFA] Asignando rifa ${idRifa} a orden ${this.ordenSeleccionada.id_orden_db}`);
 
     const datosUpdate = {
-      id_rifa: idRifa
+      id_rifa: idRifa,
+      estado: this.ordenSeleccionada.estado // ✅ Enviar estado actual
     };
 
     this.ordenService.updateOrden(this.ordenSeleccionada.id_orden_db, datosUpdate).subscribe({
