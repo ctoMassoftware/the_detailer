@@ -6,6 +6,23 @@ import {
   enviarNotificacionModificacion
 } from './notificationRouter.service.js';
 import { generarTokenRecibo } from './reciboToken.service.js';
+import { pool } from '../config/db.js';
+
+// Obtener número de boleta real de la tabla rifa
+const obtenerNumeroBoleta = async (id_evento_rifa, placa_vehiculo) => {
+  try {
+    const result = await pool.query(
+      `SELECT numero_boleta FROM rifa
+       WHERE id_evento_rifa = $1 AND UPPER(placa_vehiculo) = UPPER($2)
+       LIMIT 1`,
+      [id_evento_rifa, placa_vehiculo]
+    );
+    return result.rows.length > 0 ? result.rows[0].numero_boleta : null;
+  } catch (error) {
+    console.error('⚠️ Error obteniendo número de boleta:', error.message);
+    return null;
+  }
+};
 
 /**
  * Enviar notificación automática basada en cambio de estado
@@ -15,7 +32,7 @@ export const enviarNotificacionPorCambioEstado = async (
   estadoAnterior,
   estadoNuevo,
   ordenDatos,
-  numeroRifa = null,
+  id_rifa = null,
   credentials = null
 ) => {
   const { nombre_cliente, telefono_cliente, placa_vehiculo, tipo_vehiculo, cantidad_cascos, valorTotal, id_orden } = ordenDatos;
@@ -27,7 +44,7 @@ export const enviarNotificacionPorCambioEstado = async (
   }
 
   console.log(`📱 Cambio de estado: "${estadoAnterior}" → "${estadoNuevo}"`);
-  console.log(`📋 Auditoría SMS - Orden #${id_orden}:`, { nombre_cliente, telefono_cliente, numeroRifa });
+  console.log(`📋 Auditoría SMS - Orden #${id_orden}:`, { nombre_cliente, telefono_cliente, id_rifa });
 
   try {
     // ✅ CUALQUIER ESTADO → PROCESO (Sin ser Proceso aún)
@@ -51,22 +68,27 @@ export const enviarNotificacionPorCambioEstado = async (
       const tokenRecibo = await generarTokenRecibo(id_orden, placa_vehiculo);
       console.log(`📥 Token generado para Lista: ${tokenRecibo ? '✓ SÍ' : '✗ NO'}`);
 
-      // Si hay rifa, usar plantilla con rifa
-      if (numeroRifa) {
-        console.log(`   Con rifa #${numeroRifa}`);
-        return await enviarNotificacionOrdenListaConRifa(
-          telefono_cliente,
-          nombre_cliente,
-          valorTotal,
-          numeroRifa,
-          placa_vehiculo,
-          id_orden,
-          { orderId: id_orden, tipo: 'estado_lista_rifa', tokenRecibo },
-          credentials
-        );
+      // Si hay rifa, obtener número de boleta real y usar plantilla con rifa
+      if (id_rifa) {
+        const numeroBoleta = await obtenerNumeroBoleta(id_rifa, placa_vehiculo);
+        if (numeroBoleta) {
+          console.log(`   Con rifa - Boleta #${numeroBoleta}`);
+          return await enviarNotificacionOrdenListaConRifa(
+            telefono_cliente,
+            nombre_cliente,
+            valorTotal,
+            numeroBoleta,
+            placa_vehiculo,
+            id_orden,
+            { orderId: id_orden, tipo: 'estado_lista_rifa', tokenRecibo },
+            credentials
+          );
+        } else {
+          console.log(`   ⚠️ Rifa asignada pero sin boleta registrada aún`);
+        }
       }
 
-      // Sin rifa, usar plantilla normal
+      // Sin rifa o sin boleta registrada, usar plantilla normal
       return await enviarNotificacionOrdenListaSinRifa(
         telefono_cliente,
         nombre_cliente,
