@@ -26,16 +26,15 @@ export class ReciboComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
       this.placa = params['placa'] || '';
-    });
-
-    this.route.params.subscribe(params => {
-      this.token = params['token'] || '';
-      if (this.token && this.placa) {
-        this.obtenerRecibo();
-      } else {
-        this.error = 'Datos inválidos. Token o placa faltante.';
-        this.cargando = false;
-      }
+      this.route.params.subscribe(params => {
+        this.token = params['token'] || '';
+        if (this.token) {
+          this.obtenerRecibo();
+        } else if (!this.token && !this.placa) {
+          this.error = 'Datos inválidos. Token requerido.';
+          this.cargando = false;
+        }
+      });
     });
   }
 

@@ -24,8 +24,21 @@ router.get('/datos/:token', async (req, res) => {
     console.log(`   Placa: ${placa || 'NO'}`);
 
     // Validar token
-    const orden = await validarTokenRecibo(token, placa);
-    console.log(`   Validación: ${orden ? '✅ EXITOSA' : '❌ FALLÓ'}`);
+    let orden = await validarTokenRecibo(token, placa);
+    console.log(`   Validación inicial: ${orden ? '✅ EXITOSA' : '❌ FALLÓ'}`);
+
+    // Si no hay orden válida con token, intentar generar uno nuevo para esa placa/token
+    // El token podría ser una orden ID en formato numérico
+    if (!orden && token && !isNaN(token)) {
+      console.log(`   ℹ️ Intentando generar token para orden ${token}`);
+      const { generarTokenRecibo } = await import('../services/reciboToken.service.js');
+      const nuevoToken = await generarTokenRecibo(parseInt(token), placa);
+      if (nuevoToken) {
+        console.log(`   ✅ Token generado: ${nuevoToken.substring(0, 20)}...`);
+        // Validar el nuevo token
+        orden = await validarTokenRecibo(nuevoToken, placa);
+      }
+    }
 
     if (!orden) {
       return res.status(401).json({

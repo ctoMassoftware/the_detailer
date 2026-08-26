@@ -1,7 +1,10 @@
 <div class="recibo-container">
   <!-- Header con botones -->
   <div class="recibo-header">
-    <h1>📄 Tu Recibo</h1>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <img src="assets/logo.jpeg" alt="Logo The Detailer" style="height: 50px; border-radius: 8px;">
+      <h1>Tu Recibo</h1>
+    </div>
     <div class="botones">
       <button class="btn-descargar" (click)="descargarPDF()" [disabled]="!orden">
         📥 Descargar PDF
@@ -29,8 +32,10 @@
     <!-- Header del recibo -->
     <div class="recibo-header-content">
       <div class="empresa">
+        <img src="assets/logo.jpeg" alt="Logo" style="height: 40px; margin-bottom: 0.5rem; border-radius: 4px;">
         <h2>🚗 The Detailer</h2>
         <p>Recibo de Orden de Servicio</p>
+        <p style="font-size: 11px; color: #95a5a6; margin-top: 5px;">NIT 100002212-9</p>
       </div>
       <div class="numero-orden">
         <span class="label">Orden #</span>
