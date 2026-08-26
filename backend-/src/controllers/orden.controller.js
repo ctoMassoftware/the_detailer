@@ -185,6 +185,26 @@ export const createOrden = async (req, res) => {
       }
     }
 
+    // ✅ CREAR BOLETA SI PARTICIPA EN RIFA
+    if (id_rifa) {
+      // Verificar si ya existe boleta para esta placa en este evento
+      const boletaExiste = await client.query(
+        `SELECT id_boleta FROM rifa WHERE id_evento_rifa = $1 AND UPPER(placa_vehiculo) = UPPER($2) LIMIT 1`,
+        [id_rifa, placa_vehiculo]
+      );
+
+      if (boletaExiste.rows.length === 0) {
+        // No existe, crear nueva boleta
+        const numeroBoleta = `BL-${idOrden}`;
+        await client.query(
+          `INSERT INTO rifa (id_evento_rifa, numero_boleta, nombre, telefono, placa_vehiculo)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id_rifa, numeroBoleta, nombre_cliente, telefono_cliente, placa_vehiculo]
+        );
+        console.log(`✅ Boleta creada para orden ${idOrden}: ${numeroBoleta}`);
+      }
+    }
+
     await client.query("COMMIT");
 
     // 📱 SMS DE BIENVENIDA
