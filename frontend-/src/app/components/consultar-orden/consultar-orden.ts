@@ -655,8 +655,31 @@ export class ConsultarOrden implements OnInit {
   filtroRifa: string = '';
 
   aceptarRifa() {
-    this.mostrarRifa = true;
-    this.cargarNumerosRifa();
+    // ✅ Asignar rifa a la orden
+    if (!this.datosRifaActiva?.id_evento || !this.ordenSeleccionada?.id_orden_db) {
+      console.error('⚠️ No hay rifa activa o no hay orden seleccionada');
+      return;
+    }
+
+    console.log(`📤 [ACEPTAR RIFA] Asignando rifa ${this.datosRifaActiva.id_evento} a orden ${this.ordenSeleccionada.id_orden_db}`);
+
+    // Actualizar orden con id_rifa
+    const datosUpdate = {
+      id_rifa: this.datosRifaActiva.id_evento
+    };
+
+    this.ordenService.updateOrden(this.ordenSeleccionada.id_orden_db, datosUpdate).subscribe({
+      next: (response) => {
+        console.log('✅ Rifa asignada exitosamente');
+        // Backend crea boleta automáticamente
+        this.mostrarRifa = true;
+        this.cargarNumerosRifa();
+      },
+      error: (err) => {
+        console.error('❌ Error asignando rifa:', err);
+        Swal.fire('Error', 'No se pudo asignar la rifa', 'error');
+      }
+    });
   }
 
   rechazarRifa() {
