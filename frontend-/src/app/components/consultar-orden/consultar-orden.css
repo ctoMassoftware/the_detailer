@@ -1054,18 +1054,20 @@ input[type="date"] {
   border-radius: 0.5rem;
   border: 2px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .btn-rifa-yes:hover:not(:disabled) {
   border-color: #ec1313;
-  background-color: rgba(236, 19, 19, 0.1);
+  background-color: rgba(236, 19, 19, 0.15);
+  transform: translateY(-2px);
 }
 
 .btn-rifa-yes.selected {
   background-color: #ec1313;
   border-color: #ec1313;
-  box-shadow: 0 4px 12px rgba(236, 19, 19, 0.3);
+  box-shadow: 0 6px 20px rgba(236, 19, 19, 0.4);
+  transform: translateY(-2px);
 }
 
 .btn-rifa-yes:disabled {
@@ -1084,18 +1086,20 @@ input[type="date"] {
   padding: 0.75rem 2rem;
   border-radius: 0.5rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .btn-rifa-no:hover {
-  border-color: rgba(255, 255, 255, 0.6);
-  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(16, 185, 129, 0.6);
+  background-color: rgba(16, 185, 129, 0.15);
+  transform: translateY(-2px);
 }
 
 .btn-rifa-no.selected {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-color: white;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  background-color: #10b981;
+  border-color: #10b981;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
 }
 
 /* Boleta Container */
