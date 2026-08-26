@@ -11,7 +11,8 @@ router.post('/', verifyToken, createOrden);
 router.get('/', verifyToken, getOrdenes);
 router.put('/:id', verifyToken, updateOrden);
 router.delete('/:id', verifyToken, deleteOrden);
-router.post('/notificar', verifyToken, notificarOrdenLista);
+// ❌ DISABLED: SMS "Orden Lista" is sent automatically by orderStatusNotification.service.js when status changes
+// router.post('/notificar', verifyToken, notificarOrdenLista);
 router.post('/notificar-modificacion', verifyToken, notificarModificacion);
 
 export default router;

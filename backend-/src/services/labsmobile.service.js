@@ -226,18 +226,19 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
 };
 
 export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, numeroOrden = '', tokenRecibo = '', metadata = {}, credentials = null) => {
-  // COMPACTO: 160 chars max - SOLO CON LINK A FACTURA
+  // COMPACTO: 160 chars max - SOLO CON LINK A FACTURA (sin líneas extra)
   const linkFactura = `https://the-detailer.co/recibos?placa=${placa}`;
 
-  let mensaje = `¡Orden #${numeroOrden} completada! ✅\nVer factura:\n${linkFactura}`;
+  // Mensaje ultra-compacto: solo link sin líneas extra
+  let mensaje = `¡Orden #${numeroOrden} completada! ✅\n${linkFactura}`;
 
-  // Solo agregar cascos si es moto (y cabe en 160)
+  // Solo agregar cascos si es moto Y hay espacio (máx 160)
   const esMoto = tipoVehiculo && String(tipoVehiculo).toUpperCase().includes('MOTO');
-  if (esMoto && cantidadCascos > 0 && mensaje.length < 140) {
-    mensaje += `\n\n🧢 Recoger ${cantidadCascos} casco(s)`;
+  if (esMoto && cantidadCascos > 0 && mensaje.length <= 150) {
+    mensaje += `\n🧢 Recoger ${cantidadCascos} casco(s)`;
   }
 
-  console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160) - SOLO LINK FACTURA`);
+  console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160) - LINK DIRECTO SIN LINEAS EXTRA`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_terminada',
