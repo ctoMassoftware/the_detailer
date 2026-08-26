@@ -58,14 +58,15 @@ router.get('/por-placa/:placa', async (req, res) => {
           ) FILTER (WHERE d.id_servicio IS NOT NULL),
           '[]'::json
         ) as lista_servicios,
-        er.descripcion_premios as rifa_premio
+        er.descripcion_premios as rifa_premio,
+        r.numero_boleta as numero_rifa
        FROM orden o
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
-       LEFT JOIN rifa r ON o.id_boleta = r.id_boleta
-       LEFT JOIN evento_rifa er ON r.id_evento_rifa = er.id_evento
+       LEFT JOIN rifa r ON UPPER(o.placa_vehiculo) = UPPER(r.placa_vehiculo) AND o.id_rifa = r.id_evento_rifa
+       LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
-       GROUP BY o.id_orden, er.descripcion_premios
+       GROUP BY o.id_orden, er.descripcion_premios, r.numero_boleta
        ORDER BY o.id_orden DESC`,
       [placa]
     );
