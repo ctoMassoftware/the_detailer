@@ -152,6 +152,7 @@ export class ConsultarOrden implements OnInit {
 
   numeroBoletaRifa: string = '';
   rifaActiva: boolean = false;
+  rifaSeleccionada: boolean = false;
   datosRifaActiva: any = {
     id_evento: null,
     fecha_sorteo: '',
@@ -589,9 +590,10 @@ export class ConsultarOrden implements OnInit {
     this.montoRecibido = null;
     this.mostrarFactura = true;
     this.mostrarModal = false;
-    this.mostrarRifa = false;  // ✅ Asegurar que la rifa está colapsada al abrir
+    this.mostrarRifa = false;
+    this.rifaSeleccionada = false; // ✅ Reset: botón deshabilitado hasta seleccionar Sí/No
     this.metodoImpresionFacturaOrden = 'WINDOWS';
-    this.numeroBoletaRifa = '';  // ✅ Limpiar número seleccionado
+    this.numeroBoletaRifa = '';
     this.cargarRifaActiva();
   }
 
@@ -686,6 +688,7 @@ export class ConsultarOrden implements OnInit {
     this.ordenService.updateOrden(this.ordenSeleccionada.id_orden_db, datosUpdate).subscribe({
       next: (response) => {
         console.log('✅ Rifa asignada exitosamente');
+        this.rifaSeleccionada = true; // ✅ Habilita botón "Completar Orden"
         this.mostrarRifa = true;
         this.cargarNumerosRifa();
         Swal.fire('Éxito', 'Rifa asignada. Selecciona el número de boleta.', 'success');
@@ -700,6 +703,7 @@ export class ConsultarOrden implements OnInit {
   rechazarRifa() {
     this.mostrarRifa = false;
     this.numeroBoletaRifa = '';
+    this.rifaSeleccionada = true; // ✅ Habilita botón "Completar Orden" cuando se rechaza rifa
   }
 
   cargarNumerosRifa() {

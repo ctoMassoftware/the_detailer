@@ -554,8 +554,11 @@
       </div>
 
       <div class="factura-actions">
-        <button class="btn-send" (click)="enviarFactura()"
-          [disabled]="ordenSeleccionada.metodoPago === 'Efectivo' && ((montoRecibido || 0) < ordenSeleccionada.valorTotal)">
+        <button
+          class="btn-send"
+          [disabled]="!rifaSeleccionada || (ordenSeleccionada.metodoPago === 'Efectivo' && ((montoRecibido || 0) < ordenSeleccionada.valorTotal))"
+          [title]="!rifaSeleccionada ? 'Selecciona Sí o No para la rifa primero' : 'Completar la orden'"
+          (click)="enviarFactura()">
           Completar Orden
         </button>
         <button class="btn-cancel-factura" (click)="cerrarFactura()">Cancelar</button>

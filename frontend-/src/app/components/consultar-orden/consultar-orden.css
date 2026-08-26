@@ -1225,11 +1225,17 @@ input[type="date"] {
   border: none;
   cursor: pointer;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
 }
 
-.btn-send:hover {
+.btn-send:hover:not(:disabled) {
   background-color: #c50f0f;
+  box-shadow: 0 12px 20px -3px rgba(236, 19, 19, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-send:active:not(:disabled) {
+  transform: translateY(0px);
 }
 
 .btn-cancel-factura {
@@ -1535,10 +1541,12 @@ input[type="date"] {
 }
 
 .btn-send:disabled {
-    opacity: 0.4;
+    background-color: #cbd5e1;
+    color: #94a3b8;
     cursor: not-allowed;
-    background-color: #555;
+    opacity: 0.65;
     box-shadow: none;
+    transform: none;
 }
 
 /* ═══════════════════════════════════════════════════════════ */
