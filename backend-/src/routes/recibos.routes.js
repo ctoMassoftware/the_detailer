@@ -46,7 +46,7 @@ router.get('/por-placa/:placa', async (req, res) => {
     const result = await pool.query(
       `SELECT
         o.*,
-        u.nombre_usuario as responsable_nombre,
+        CONCAT(u.nombre, ' ', u.apellido) as responsable_nombre,
         COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total_orden,
         COALESCE(
           json_agg(
@@ -68,7 +68,7 @@ router.get('/por-placa/:placa', async (req, res) => {
        LEFT JOIN rifa r ON UPPER(o.placa_vehiculo) = UPPER(r.placa_vehiculo) AND o.id_rifa = r.id_evento_rifa
        LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
-       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, u.nombre_usuario, er.descripcion_premios, r.numero_boleta
+       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, u.nombre, u.apellido, er.descripcion_premios, r.numero_boleta
        ORDER BY o.id_orden DESC`,
       [placa]
     );
