@@ -61,7 +61,7 @@ router.get('/por-placa/:placa', async (req, res) => {
         ) as lista_servicios,
         er.descripcion_premios as rifa_premio,
         er.fecha_sorteo as fecha_sorteo,
-        (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa LIMIT 1) as numero_rifa
+        (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa AND UPPER(placa_vehiculo) = UPPER(o.placa_vehiculo) LIMIT 1) as numero_rifa
        FROM orden o
        LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
