@@ -166,6 +166,35 @@ router.get('/debug/:idOrden', async (req, res) => {
 });
 
 /**
+ * DEBUG: Buscar órdenes que tienen rifa
+ * GET /api/recibos/debug-rifa
+ */
+router.get('/debug-rifa', async (req, res) => {
+  try {
+    // Buscar órdenes con rifa
+    const result = await pool.query(`
+      SELECT o.id_orden, o.placa_vehiculo, o.nombre_cliente, o.id_rifa,
+             er.id_evento, er.descripcion_premios, er.fecha_sorteo,
+             r.numero_boleta, r.placa_vehiculo as rifa_placa
+      FROM orden o
+      LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
+      LEFT JOIN rifa r ON o.id_rifa = r.id_evento_rifa
+      WHERE o.id_rifa IS NOT NULL
+      LIMIT 5
+    `);
+
+    res.json({
+      debug: true,
+      totalConRifa: result.rowCount,
+      ordenes: result.rows
+    });
+  } catch (error) {
+    console.error('Error en debug rifa:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * Obtener datos del recibo en JSON
  * GET /api/recibos/datos/:token?placa=ABC123
  */
