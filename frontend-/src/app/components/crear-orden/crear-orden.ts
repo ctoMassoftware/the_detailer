@@ -447,7 +447,7 @@ export class CrearOrdenComponent implements OnInit {
 
     // Solo enviar deja_casco y cantidad_cascos si es moto
     const payload: any = {
-      cedula_cliente: this.datosOrden.cedula_cliente || '', 
+      cedula_cliente: this.datosOrden.cedula_cliente || '',
       nombre_cliente: this.datosOrden.nombre_cliente,
       correo_cliente: this.datosOrden.correo_cliente || '',
       telefono_cliente: this.datosOrden.telefono_cliente,
@@ -459,6 +459,8 @@ export class CrearOrdenComponent implements OnInit {
       metodo_pago: this.datosOrden.metodo_pago,
       caja: this.datosOrden.caja,
       id_user_encargado: this.datosOrden.tecnico_asignado,
+      fecha: this.datosOrden.fecha,
+      hora: this.datosOrden.hora,
       id_rifa: this.datosOrden.participa_rifa ? this.datosOrden.id_rifa : null,
       notas: this.datosOrden.notas,
       servicios: this.itemsSeleccionados.map(item => ({
