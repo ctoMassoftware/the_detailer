@@ -51,7 +51,6 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Permitir peticiones sin origin (como Postman) o si está en la lista
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -65,7 +64,23 @@ app.use(cors({
     optionsSuccessStatus: 200,
     maxAge: 3600
 }));
-app.use(express.json());
+
+app.use(express.json({
+    strict: false,
+    verify: (req, res, buf) => {
+        if (buf.toString().trim() === '') {
+            throw new Error('Empty body');
+        }
+    }
+}));
+
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        console.warn('⚠️ JSON Parse Error:', err.message);
+        return res.status(400).json({ error: 'Invalid JSON' });
+    }
+    next(err);
+});
 
 // 4. DEFINICIÓN DE RUTAS API
 app.use('/api/auth', authRoutes);
