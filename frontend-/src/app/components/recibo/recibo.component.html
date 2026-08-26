@@ -86,7 +86,7 @@
 
       <div class="info-box">
         <strong>📅 Fecha</strong>
-        <p>{{ obtenerFecha(orden.fecha) }}</p>
+        <p>{{ obtenerFecha(orden.fecha) }} {{ orden.hora ? '⏰ ' + orden.hora : '' }}</p>
       </div>
 
       <div class="info-box">
@@ -131,6 +131,28 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
+    <!-- Información de Boleta/Rifa (si existe) -->
+    <div *ngIf="orden.numero_rifa || orden.cantidad_cascos" class="rifa-section">
+      <h3>📋 Información Adicional</h3>
+      <div class="rifa-info">
+        <div *ngIf="orden.numero_rifa" class="rifa-item">
+          <strong>🎟️ Boleta Rifa:</strong>
+          <span class="rifa-numero">{{ orden.numero_rifa }}</span>
+        </div>
+        <div *ngIf="orden.cantidad_cascos && orden.cantidad_cascos > 0" class="rifa-item">
+          <strong>🧢 Cascos a Recoger:</strong>
+          <span>{{ orden.cantidad_cascos }}</span>
+        </div>
+        <div *ngIf="orden.metodoPago" class="rifa-item">
+          <strong>💳 Método de Pago:</strong>
+          <span>{{ orden.metodoPago }}</span>
+        </div>
+      </div>
     </div>
 
     <!-- Separador -->

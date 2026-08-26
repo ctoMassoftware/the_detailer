@@ -77,12 +77,21 @@ router.get('/por-placa/:placa', async (req, res) => {
     const ordenes = result.rows.map(row => ({
       id_orden: row.id_orden,
       fecha: row.fecha,
+      hora: row.hora,
       nombre_cliente: row.nombre_cliente,
+      cedula_cliente: row.cedula_cliente,
+      telefono_cliente: row.telefono_cliente,
+      correo_cliente: row.correo_cliente,
       placa_vehiculo: row.placa_vehiculo,
+      tipo_vehiculo: row.tipo_vehiculo,
       marca_vehiculo: row.marca_vehiculo,
       modelo_vehiculo: row.modelo_vehiculo,
       total: row.total_orden,
       estado: row.estado,
+      cantidad_cascos: row.cantidad_cascos || 0,
+      numero_rifa: row.numero_rifa,
+      metodoPago: row.metodo_pago,
+      notas: row.notas,
       servicios: row.lista_servicios
     }));
 

@@ -557,6 +557,49 @@
   transform: translateX(-50%);
 }
 
+.rifa-section {
+  background: #1F1F1F;
+  border-left: 4px solid #fd0100;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.rifa-section h3 {
+  color: #fd0100;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 16px;
+}
+
+.rifa-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rifa-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #e5e7eb;
+  font-size: 14px;
+}
+
+.rifa-item strong {
+  color: #95a5a6;
+  margin-right: 10px;
+}
+
+.rifa-numero {
+  background: #fd0100;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
 @media (max-width: 768px) {
   .recibo {
     padding: 20px;
