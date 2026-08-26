@@ -433,23 +433,23 @@ export const updateOrden = async (req, res) => {
       console.log(`🧢 Datos para notificación: tipo=${tipoVehiculoActual}, cascos=${cantidadCascosActual}`);
 
       const ordenDatos = {
-        nombre_cliente,
-        telefono_cliente,
-        placa_vehiculo,
+        nombre_cliente: nombre_final,
+        telefono_cliente: telefono_final,
+        placa_vehiculo: placa_final,
         tipo_vehiculo: tipoVehiculoActual,
         cantidad_cascos: cantidadCascosActual,
         valorTotal: valorTotalActual,
         id_orden: id
       };
 
-      // Obtener id_rifa de la orden actual (si existe)
-      const id_rifa = ordenActual.id_rifa || id_rifa_from_request;
+      // Obtener id_rifa: usar el del request si viene, si no usar el actual de BD
+      const id_rifa_final = id_rifa !== undefined ? id_rifa : ordenActual.id_rifa;
 
       enviarNotificacionPorCambioEstado(
         estadoAnterior,
         estado,
         ordenDatos,
-        id_rifa // ✅ Pasar numeroRifa para SMS con rifa
+        id_rifa_final // ✅ Pasar id_rifa para SMS con rifa
       ).catch(err => {
         console.error('⚠️ Error enviando notificación automática:', err);
       });

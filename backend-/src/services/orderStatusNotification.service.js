@@ -45,6 +45,7 @@ export const enviarNotificacionPorCambioEstado = async (
 
   console.log(`📱 Cambio de estado: "${estadoAnterior}" → "${estadoNuevo}"`);
   console.log(`📋 Auditoría SMS - Orden #${id_orden}:`, { nombre_cliente, telefono_cliente, id_rifa });
+  console.log(`📝 Estados normalizados: anterior="${estadoAnterior?.toLowerCase()}" nuevo="${estadoNuevo?.toLowerCase()}"`);
 
   try {
     // ✅ CUALQUIER ESTADO → PROCESO (Sin ser Proceso aún)
@@ -60,7 +61,9 @@ export const enviarNotificacionPorCambioEstado = async (
     }
 
     // ✅ CUALQUIER ESTADO → LISTA (Con o sin Rifa)
-    if (estadoAnterior && estadoAnterior.toLowerCase() !== 'lista' && estadoNuevo && estadoNuevo.toLowerCase() === 'lista') {
+    // Permite transición: NULL→LISTA, PROCESO→LISTA, etc.
+    if (estadoNuevo && estadoNuevo.toLowerCase() === 'lista' &&
+        (!estadoAnterior || estadoAnterior.toLowerCase() !== 'lista')) {
       console.log(`✉️ Enviando SMS #2: Orden LISTA a ${telefono_cliente}`);
 
       // 📥 Generar token para descarga de recibo cuando la orden está lista
@@ -101,7 +104,9 @@ export const enviarNotificacionPorCambioEstado = async (
     }
 
     // ✅ LISTA → FINALIZADO/FINALIZADA/COMPLETADO (flexible con estado)
-    if (estadoAnterior && estadoAnterior.toLowerCase() === 'lista' && estadoNuevo && estadoNuevo.toLowerCase().includes('finaliz')) {
+    // Solo envía si estado anterior es LISTA y nuevo incluye 'finaliz' (FINALIZADA, FINALIZADO, etc)
+    if (estadoNuevo && estadoNuevo.toLowerCase().includes('finaliz') &&
+        estadoAnterior && estadoAnterior.toLowerCase() === 'lista') {
       console.log(`✉️ Enviando SMS #3: Orden COMPLETADA a ${telefono_cliente}`);
       console.log(`📊 Datos extraídos: tipo_vehiculo="${tipo_vehiculo}", cantidad_cascos=${cantidad_cascos}`);
 
