@@ -24,6 +24,7 @@ import messagesRouter from './routes/messages.routes.js';
 import notificacionesRoutes from './routes/notificaciones.routes.js'; // 👈 RUTA DE NOTIFICACIONES AUTOMÁTICAS
 import smsRoutes from './routes/sms.routes.js'; // 👈 RUTA DE SMS DINÁMICO
 import recibosRoutes from './routes/recibos.routes.js'; // 👈 RUTA DE RECIBOS CON TOKEN
+import adminRoutes from './routes/admin.routes.js'; // 👈 RUTA DE ADMIN (MIGRATIONS, ETC)
 
 // Configuración de variables de entorno
 dotenv.config();
@@ -82,6 +83,7 @@ app.use('/api/messages', messagesRouter);
 app.use('/api/notificaciones', notificacionesRoutes); // 👈 ENDPOINT DE NOTIFICACIONES AUTOMÁTICAS
 app.use('/api/sms', smsRoutes); // 👈 ENDPOINT DE SMS DINÁMICO
 app.use('/api/recibos', recibosRoutes); // 👈 ENDPOINT DE RECIBOS CON TOKEN
+app.use('/api/admin', adminRoutes); // 👈 ENDPOINT DE ADMIN (SUPER_ADMIN ONLY)
 
 const PORT = process.env.PORT || 3000;
 
