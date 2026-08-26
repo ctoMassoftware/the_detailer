@@ -450,9 +450,16 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
     this.datosOrden.tecnico_asignado = operarioEncontrado.id_user || operarioEncontrado.id;
 
     // ✅ Validar rifa: si participa, debe tener evento seleccionado
+    console.log('🔍 [VALIDACIÓN RIFA]');
+    console.log(`  - participa_rifa: ${this.datosOrden.participa_rifa}`);
+    console.log(`  - id_rifa: ${this.datosOrden.id_rifa}`);
     if (this.datosOrden.participa_rifa && !this.datosOrden.id_rifa) {
+      console.warn('⚠️ VALIDACIÓN FALLÓ: Usuario seleccionó rifa pero no eligió evento');
       this.mostrarMensaje('Por favor selecciona un evento de rifa.', 'error');
       return;
+    }
+    if (this.datosOrden.participa_rifa && this.datosOrden.id_rifa) {
+      console.log(`✅ VALIDACIÓN OK: Rifa asignada (evento: ${this.datosOrden.id_rifa})`);
     }
 
     // Solo enviar deja_casco y cantidad_cascos si es moto

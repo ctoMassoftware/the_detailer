@@ -74,11 +74,18 @@ export const createOrden = async (req, res) => {
     fecha = null
   } = req.body;
 
-  // 🔍 DEBUG: Log qué datos se reciben
+  // 🔍 DEBUG: Log COMPLETO qué datos se reciben
   console.log('📥 [CREATE ORDEN] Datos recibidos:');
-  console.log(`  - id_rifa: ${id_rifa} (tipo: ${typeof id_rifa})`);
+  console.log(`  - placa_vehiculo: ${placa_vehiculo}`);
+  console.log(`  - nombre_cliente: ${nombre_cliente}`);
+  console.log(`  - id_rifa: ${id_rifa} (tipo: ${typeof id_rifa}) ⚠️ CRÍTICO`);
   console.log(`  - fecha: ${fecha}`);
   console.log(`  - hora: ${req.body.hora}`);
+  console.log(`  - Full req.body.id_rifa: ${JSON.stringify(req.body.id_rifa)}`);
+  console.log(`  - Payload completo: ${JSON.stringify({
+    placa_vehiculo, nombre_cliente, id_rifa, fecha,
+    servicios: servicios?.length, estado: req.body.estado
+  })}`);
 
   const sedeFinal = rol === "SUPER_ADMIN" && sede ? sede : sedeUsuario || "GLOBAL";
   const client = await pool.connect();
