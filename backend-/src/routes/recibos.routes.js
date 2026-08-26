@@ -66,8 +66,8 @@ router.get('/por-placa/:placa', async (req, res) => {
        LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
-       LEFT JOIN rifa r ON UPPER(o.placa_vehiculo) = UPPER(r.placa_vehiculo) AND o.id_rifa = r.id_evento_rifa
        LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
+       LEFT JOIN rifa r ON o.id_rifa = r.id_evento_rifa
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
        GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, u.nombre, u.apellido, er.descripcion_premios, er.fecha_sorteo, r.numero_boleta
        ORDER BY o.fecha DESC, o.hora DESC, o.id_orden DESC`,
@@ -116,6 +116,52 @@ router.get('/por-placa/:placa', async (req, res) => {
   } catch (error) {
     console.error('Error obteniendo órdenes por placa:', error);
     res.status(500).json({ error: 'Error obteniendo órdenes' });
+  }
+});
+
+/**
+ * DEBUG: Validar datos en BD para una orden específica
+ * GET /api/recibos/debug/:idOrden
+ */
+router.get('/debug/:idOrden', async (req, res) => {
+  try {
+    const { idOrden } = req.params;
+
+    // Validar orden
+    const ordenRes = await pool.query('SELECT * FROM orden WHERE id_orden = $1', [idOrden]);
+    const orden = ordenRes.rows[0] || null;
+
+    // Validar evento de rifa
+    let eventoRifa = null;
+    if (orden && orden.id_rifa) {
+      const rifaRes = await pool.query('SELECT * FROM evento_rifa WHERE id_evento = $1', [orden.id_rifa]);
+      eventoRifa = rifaRes.rows[0] || null;
+    }
+
+    // Validar boletas registradas para ese evento
+    let boletas = [];
+    if (orden && orden.id_rifa) {
+      const boletasRes = await pool.query('SELECT * FROM rifa WHERE id_evento_rifa = $1', [orden.id_rifa]);
+      boletas = boletasRes.rows;
+    }
+
+    res.json({
+      debug: true,
+      orden: orden ? {
+        id_orden: orden.id_orden,
+        placa_vehiculo: orden.placa_vehiculo,
+        nombre_cliente: orden.nombre_cliente,
+        id_rifa: orden.id_rifa,
+        fecha: orden.fecha,
+        estado: orden.estado
+      } : null,
+      eventoRifa: eventoRifa,
+      boletasParaEseEvento: boletas,
+      primeraBoletaDelEvento: boletas.length > 0 ? boletas[0] : null
+    });
+  } catch (error) {
+    console.error('Error en debug:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
