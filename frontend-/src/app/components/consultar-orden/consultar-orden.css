@@ -959,33 +959,73 @@ input[type="date"] {
 }
 
 /* ---------------------------------------------------
-   AJUSTES RESPONSIVE PARA EL SELECT DE PAGO
+   SELECT DE PAGO EN FACTURA
    --------------------------------------------------- */
 .select-pago-factura {
-    width: 150px; 
-    padding: 0.5rem; 
-    text-align: right;
+    width: 180px;
+    padding: 0.75rem 1rem;
+    background-color: #2c2c2c;
+    color: white;
+    border: 2px solid #10b981;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2310b981' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 2.5rem;
+}
+
+.select-pago-factura:hover {
+    background-color: #333333;
+    border-color: #22c55e;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.select-pago-factura:focus {
+    outline: none;
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.select-pago-factura option {
+    background-color: #1a1a1a;
+    color: white;
+    padding: 0.5rem;
+}
+
+.row-metodo-pago {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    justify-content: space-between;
 }
 
 @media (max-width: 480px) {
     .factura-totals {
-        justify-content: center; /* Centrar el bloque en móviles */
+        justify-content: center;
     }
     .totals-box {
-        max-width: 100%; /* Ocupar todo el ancho disponible */
+        max-width: 100%;
     }
-    
+
     .row-metodo-pago {
-        flex-direction: column; /* Apilar Etiqueta y Select */
+        flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
     }
 
     .select-pago-factura {
-        width: 100%; /* Ocupa todo el ancho en celular */
-        text-align: center; /* Centra el texto para que se vea mejor */
+        width: 100%;
+        text-align: center;
         font-size: 1rem;
-        padding: 0.75rem; /* Botón más grande para el dedo */
+        padding: 0.75rem;
+        padding-right: 2.5rem;
     }
 }
 
