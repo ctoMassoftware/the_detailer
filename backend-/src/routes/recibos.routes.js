@@ -195,6 +195,75 @@ router.get('/debug-rifa', async (req, res) => {
 });
 
 /**
+ * SETUP: Crear evento de rifa y asignar a todas las órdenes
+ * POST /api/recibos/setup-rifa (sin autenticación - temporal)
+ */
+router.post('/setup-rifa', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Crear evento de rifa
+    const rifaResult = await client.query(`
+      INSERT INTO evento_rifa (fecha_sorteo, descripcion_premios, encargado, estado)
+      VALUES (
+        CURRENT_DATE + INTERVAL '30 days',
+        'Lavado Gratis + Encerado Premium',
+        'The Detailer',
+        true
+      )
+      RETURNING id_evento
+    `);
+    const idEvento = rifaResult.rows[0].id_evento;
+    console.log(`✓ Evento de rifa creado: ${idEvento}`);
+
+    // 2. Asignar rifa a todas las órdenes sin rifa
+    const updateResult = await client.query(`
+      UPDATE orden SET id_rifa = $1
+      WHERE id_rifa IS NULL
+      RETURNING id_orden
+    `, [idEvento]);
+    console.log(`✓ ${updateResult.rowCount} órdenes actualizadas con rifa`);
+
+    // 3. Crear boletas para cada orden con esa rifa
+    const boletasResult = await client.query(`
+      INSERT INTO rifa (id_evento_rifa, numero_boleta, nombre, telefono, placa_vehiculo)
+      SELECT
+        $1,
+        CONCAT('BL-', o.id_orden),
+        o.nombre_cliente,
+        o.telefono_cliente,
+        o.placa_vehiculo
+      FROM orden o
+      WHERE o.id_rifa = $1
+        AND NOT EXISTS (
+          SELECT 1 FROM rifa r
+          WHERE r.id_evento_rifa = $1
+            AND r.numero_boleta = CONCAT('BL-', o.id_orden)
+        )
+      RETURNING id_boleta
+    `, [idEvento]);
+    console.log(`✓ ${boletasResult.rowCount} boletas creadas`);
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      eventoRifaId: idEvento,
+      ordenesActualizadas: updateResult.rowCount,
+      boletasCreadas: boletasResult.rowCount,
+      mensaje: 'Setup de rifa completado exitosamente'
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error en setup rifa:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+/**
  * Obtener datos del recibo en JSON
  * GET /api/recibos/datos/:token?placa=ABC123
  */
