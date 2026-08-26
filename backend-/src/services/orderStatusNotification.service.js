@@ -48,8 +48,19 @@ export const enviarNotificacionPorCambioEstado = async (
   console.log(`📝 Estados normalizados: anterior="${estadoAnterior?.toLowerCase()}" nuevo="${estadoNuevo?.toLowerCase()}"`);
 
   try {
+    // Normalizar estados para comparación
+    const estadoNuevoNorm = estadoNuevo?.toLowerCase() || '';
+    const estadoAnteriorNorm = estadoAnterior?.toLowerCase() || '';
+
+    console.log(`🔍 Evaluando transiciones:`);
+    console.log(`   Anterior: "${estadoAnterior}" (normalizado: "${estadoAnteriorNorm}")`);
+    console.log(`   Nuevo: "${estadoNuevo}" (normalizado: "${estadoNuevoNorm}")`);
+
     // ✅ CUALQUIER ESTADO → PROCESO (Sin ser Proceso aún)
-    if (estadoNuevo && estadoNuevo.toLowerCase().includes('proceso') && !estadoAnterior?.toLowerCase().includes('proceso')) {
+    const esTransicionAProceso = estadoNuevoNorm.includes('proceso') && !estadoAnteriorNorm.includes('proceso');
+    console.log(`   ✓ ¿Transición a PROCESO? ${esTransicionAProceso}`);
+
+    if (esTransicionAProceso) {
       console.log(`✉️ Enviando SMS #1: Orden EN PROCESO a ${telefono_cliente}`);
       return await enviarNotificacionModificacion(
         telefono_cliente,
@@ -62,8 +73,10 @@ export const enviarNotificacionPorCambioEstado = async (
 
     // ✅ CUALQUIER ESTADO → LISTA (Con o sin Rifa)
     // Permite transición: NULL→LISTA, PROCESO→LISTA, etc.
-    if (estadoNuevo && estadoNuevo.toLowerCase() === 'lista' &&
-        (!estadoAnterior || estadoAnterior.toLowerCase() !== 'lista')) {
+    const esTransicionALista = estadoNuevoNorm === 'lista' && estadoAnteriorNorm !== 'lista';
+    console.log(`   ✓ ¿Transición a LISTA? ${esTransicionALista}`);
+
+    if (esTransicionALista) {
       console.log(`✉️ Enviando SMS #2: Orden LISTA a ${telefono_cliente}`);
 
       // 📥 Generar token para descarga de recibo cuando la orden está lista
@@ -105,8 +118,10 @@ export const enviarNotificacionPorCambioEstado = async (
 
     // ✅ LISTA → FINALIZADO/FINALIZADA/COMPLETADO (flexible con estado)
     // Solo envía si estado anterior es LISTA y nuevo incluye 'finaliz' (FINALIZADA, FINALIZADO, etc)
-    if (estadoNuevo && estadoNuevo.toLowerCase().includes('finaliz') &&
-        estadoAnterior && estadoAnterior.toLowerCase() === 'lista') {
+    const esTransicionAFinalizada = estadoNuevoNorm.includes('finaliz') && estadoAnteriorNorm === 'lista';
+    console.log(`   ✓ ¿Transición a FINALIZADA? ${esTransicionAFinalizada} (anterior=${estadoAnteriorNorm}, nuevo=${estadoNuevoNorm})`);
+
+    if (esTransicionAFinalizada) {
       console.log(`✉️ Enviando SMS #3: Orden COMPLETADA a ${telefono_cliente}`);
       console.log(`📊 Datos extraídos: tipo_vehiculo="${tipo_vehiculo}", cantidad_cascos=${cantidad_cascos}`);
 

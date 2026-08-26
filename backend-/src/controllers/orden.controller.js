@@ -426,14 +426,16 @@ export const updateOrden = async (req, res) => {
     // Normalizar estadoAnterior: si es "null" (string) o null/undefined, tratar como vacío
     const estadoAnteriorNormalizado = (estadoAnterior && estadoAnterior !== 'null') ? estadoAnterior : null;
 
-    console.log(`📊 updateOrden debug:`);
-    console.log(`   estadoAnterior raw: "${estadoAnterior}" (${typeof estadoAnterior})`);
-    console.log(`   estadoAnterior normalizado: "${estadoAnteriorNormalizado}"`);
-    console.log(`   estado (nuevo): "${estado}" (${typeof estado})`);
-    console.log(`   ¿Son diferentes? ${estadoAnteriorNormalizado !== estado}`);
+    console.log(`\n📊 ═══ NOTIFICACIÓN SMS ═══`);
+    console.log(`📊 updateOrden - Orden #${id}:`);
+    console.log(`   📝 Estado anterior (raw): "${estadoAnterior}" (type: ${typeof estadoAnterior})`);
+    console.log(`   📝 Estado anterior (norm): "${estadoAnteriorNormalizado}"`);
+    console.log(`   📝 Estado nuevo (enviado): "${estado}" (type: ${typeof estado})`);
+    console.log(`   📝 ¿Cambió el estado? ${estadoAnteriorNormalizado !== estado}`);
 
     // Enviar notificación si: estado cambió Y estado nuevo está definido
     if (estado !== undefined && estadoAnteriorNormalizado !== estado) {
+      console.log(`✅ ¡Enviar notificación! Cambio: "${estadoAnteriorNormalizado}" → "${estado}"`);
       console.log(`✅ [NOTIFICACIÓN AUTOMÁTICA] Estado cambió: ${estadoAnterior} → ${estado}`);
       console.log(`🧢 Datos para notificación: tipo=${tipoVehiculoActual}, cascos=${cantidadCascosActual}`);
 
