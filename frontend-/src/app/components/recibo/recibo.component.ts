@@ -12,6 +12,8 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./recibo.component.css']
 })
 export class ReciboComponent implements OnInit {
+  private apiUrl = 'https://thedetailer.up.railway.app/api/recibos';
+
   token: string = '';
   placa: string = '';
   orden: any = null;
@@ -51,7 +53,10 @@ export class ReciboComponent implements OnInit {
     this.cargando = true;
     this.error = '';
 
-    this.http.get(`/api/recibos/datos/${this.token}?placa=${this.placa}`)
+    const url = `${this.apiUrl}/datos/${this.token}?placa=${this.placa}`;
+    console.log('📥 Obteniendo recibo:', url);
+
+    this.http.get(url)
       .subscribe(
         (response: any) => {
           if (response.success && response.orden) {
@@ -63,13 +68,13 @@ export class ReciboComponent implements OnInit {
           this.cargando = false;
         },
         (error) => {
-          console.error('Error:', error);
+          console.error('Error obteniendo recibo:', error);
           if (error.status === 401) {
             this.error = 'Token inválido, expirado o no descargado.';
           } else if (error.status === 404) {
             this.error = 'Recibo no encontrado.';
           } else {
-            this.error = 'Error al cargar el recibo. Intenta más tarde.';
+            this.error = `Error al cargar el recibo: ${error.status || 'desconocido'}. Intenta más tarde.`;
           }
           this.cargando = false;
         }
@@ -80,11 +85,15 @@ export class ReciboComponent implements OnInit {
     this.cargando = true;
     this.error = '';
 
-    this.http.get(`/api/recibos/por-placa/${this.placa}`)
+    const url = `${this.apiUrl}/por-placa/${this.placa}`;
+    console.log('📥 Obteniendo órdenes por placa:', url);
+
+    this.http.get(url)
       .subscribe(
         (response: any) => {
           if (response.success && response.ordenes && response.ordenes.length > 0) {
             this.ordenes = response.ordenes;
+            // Seleccionar la última orden (más reciente)
             this.ordenSeleccionada = response.ordenes[0];
             this.orden = this.ordenSeleccionada;
             console.log(`✓ ${this.ordenes.length} órdenes cargadas para placa ${this.placa}`);
@@ -94,8 +103,8 @@ export class ReciboComponent implements OnInit {
           this.cargando = false;
         },
         (error) => {
-          console.error('Error:', error);
-          this.error = 'Error al cargar las órdenes. Intenta más tarde.';
+          console.error('Error obteniendo órdenes por placa:', error);
+          this.error = `Error al cargar las órdenes: ${error.status || 'desconocido'}. Intenta más tarde.`;
           this.cargando = false;
         }
       );

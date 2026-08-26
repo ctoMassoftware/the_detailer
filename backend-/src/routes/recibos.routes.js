@@ -4,6 +4,23 @@ import { pool } from '../config/db.js';
 
 const router = Router();
 
+/**
+ * Health check y diagnostics
+ * GET /api/recibos/health
+ */
+router.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'recibos',
+    timestamp: new Date().toISOString(),
+    endpoints: [
+      'GET /datos/:token?placa=XXX - Obtener recibo específico',
+      'GET /por-placa/:placa - Obtener todas las órdenes de una placa',
+      'GET /descargar/:token?placa=XXX - Descargar HTML del recibo'
+    ]
+  });
+});
+
 // 🔍 Middleware de debugging - registra todas las solicitudes
 router.use((req, res, next) => {
   console.log(`📍 GET /api/recibos${req.path}`);

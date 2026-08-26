@@ -45,6 +45,11 @@ export const enviarNotificacionPorCambioEstado = async (
     if (estadoAnterior !== 'Lista' && estadoNuevo === 'Lista') {
       console.log(`✉️ Enviando SMS: Orden LISTA a ${telefono_cliente}`);
 
+      // 📥 Generar token para descarga de recibo cuando la orden está lista
+      console.log(`📥 Generando token para orden ${id_orden}, placa: ${placa_vehiculo}`);
+      const tokenRecibo = await generarTokenRecibo(id_orden, placa_vehiculo);
+      console.log(`📥 Token generado para Lista: ${tokenRecibo ? '✓ SÍ' : '✗ NO'}`);
+
       // Si hay rifa, usar plantilla con rifa
       if (numeroRifa) {
         console.log(`   Con rifa #${numeroRifa}`);
@@ -55,7 +60,7 @@ export const enviarNotificacionPorCambioEstado = async (
           numeroRifa,
           placa_vehiculo,
           id_orden,
-          { orderId: id_orden, tipo: 'estado_lista_rifa' },
+          { orderId: id_orden, tipo: 'estado_lista_rifa', tokenRecibo },
           credentials
         );
       }
@@ -67,7 +72,7 @@ export const enviarNotificacionPorCambioEstado = async (
         valorTotal,
         placa_vehiculo,
         id_orden,
-        { orderId: id_orden, tipo: 'estado_lista' },
+        { orderId: id_orden, tipo: 'estado_lista', tokenRecibo },
         credentials
       );
     }
