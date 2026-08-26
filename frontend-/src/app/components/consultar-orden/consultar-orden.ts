@@ -574,9 +574,9 @@ export class ConsultarOrden implements OnInit {
     this.montoRecibido = null;
     this.mostrarFactura = true;
     this.mostrarModal = false;
-    this.mostrarRifa = false;
+    this.mostrarRifa = false;  // ✅ Asegurar que la rifa está colapsada al abrir
     this.metodoImpresionFacturaOrden = 'WINDOWS';
-    this.numeroBoletaRifa = '';
+    this.numeroBoletaRifa = '';  // ✅ Limpiar número seleccionado
     this.cargarRifaActiva();
   }
 
