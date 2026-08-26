@@ -124,7 +124,7 @@ export class CrearOrdenComponent implements OnInit {
     notas: '',
     deja_casco: false,
     cantidad_cascos: 0,
-    participa_rifa: false,
+    participa_rifa: false,  // ✅ Por defecto NO participa
     id_rifa: null
   };
 
@@ -445,6 +445,12 @@ export class CrearOrdenComponent implements OnInit {
 
     this.datosOrden.tecnico_asignado = operarioEncontrado.id_user || operarioEncontrado.id;
 
+    // ✅ Validar rifa: si participa, debe tener evento seleccionado
+    if (this.datosOrden.participa_rifa && !this.datosOrden.id_rifa) {
+      this.mostrarMensaje('Por favor selecciona un evento de rifa.', 'error');
+      return;
+    }
+
     // Solo enviar deja_casco y cantidad_cascos si es moto
     const payload: any = {
       cedula_cliente: this.datosOrden.cedula_cliente || '',
@@ -473,6 +479,16 @@ export class CrearOrdenComponent implements OnInit {
       payload.deja_casco = this.datosOrden.deja_casco;
       payload.cantidad_cascos = this.datosOrden.deja_casco ? Number(this.datosOrden.cantidad_cascos) : 0;
     }
+
+    // 🔍 DEBUG: Log del payload antes de enviar
+    console.log('📤 [CREAR ORDEN] Enviando payload:', {
+      placa: payload.placa_vehiculo,
+      fecha: payload.fecha,
+      hora: payload.hora,
+      participa_rifa: this.datosOrden.participa_rifa,
+      id_rifa: payload.id_rifa,
+      cliente: payload.nombre_cliente
+    });
 
     this.ordenService.createOrden(payload).subscribe({
       next: (resp) => {

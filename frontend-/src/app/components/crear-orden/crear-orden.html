@@ -309,24 +309,27 @@
       </section>
 
       <section class="panel">
-        <h3 class="panel-title">🎰 Participación en Rifa</h3>
+        <h3 class="panel-title">🎰 Participación en Rifa (Opcional)</h3>
         <div class="grid-form">
           <div class="form-group">
-            <label>¿Participa en Rifa?</label>
+            <label>¿El cliente participa en rifa?</label>
             <select [(ngModel)]="datosOrden.participa_rifa" (change)="datosOrden.id_rifa = null" class="input-dark">
-              <option [value]="false">No</option>
-              <option [value]="true">Sí</option>
+              <option [value]="false" selected>❌ No participa</option>
+              <option [value]="true">✅ Sí participa</option>
             </select>
           </div>
 
           <div class="form-group" *ngIf="datosOrden.participa_rifa">
-            <label>Evento de Rifa *</label>
-            <select [(ngModel)]="datosOrden.id_rifa" class="input-dark" required>
-              <option [value]="null" disabled selected hidden>Seleccione evento...</option>
+            <label style="color: var(--primary); font-weight: bold;">🎟️ Selecciona Evento de Rifa *</label>
+            <select [(ngModel)]="datosOrden.id_rifa" class="input-dark" required style="border: 2px solid var(--primary);">
+              <option [value]="null" disabled selected hidden>⚠️ Selecciona un evento...</option>
               <option *ngFor="let rifa of rifasDisponibles" [value]="rifa.id_evento">
-                {{ rifa.descripcion_premios }} ({{ rifa.fecha_sorteo | date:'dd/MM/yyyy' }})
+                🎁 {{ rifa.descripcion_premios }} (Sorteo: {{ rifa.fecha_sorteo | date:'dd/MM/yyyy' }})
               </option>
             </select>
+            <small style="color: var(--primary); display: block; margin-top: 5px;">
+              ℹ️ El cliente participará automáticamente con esta orden
+            </small>
           </div>
         </div>
       </section>
