@@ -190,10 +190,10 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
 // EXPORTED NOTIFICATION FUNCTIONS - ALL OPTIMIZED FOR 160 CHARS MAX
 
 export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
-  // COMPACTO: 160 chars max (1 SMS)
-  const mensaje = `Orden #${numeroOrden} recibida ✅\n${placa} | Total: $${Number(total || 0).toLocaleString('es-CO')}\n⏳ Te contactaremos cuando esté lista.\nThe Detailer`;
+  // COMPACTO: 160 chars max - SIN TOTAL, SIN LINK
+  const mensaje = `¡Hola ${nombreCliente}! 👋\nRecibimos tu orden #${numeroOrden}\n${placa}\n⏳ Te notificaremos cuando esté lista.\nThe Detailer`;
 
-  console.log(`📊 SMS Inicio - ${mensaje.length} chars (máx: 160)`);
+  console.log(`📊 SMS Inicio - ${mensaje.length} chars (máx: 160) - SIN TOTAL/LINK`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_inicio',
@@ -202,10 +202,10 @@ export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, 
 };
 
 export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
-  // COMPACTO: 160 chars max (1 SMS)
-  const mensaje = `¡LISTA! Orden #${numeroOrden}\n${placa} | $${Number(total || 0).toLocaleString('es-CO')}\nVer: the-detailer.co/recibos?placa=${placa}`;
+  // COMPACTO: 160 chars max - CON TOTAL, SIN LINK (link solo en Terminada)
+  const mensaje = `¡Tu orden #${numeroOrden} está LISTA! 🎉\n${placa}\n💰 Total: $${Number(total || 0).toLocaleString('es-CO')}\n\nVen a recogerla. The Detailer`;
 
-  console.log(`📊 SMS Lista - ${mensaje.length} chars (máx: 160)`);
+  console.log(`📊 SMS Lista - ${mensaje.length} chars (máx: 160) - CON TOTAL, SIN LINK`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_lista_sin_rifa',
@@ -214,10 +214,10 @@ export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreClient
 };
 
 export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
-  // COMPACTO: 160 chars max (1 SMS)
-  const mensaje = `¡LISTA! Orden #${numeroOrden}\n${placa} | Rifa: ${numeroRifa}\nVer: the-detailer.co/recibos?placa=${placa}`;
+  // COMPACTO: 160 chars max - CON TOTAL Y RIFA, SIN LINK
+  const mensaje = `¡Tu orden #${numeroOrden} está LISTA! 🎉\n${placa} | Rifa: ${numeroRifa}\n💰 Total: $${Number(total || 0).toLocaleString('es-CO')}`;
 
-  console.log(`📊 SMS Lista+Rifa - ${mensaje.length} chars (máx: 160)`);
+  console.log(`📊 SMS Lista+Rifa - ${mensaje.length} chars (máx: 160) - CON TOTAL/RIFA, SIN LINK`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_lista_con_rifa',
@@ -226,16 +226,18 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
 };
 
 export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, numeroOrden = '', tokenRecibo = '', metadata = {}, credentials = null) => {
-  // COMPACTO: 160 chars max (1 SMS)
-  let mensaje = `¡COMPLETADA! Orden #${numeroOrden}\n${placa} | $${Number(total || 0).toLocaleString('es-CO')}\nVer: the-detailer.co/recibos?placa=${placa}`;
+  // COMPACTO: 160 chars max - SOLO CON LINK A FACTURA
+  const linkFactura = `https://the-detailer.co/recibos?placa=${placa}`;
+
+  let mensaje = `¡Orden #${numeroOrden} completada! ✅\nVer factura:\n${linkFactura}`;
 
   // Solo agregar cascos si es moto (y cabe en 160)
   const esMoto = tipoVehiculo && String(tipoVehiculo).toUpperCase().includes('MOTO');
   if (esMoto && cantidadCascos > 0 && mensaje.length < 140) {
-    mensaje += `\n🧢 Recoger ${cantidadCascos} casco(s)`;
+    mensaje += `\n\n🧢 Recoger ${cantidadCascos} casco(s)`;
   }
 
-  console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160)`);
+  console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160) - SOLO LINK FACTURA`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_terminada',
