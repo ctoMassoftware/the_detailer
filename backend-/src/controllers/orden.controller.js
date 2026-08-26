@@ -297,22 +297,21 @@ export const getOrdenes = async (req, res) => {
 };
 
 export const updateOrden = async (req, res) => {
+  const { id } = req.params;
+  const body = req.body || {};
+
+  console.log(`📝 updateOrden: ID=${id}, Body type:`, typeof body, 'Keys:', Object.keys(body));
+
+  const {
+    cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+    placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+    metodo_pago, caja, id_user_encargado, estado, id_rifa,
+    fecha, hora, notas, servicios, deja_casco, cantidad_cascos
+  } = body;
+
+  const client = await pool.connect();
+
   try {
-    const { id } = req.params;
-    const body = req.body || {};
-
-    console.log(`📝 updateOrden: ID=${id}, Body type:`, typeof body, 'Keys:', Object.keys(body));
-
-    const {
-      cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
-      placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-      metodo_pago, caja, id_user_encargado, estado, id_rifa,
-      fecha, hora, notas, servicios, deja_casco, cantidad_cascos
-    } = body;
-
-    const client = await pool.connect();
-
-    try {
       // ✅ PRIMERO: Obtener datos ACTUALES de la orden
       const ordenActualResult = await client.query(
         `SELECT cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
@@ -346,7 +345,7 @@ export const updateOrden = async (req, res) => {
       const hora_final = hora ? limpiarHora(hora) : ordenActual.hora;
       const notas_final = notas !== undefined ? notas : ordenActual.notas;
 
-      await client.query("BEGIN");
+    await client.query("BEGIN");
     const estadoAnterior = ordenActual.estado;
     const tipoVehiculoActual = tipo_final;
     const cantidadCascosActual = cantidad_cascos ?? (ordenActual.cantidad_cascos || 0);
@@ -460,7 +459,7 @@ export const updateOrden = async (req, res) => {
   } finally {
     client.release();
   }
-};
+}
 
 export const deleteOrden = async (req, res) => {
   const { id } = req.params;
