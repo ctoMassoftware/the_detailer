@@ -12,7 +12,17 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./recibo.component.css']
 })
 export class ReciboComponent implements OnInit {
-  private apiUrl = '/api/recibos';
+  // API URL - usando variable de entorno en producción
+  private apiUrl = this.getApiUrl();
+
+  private getApiUrl(): string {
+    // En producción: https://thedetailer.up.railway.app
+    // En desarrollo: http://localhost:3000
+    const isDev = !window.location.hostname.includes('the-detailer.co');
+    return isDev
+      ? 'http://localhost:3000/api/recibos'
+      : 'https://thedetailer.up.railway.app/api/recibos';
+  }
 
   token: string = '';
   placa: string = '';
