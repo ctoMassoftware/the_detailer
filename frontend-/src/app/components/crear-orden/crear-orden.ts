@@ -9,7 +9,6 @@ import { Nav } from "../../shared/nav/nav";
 import { ServicioService } from '../../services/servicio.service';
 import { OrdenService } from '../../services/orden.service';
 import { OperarioService } from '../../services/operario.service';
-import { RifaService } from '../../services/rifa.service';
 
 @Component({
   selector: 'app-crear-orden',
@@ -97,14 +96,12 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
   private servicioService = inject(ServicioService);
   private ordenService = inject(OrdenService);
   private operarioService = inject(OperarioService);
-  private rifaService = inject(RifaService);
   private router = inject(Router);
 
   serviciosUnitarios: any[] = [];
   combos: any[] = [];
   tecnicos: any[] = [];
   nombreTecnicoSeleccionado: string = '';
-  rifasDisponibles: any[] = [];
 
   rolUsuario: string = '';
 
@@ -126,9 +123,7 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
     caja: 'Caja 1',
     notas: '',
     deja_casco: false,
-    cantidad_cascos: 0,
-    participa_rifa: false,  // ✅ Por defecto NO participa
-    id_rifa: null
+    cantidad_cascos: 0
   };
 
   itemsSeleccionados: any[] = [];
@@ -148,19 +143,6 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
     this.cargarUsuarioSesion();
     this.cargarServicios();
     this.cargarOperarios();
-    this.cargarRifas();
-  }
-
-  cargarRifas() {
-    this.rifaService.getTodasRifas().pipe(takeUntil(this.destroy$)).subscribe({
-      next: (rifas: any[]) => {
-        this.rifasDisponibles = rifas || [];
-      },
-      error: (err) => {
-        console.error('Error cargando rifas:', err);
-        this.rifasDisponibles = [];
-      }
-    });
   }
 
   capitalizarPalabras(texto: string): string {
@@ -449,19 +431,6 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
 
     this.datosOrden.tecnico_asignado = operarioEncontrado.id_user || operarioEncontrado.id;
 
-    // ✅ Validar rifa: si participa, debe tener evento seleccionado
-    console.log('🔍 [VALIDACIÓN RIFA]');
-    console.log(`  - participa_rifa: ${this.datosOrden.participa_rifa}`);
-    console.log(`  - id_rifa: ${this.datosOrden.id_rifa}`);
-    if (this.datosOrden.participa_rifa && !this.datosOrden.id_rifa) {
-      console.warn('⚠️ VALIDACIÓN FALLÓ: Usuario seleccionó rifa pero no eligió evento');
-      this.mostrarMensaje('Por favor selecciona un evento de rifa.', 'error');
-      return;
-    }
-    if (this.datosOrden.participa_rifa && this.datosOrden.id_rifa) {
-      console.log(`✅ VALIDACIÓN OK: Rifa asignada (evento: ${this.datosOrden.id_rifa})`);
-    }
-
     // Solo enviar deja_casco y cantidad_cascos si es moto
     const payload: any = {
       cedula_cliente: this.datosOrden.cedula_cliente || '',
@@ -478,7 +447,6 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
       id_user_encargado: this.datosOrden.tecnico_asignado,
       fecha: this.datosOrden.fecha,
       hora: this.datosOrden.hora,
-      id_rifa: this.datosOrden.participa_rifa ? this.datosOrden.id_rifa : null,
       notas: this.datosOrden.notas,
       servicios: this.itemsSeleccionados.map(item => ({
         id_servicio: item.id_servicio,
@@ -496,8 +464,6 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
       placa: payload.placa_vehiculo,
       fecha: payload.fecha,
       hora: payload.hora,
-      participa_rifa: this.datosOrden.participa_rifa,
-      id_rifa: payload.id_rifa,
       cliente: payload.nombre_cliente
     });
 
