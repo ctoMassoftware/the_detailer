@@ -396,7 +396,9 @@ export const updateOrden = async (req, res) => {
     updateQuery += ` WHERE id_orden = $${paramIndex}`;
     values.push(id);
 
+    console.log(`🔄 Ejecutando UPDATE:`, { query: updateQuery.substring(0, 100), valuesCount: values.length });
     await client.query(updateQuery, values);
+    console.log(`✅ UPDATE exitoso para orden ${id}`);
 
     if (servicios !== undefined) {
       await client.query("DELETE FROM public.detalle_orden_venta WHERE id_orden = $1", [id]);
