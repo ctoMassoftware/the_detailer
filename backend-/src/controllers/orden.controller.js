@@ -301,7 +301,7 @@ export const updateOrden = async (req, res) => {
   const {
     cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
     placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-    metodo_pago, caja, id_user_encargado, estado,
+    metodo_pago, caja, id_user_encargado, estado, id_rifa,
     fecha, hora, notas, servicios, deja_casco, cantidad_cascos
   } = req.body;
 
@@ -334,7 +334,7 @@ export const updateOrden = async (req, res) => {
     );
     const valorTotalActual = totalResult.rows[0]?.total || 0;
 
-    // ✅ Construir UPDATE dinámicamente: solo incluir cantidad_cascos y deja_casco si se envían
+    // ✅ Construir UPDATE dinámicamente: solo incluir cantidad_cascos, deja_casco, id_rifa si se envían
     let updateQuery = `
       UPDATE public.orden SET
         cedula_cliente = $1, nombre_cliente = $2, correo_cliente = $3, telefono_cliente = $4, direccion_cliente = $5,
@@ -348,7 +348,13 @@ export const updateOrden = async (req, res) => {
       fecha, horaFinal, notas
     ];
 
+    // ✅ Agregar id_rifa si viene
     let paramIndex = values.length + 1;
+    if (id_rifa !== undefined && id_rifa !== null) {
+      updateQuery += `, id_rifa = $${paramIndex}`;
+      values.push(id_rifa);
+      paramIndex++;
+    }
 
     // ✅ Solo actualizar deja_casco si viene en el request
     if (deja_casco !== undefined && deja_casco !== null) {
