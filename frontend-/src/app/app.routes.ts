@@ -21,6 +21,7 @@ export const routes: Routes = [
   // ==========================================
   { path: '', component: Landing, pathMatch: 'full' },
   { path: 'login', component: Login },
+  { path: 'recibos', component: ReciboComponent }, // 👈 RECIBOS CON QUERY PARAM (?placa=ABC)
   { path: 'recibos/:token', component: ReciboComponent }, // 👈 RECIBOS CON TOKEN
 
   // ==========================================
