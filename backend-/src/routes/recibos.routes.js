@@ -61,15 +61,14 @@ router.get('/por-placa/:placa', async (req, res) => {
         ) as lista_servicios,
         er.descripcion_premios as rifa_premio,
         er.fecha_sorteo as fecha_sorteo,
-        r.numero_boleta as numero_rifa
+        (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa LIMIT 1) as numero_rifa
        FROM orden o
        LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
        LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
-       LEFT JOIN rifa r ON o.id_rifa = r.id_evento_rifa
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
-       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, u.nombre, u.apellido, er.descripcion_premios, er.fecha_sorteo, r.numero_boleta
+       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, u.nombre, u.apellido, er.descripcion_premios, er.fecha_sorteo
        ORDER BY o.fecha DESC, o.hora DESC, o.id_orden DESC`,
       [placa]
     );
