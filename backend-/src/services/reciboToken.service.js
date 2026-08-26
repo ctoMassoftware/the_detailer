@@ -66,8 +66,8 @@ export const validarTokenRecibo = async (token, placa = null) => {
 
     const row = result.rows[0];
 
-    // Validar placa (seguridad adicional)
-    if (placa && row.placa_vehiculo !== placa) {
+    // Validar placa (seguridad adicional) - case-insensitive
+    if (placa && String(row.placa_vehiculo).toUpperCase() !== String(placa).toUpperCase()) {
       console.warn(`⚠️ Placa no coincide: ${placa} != ${row.placa_vehiculo}`);
       return null;
     }

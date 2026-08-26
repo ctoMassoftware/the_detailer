@@ -42,7 +42,7 @@ router.get('/por-placa/:placa', async (req, res) => {
       return res.status(400).json({ error: 'Placa inválida' });
     }
 
-    // Obtener todas las órdenes de esa placa
+    // Obtener todas las órdenes de esa placa (case-insensitive)
     const result = await pool.query(
       `SELECT
         o.*,
@@ -61,7 +61,7 @@ router.get('/por-placa/:placa', async (req, res) => {
        FROM orden o
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
-       WHERE o.placa_vehiculo = $1
+       WHERE UPPER(o.placa_vehiculo) = UPPER($1)
        GROUP BY o.id_orden
        ORDER BY o.id_orden DESC`,
       [placa]
