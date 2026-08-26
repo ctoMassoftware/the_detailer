@@ -126,27 +126,60 @@ export class ReciboComponent implements OnInit {
   }
 
   descargarPDF(): void {
-    if (typeof (window as any).html2pdf === 'undefined') {
-      alert('Error: Librería PDF no disponible');
-      return;
+    try {
+      const elemento = document.getElementById('recibo-contenido');
+      if (!elemento) {
+        alert('Error: Elemento del recibo no encontrado');
+        return;
+      }
+
+      // Dinamically load html2pdf if not available
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      script.onload = () => {
+        this.generarPDF(elemento);
+      };
+      script.onerror = () => {
+        alert('Error: No se pudo cargar la librería PDF. Intenta de nuevo.');
+      };
+
+      // Solo agregar si no existe
+      if (!document.querySelector('script[src*="html2pdf"]')) {
+        document.head.appendChild(script);
+      } else {
+        this.generarPDF(elemento);
+      }
+    } catch (error) {
+      console.error('Error descargando PDF:', error);
+      alert('Error al generar PDF. Intenta de nuevo.');
     }
+  }
 
-    const elemento = document.getElementById('recibo-contenido');
-    if (!elemento) return;
+  private generarPDF(elemento: HTMLElement): void {
+    try {
+      if (typeof (window as any).html2pdf === 'undefined') {
+        alert('Error: Librería PDF no disponible. Intenta de nuevo.');
+        return;
+      }
 
-    const opt = {
-      margin: 10,
-      filename: `Recibo_${this.orden.placa_vehiculo || this.orden.id_orden}_${new Date().toISOString().split('T')[0]}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-    };
+      const opt = {
+        margin: 10,
+        filename: `Recibo_${this.orden.placa_vehiculo || this.orden.id_orden}_${new Date().toISOString().split('T')[0]}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+      };
 
-    (window as any).html2pdf().set(opt).from(elemento).save();
+      (window as any).html2pdf().set(opt).from(elemento).save();
+      console.log('✓ PDF descargado exitosamente');
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      alert('Error al generar PDF');
+    }
   }
 
   volver(): void {
-    this.router.navigate(['/home']);
+    this.router.navigate(['/']);
   }
 
   obtenerFecha(fecha: string): string {
