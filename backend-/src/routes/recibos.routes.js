@@ -11,6 +11,78 @@ router.use((req, res, next) => {
 });
 
 /**
+ * Obtener todas las órdenes de un vehículo por placa
+ * GET /api/recibos/por-placa/:placa
+ */
+router.get('/por-placa/:placa', async (req, res) => {
+  try {
+    const { placa } = req.params;
+
+    console.log(`📥 ENDPOINT ÓRDENES POR PLACA - Solicitud recibida`);
+    console.log(`   Placa: ${placa}`);
+
+    if (!placa || placa.length < 3) {
+      return res.status(400).json({ error: 'Placa inválida' });
+    }
+
+    // Obtener todas las órdenes de esa placa
+    const result = await pool.query(
+      `SELECT
+        o.*,
+        COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total_orden,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'servicio', s.nombre_servicio,
+              'cantidad', d.cantidad,
+              'precio_unitario', d.precio_servicio_aplicado,
+              'subtotal', (d.cantidad * d.precio_servicio_aplicado)
+            )
+          ) FILTER (WHERE d.id_servicio IS NOT NULL),
+          '[]'::json
+        ) as lista_servicios
+       FROM orden o
+       LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
+       LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
+       WHERE o.placa_vehiculo = $1
+       GROUP BY o.id_orden
+       ORDER BY o.id_orden DESC`,
+      [placa]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: `No hay órdenes registradas para la placa ${placa}`
+      });
+    }
+
+    const ordenes = result.rows.map(row => ({
+      id_orden: row.id_orden,
+      fecha: row.fecha,
+      nombre_cliente: row.nombre_cliente,
+      placa_vehiculo: row.placa_vehiculo,
+      marca_vehiculo: row.marca_vehiculo,
+      modelo_vehiculo: row.modelo_vehiculo,
+      total: row.total_orden,
+      estado: row.estado,
+      servicios: row.lista_servicios
+    }));
+
+    res.json({
+      success: true,
+      placa: placa,
+      total_ordenes: ordenes.length,
+      ordenes: ordenes
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo órdenes por placa:', error);
+    res.status(500).json({ error: 'Error obteniendo órdenes' });
+  }
+});
+
+/**
  * Obtener datos del recibo en JSON
  * GET /api/recibos/datos/:token?placa=ABC123
  */

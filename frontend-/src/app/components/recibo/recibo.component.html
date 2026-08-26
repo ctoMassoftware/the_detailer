@@ -3,7 +3,7 @@
   <div class="recibo-header">
     <div style="display: flex; align-items: center; gap: 1rem;">
       <img src="assets/logo.jpeg" alt="Logo The Detailer" style="height: 50px; border-radius: 8px;">
-      <h1>Tu Recibo</h1>
+      <h1>{{ modo === 'token' ? 'Tu Recibo' : 'Órdenes - ' + placa }}</h1>
     </div>
     <div class="botones">
       <button class="btn-descargar" (click)="descargarPDF()" [disabled]="!orden">
@@ -18,13 +18,32 @@
   <!-- Indicador de carga -->
   <div *ngIf="cargando" class="loading">
     <div class="spinner"></div>
-    <p>Cargando recibo...</p>
+    <p>Cargando{{ modo === 'token' ? ' recibo' : ' órdenes' }}...</p>
   </div>
 
   <!-- Mensaje de error -->
   <div *ngIf="error && !cargando" class="error-box">
     <p>❌ {{ error }}</p>
-    <button class="btn-reintentar" (click)="obtenerRecibo()">Reintentar</button>
+    <button class="btn-reintentar" (click)="modo === 'token' ? obtenerRecibo() : obtenerOrdenesPorPlaca()">
+      Reintentar
+    </button>
+  </div>
+
+  <!-- Selector de órdenes (si hay múltiples) -->
+  <div *ngIf="modo === 'placa' && ordenes.length > 1 && !cargando" class="ordenes-selector">
+    <h2>Selecciona una orden para ver detalles:</h2>
+    <div class="ordenes-grid">
+      <button
+        *ngFor="let ord of ordenes"
+        class="orden-card"
+        [class.activa]="ordenSeleccionada?.id_orden === ord.id_orden"
+        (click)="seleccionarOrden(ord.id_orden)">
+        <div class="orden-numero">Orden #{{ ord.id_orden }}</div>
+        <div class="orden-fecha">{{ obtenerFecha(ord.fecha) }}</div>
+        <div class="orden-estado" [ngClass]="'estado-' + formatEstado(ord.estado)">{{ ord.estado }}</div>
+        <div class="orden-total">${{ ord.total.toLocaleString('es-CO') }}</div>
+      </button>
+    </div>
   </div>
 
   <!-- Recibo -->
