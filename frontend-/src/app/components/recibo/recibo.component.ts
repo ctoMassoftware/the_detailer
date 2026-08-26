@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RifaService } from '../../services/rifa.service';
 
 @Component({
   selector: 'app-recibo',
@@ -12,6 +13,8 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./recibo.component.css']
 })
 export class ReciboComponent implements OnInit {
+  private rifaService = inject(RifaService);
+
   // API URL - usando variable de entorno en producción
   private apiUrl = this.getApiUrl();
 
@@ -33,6 +36,10 @@ export class ReciboComponent implements OnInit {
   error: string = '';
   modo: 'token' | 'placa' = 'token';
   mostrarTodasLasOrdenes: boolean = false;  // Toggle para mostrar selector
+
+  // Rifas del módulo administrador
+  rifaInfo: any = null;
+  boletasRifa: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -76,6 +83,11 @@ export class ReciboComponent implements OnInit {
           if (response.success && response.orden) {
             this.orden = response.orden;
             console.log('✓ Recibo cargado:', this.orden);
+
+            // ✅ Cargar datos de la rifa si la orden tiene id_rifa
+            if (this.orden.id_rifa) {
+              this.cargarRifaInfo(this.orden.id_rifa);
+            }
           } else {
             this.error = 'No se pudo cargar el recibo';
           }
@@ -237,5 +249,31 @@ export class ReciboComponent implements OnInit {
 
   toggleTodasLasOrdenes(): void {
     this.mostrarTodasLasOrdenes = !this.mostrarTodasLasOrdenes;
+  }
+
+  cargarRifaInfo(idRifa: number): void {
+    console.log(`🎯 Cargando info de rifa #${idRifa}`);
+    this.rifaService.getRifaActiva().subscribe(
+      (rifa: any) => {
+        if (rifa && rifa.id_evento === idRifa) {
+          this.rifaInfo = rifa;
+          console.log('✓ Rifa cargada:', this.rifaInfo);
+
+          // Cargar boletas de esta rifa
+          this.rifaService.getBoletasPorRifa(idRifa).subscribe(
+            (boletas: any[]) => {
+              this.boletasRifa = boletas;
+              console.log(`✓ ${boletas.length} boletas cargadas para rifa #${idRifa}`);
+            },
+            (error) => {
+              console.warn('⚠️ Error cargando boletas:', error);
+            }
+          );
+        }
+      },
+      (error) => {
+        console.warn('⚠️ Error cargando rifa:', error);
+      }
+    );
   }
 }
