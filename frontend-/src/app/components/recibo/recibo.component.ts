@@ -199,11 +199,10 @@ export class ReciboComponent implements OnInit {
 
   obtenerFecha(fecha: string): string {
     if (!fecha) return 'N/A';
-    return new Date(fecha).toLocaleDateString('es-CO', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
+    // Espera formato YYYY-MM-DD del backend, convierte a DD/MM/YYYY
+    const [anio, mes, dia] = fecha.split('-');
+    if (!anio || !mes || !dia) return 'N/A';
+    return `${dia}/${mes}/${anio}`;
   }
 
   obtenerTotal(servicios: any[]): number {

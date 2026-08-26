@@ -105,9 +105,24 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
 
   rolUsuario: string = '';
 
+  private obtenerFechaLocal(): string {
+    const ahora = new Date();
+    const anio = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+    const dia = String(ahora.getDate()).padStart(2, '0');
+    return `${anio}-${mes}-${dia}`;
+  }
+
+  private obtenerHoraLocal(): string {
+    const ahora = new Date();
+    const horas = String(ahora.getHours()).padStart(2, '0');
+    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+    return `${horas}:${minutos}`;
+  }
+
   datosOrden: any = {
-    fecha: new Date().toISOString().split('T')[0],
-    hora: new Date().toTimeString().split(' ')[0].substring(0, 5),
+    fecha: this.obtenerFechaLocal(),
+    hora: this.obtenerHoraLocal(),
     nombre_cliente: '',
     cedula_cliente: '',
     telefono_cliente: '',
