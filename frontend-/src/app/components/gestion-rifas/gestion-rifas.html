@@ -1,0 +1,142 @@
+<div class="page-wrapper">
+  <app-nav></app-nav>
+
+  <main class="main-content">
+    <div class="content-wrapper">
+      <header class="page-header">
+        <h1 class="page-title">🎰 Gestión de Rifas por Sede</h1>
+        <p class="page-subtitle">Administra, activa/desactiva y controla las rifas de tu sede</p>
+      </header>
+
+      <!-- Mensaje de error -->
+      <div *ngIf="error" class="error-box">
+        <p>❌ {{ error }}</p>
+        <button class="btn-retry" (click)="cargarRifas()">Reintentar</button>
+      </div>
+
+      <!-- Indicador de carga -->
+      <div *ngIf="cargando" class="loading">
+        <div class="spinner"></div>
+        <p>Cargando rifas...</p>
+      </div>
+
+      <!-- Botón para crear nueva rifa -->
+      <div class="action-bar">
+        <button class="btn-primary btn-lg" (click)="abrirFormularioNueva()" [disabled]="cargando">
+          <span class="material-symbols-outlined">add</span>
+          Crear Nueva Rifa
+        </button>
+      </div>
+
+      <!-- Lista de rifas -->
+      <div *ngIf="!cargando && rifas.length > 0" class="rifas-container">
+        <div class="rifas-grid">
+          <div *ngFor="let rifa of rifas" class="rifa-card" [class.inactiva]="!rifa.estado">
+            <!-- Estado badge -->
+            <div class="rifa-badge" [class.activa]="rifa.estado" [class.inactiva]="!rifa.estado">
+              {{ rifa.estado ? '✅ ACTIVA' : '❌ INACTIVA' }}
+            </div>
+
+            <!-- Contenido -->
+            <div class="rifa-content">
+              <h3 class="rifa-title">📅 Fecha de Sorteo</h3>
+              <p class="rifa-value">{{ formatearFecha(rifa.fecha_sorteo) }}</p>
+
+              <h3 class="rifa-title mt-2">🏆 Premios</h3>
+              <p class="rifa-value-premios">{{ rifa.descripcion_premios }}</p>
+
+              <h3 class="rifa-title mt-2">👤 Encargado</h3>
+              <p class="rifa-value">{{ rifa.encargado }}</p>
+            </div>
+
+            <!-- Acciones -->
+            <div class="rifa-actions">
+              <button class="btn-action btn-edit" (click)="abrirFormularioEditar(rifa)" title="Editar">
+                <span class="material-symbols-outlined">edit</span>
+                Editar
+              </button>
+              <button
+                [class.btn-action-deactivate]="rifa.estado"
+                [class.btn-action-activate]="!rifa.estado"
+                (click)="toggleEstadoRifa(rifa)"
+                [title]="rifa.estado ? 'Desactivar' : 'Activar'">
+                <span class="material-symbols-outlined">{{ rifa.estado ? 'pause_circle' : 'play_circle' }}</span>
+                {{ rifa.estado ? 'Desactivar' : 'Activar' }}
+              </button>
+              <button class="btn-action btn-delete" (click)="eliminarRifa(rifa)" title="Eliminar">
+                <span class="material-symbols-outlined">delete</span>
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sin rifas -->
+      <div *ngIf="!cargando && rifas.length === 0" class="empty-state">
+        <span class="material-symbols-outlined empty-icon">casino</span>
+        <h3>No hay rifas registradas</h3>
+        <p>Crea tu primera rifa para comenzar</p>
+        <button class="btn-primary" (click)="abrirFormularioNueva()">Crear Rifa</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== MODAL FORMULARIO RIFA ==================== -->
+  <div class="modal-overlay" *ngIf="mostrarFormulario">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>{{ modoEdicion ? 'Editar Rifa' : 'Crear Nueva Rifa' }}</h2>
+        <button class="btn-close" (click)="cerrarFormulario()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Fecha de Sorteo *</label>
+          <input
+            type="date"
+            [(ngModel)]="nuevaRifa.fecha_sorteo"
+            class="input-dark"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label>Descripción de Premios *</label>
+          <textarea
+            [(ngModel)]="nuevaRifa.descripcion_premios"
+            class="input-dark"
+            placeholder="Ej: Moto Yamaha 125cc&#10;Casco Integral&#10;Casaca Cuero"
+            rows="6"
+            required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Encargado *</label>
+          <input
+            type="text"
+            [(ngModel)]="nuevaRifa.encargado"
+            class="input-dark"
+            placeholder="Nombre del encargado"
+            required>
+        </div>
+
+        <div class="form-group" *ngIf="modoEdicion">
+          <label>Estado</label>
+          <select [(ngModel)]="nuevaRifa.estado" class="input-dark">
+            <option [ngValue]="true">Activa</option>
+            <option [ngValue]="false">Inactiva</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="cerrarFormulario()">Cancelar</button>
+        <button class="btn-primary" (click)="guardarRifa()">
+          {{ modoEdicion ? 'Actualizar' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

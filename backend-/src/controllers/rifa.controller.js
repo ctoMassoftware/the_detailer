@@ -74,7 +74,7 @@ export const getRifaActiva = async (req, res) => {
         const result = await pool.query(
             'SELECT id_evento, fecha_sorteo, descripcion_premios, encargado FROM evento_rifa WHERE estado = true LIMIT 1'
         );
-        
+
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
         } else {
@@ -83,6 +83,57 @@ export const getRifaActiva = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al obtener rifa activa' });
+    }
+};
+
+export const actualizarRifa = async (req, res) => {
+    const { id } = req.params;
+    const { fecha_sorteo, descripcion_premios, encargado, estado } = req.body;
+
+    try {
+        let query = 'UPDATE evento_rifa SET';
+        const values = [];
+        const updates = [];
+
+        if (fecha_sorteo !== undefined) {
+            updates.push(`fecha_sorteo = $${values.length + 1}`);
+            values.push(fecha_sorteo);
+        }
+        if (descripcion_premios !== undefined) {
+            updates.push(`descripcion_premios = $${values.length + 1}`);
+            values.push(descripcion_premios);
+        }
+        if (encargado !== undefined) {
+            updates.push(`encargado = $${values.length + 1}`);
+            values.push(encargado);
+        }
+        if (estado !== undefined) {
+            // Si activamos una rifa, desactivamos todas las demás
+            if (estado === true) {
+                await pool.query('UPDATE evento_rifa SET estado = false WHERE id_evento != $1', [id]);
+            }
+            updates.push(`estado = $${values.length + 1}`);
+            values.push(estado);
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'No hay campos para actualizar' });
+        }
+
+        query += ' ' + updates.join(', ');
+        query += ` WHERE id_evento = $${values.length + 1} RETURNING *`;
+        values.push(id);
+
+        const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Rifa no encontrada' });
+        }
+
+        res.json({ message: 'Rifa actualizada correctamente', rifa: result.rows[0] });
+    } catch (error) {
+        console.error('Error actualizando rifa:', error);
+        res.status(500).json({ error: 'Error al actualizar la rifa' });
     }
 };
 

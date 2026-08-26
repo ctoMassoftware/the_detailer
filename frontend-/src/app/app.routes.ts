@@ -8,6 +8,7 @@ import { InventarioProductos } from './components/inventario-productos/inventari
 import { BoletaMensajes } from './components/boleta-mensajes/boleta-mensajes';
 import { Graficas } from './components/visualizar-graficas/visualizar-graficas';
 import { GestionOperarios } from './components/gestion-operarios/gestion-operarios';
+import { GestionRifasComponent } from './components/gestion-rifas/gestion-rifas';
 import { CombosServicios } from './components/combos-servicios/combos-servicios';
 import { VentaMostrador } from './components/venta-mostrador/venta-mostrador';
 import { CuadernoRecibos } from './components/cuaderno-recibos/cuaderno-recibos'; // 👈 NUEVA IMPORTACIÓN
@@ -59,6 +60,12 @@ export const routes: Routes = [
   {
     path: 'gestion-operarios',
     component: GestionOperarios,
+    canActivate: [authGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'ADMIN_SEDE'] }
+  },
+  {
+    path: 'gestion-rifas',
+    component: GestionRifasComponent,
     canActivate: [authGuard],
     data: { roles: ['SUPER_ADMIN', 'ADMIN', 'ADMIN_SEDE'] }
   },

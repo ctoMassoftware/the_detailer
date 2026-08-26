@@ -9,7 +9,8 @@ import {
   getBoletasPorRifa,
   eliminarRifa,
   elegirGanador,
-  historialGanadores
+  historialGanadores,
+  actualizarRifa
 } from '../controllers/rifa.controller.js';
 import { verifyToken } from '../controllers/auth.controller.js';
 
@@ -27,6 +28,9 @@ router.get('/:idEvento/boletas', verifyToken, getBoletasPorRifa);
 router.post('/elegir-ganador', verifyToken, elegirGanador);
 // Consultar historial de ganadores
 router.get('/historial-ganadores', verifyToken, historialGanadores);
+
+// Actualizar rifa
+router.put('/:id', verifyToken, actualizarRifa);
 
 router.delete('/eliminar/:id', verifyToken, eliminarRifa);
 
