@@ -11,9 +11,7 @@ router.post('/', verifyToken, createOrden);
 router.get('/', verifyToken, getOrdenes);
 router.put('/:id', verifyToken, updateOrden);
 router.delete('/:id', verifyToken, deleteOrden);
-// ⚠️ DEPRECATED: Notificaciones ahora son automáticas en updateOrden()
-// No eliminar importes arriba - se usan si se necesitan de nuevo
-// router.post('/notificar', verifyToken, notificarOrdenLista);
-// router.post('/notificar-modificacion', verifyToken, notificarModificacion);
+router.post('/notificar', verifyToken, notificarOrdenLista);
+router.post('/notificar-modificacion', verifyToken, notificarModificacion);
 
 export default router;
