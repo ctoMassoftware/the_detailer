@@ -98,6 +98,11 @@
         <strong>🏎️ Vehículo</strong>
         <p>{{ orden.marca_vehiculo }} {{ orden.modelo_vehiculo }}</p>
       </div>
+
+      <div class="info-box">
+        <strong>👨‍🔧 Responsable</strong>
+        <p>{{ orden.responsable || 'N/A' }}</p>
+      </div>
     </div>
 
     <!-- Separador -->
@@ -136,17 +141,35 @@
     <!-- Separador -->
     <div class="separator"></div>
 
-    <!-- Información de Boleta/Rifa (si existe) -->
-    <div *ngIf="orden.numero_rifa || orden.cantidad_cascos || orden.metodoPago" class="rifa-section">
+    <!-- Información de Rifa (SOLO si participa) -->
+    <div *ngIf="orden.id_rifa && orden.numero_rifa" class="rifa-section">
+      <h3>🎰 Información de Rifa</h3>
+      <div class="rifa-info">
+        <div class="rifa-item rifa-participacion">
+          <strong>🎟️ Boleta:</strong>
+          <span class="rifa-numero">#{{ orden.numero_rifa }}</span>
+        </div>
+        <div class="rifa-item">
+          <strong>🏆 Premio:</strong>
+          <span class="rifa-premio">{{ orden.rifa_premio || 'N/A' }}</span>
+        </div>
+        <div class="rifa-item">
+          <strong>👤 Responsable:</strong>
+          <span>{{ orden.responsable || 'N/A' }}</span>
+        </div>
+      </div>
+
+      <!-- Observaciones de Rifa -->
+      <div *ngIf="orden.notas" class="rifa-notas">
+        <strong>📝 Observaciones:</strong>
+        <p>{{ orden.notas }}</p>
+      </div>
+    </div>
+
+    <!-- Información Adicional (No-Rifa) -->
+    <div *ngIf="!orden.id_rifa && (orden.cantidad_cascos || orden.metodoPago)" class="info-adicional-section">
       <h3>📋 Información Adicional</h3>
       <div class="rifa-info">
-        <div *ngIf="orden.numero_rifa" class="rifa-item rifa-participacion">
-          <strong>🎟️ Participación Rifa:</strong>
-          <div class="rifa-details">
-            <span class="rifa-numero">Boleta #{{ orden.numero_rifa }}</span>
-            <span *ngIf="orden.rifa_premio" class="rifa-premio">🏆 {{ orden.rifa_premio }}</span>
-          </div>
-        </div>
         <div *ngIf="orden.cantidad_cascos && orden.cantidad_cascos > 0" class="rifa-item">
           <strong>🧢 Cascos a Recoger:</strong>
           <span>{{ orden.cantidad_cascos }}</span>

@@ -42,10 +42,11 @@ router.get('/por-placa/:placa', async (req, res) => {
       return res.status(400).json({ error: 'Placa inválida' });
     }
 
-    // Obtener todas las órdenes de esa placa (case-insensitive) + info de rifa
+    // Obtener todas las órdenes de esa placa (case-insensitive) + info de rifa + responsable
     const result = await pool.query(
       `SELECT
         o.*,
+        u.nombre_usuario as responsable_nombre,
         COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total_orden,
         COALESCE(
           json_agg(
@@ -61,12 +62,13 @@ router.get('/por-placa/:placa', async (req, res) => {
         er.descripcion_premios as rifa_premio,
         r.numero_boleta as numero_rifa
        FROM orden o
+       LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
        LEFT JOIN rifa r ON UPPER(o.placa_vehiculo) = UPPER(r.placa_vehiculo) AND o.id_rifa = r.id_evento_rifa
        LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
-       GROUP BY o.id_orden, er.descripcion_premios, r.numero_boleta
+       GROUP BY o.id_orden, er.descripcion_premios, r.numero_boleta, u.nombre_usuario
        ORDER BY o.id_orden DESC`,
       [placa]
     );
@@ -94,10 +96,12 @@ router.get('/por-placa/:placa', async (req, res) => {
       estado: row.estado,
       cantidad_cascos: row.cantidad_cascos || 0,
       numero_rifa: row.numero_rifa,
-      rifa_premio: row.rifa_premio,  // Premio de la rifa si participa
-      metodoPago: row.metodo_pago,
-      notas: row.notas,
-      servicios: row.lista_servicios
+      rifa_premio: row.rifa_premio,
+      responsable: row.responsable_nombre,  // Nombre del operario
+      id_rifa: row.id_rifa,  // Para validar si tiene rifa
+      notas: row.notas,  // Observaciones
+      servicios: row.lista_servicios,
+      metodoPago: row.metodo_pago
     }));
 
     res.json({
