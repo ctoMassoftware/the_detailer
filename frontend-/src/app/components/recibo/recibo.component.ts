@@ -127,6 +127,17 @@ export class ReciboComponent implements OnInit {
   seleccionarOrden(ordenId: number): void {
     this.ordenSeleccionada = this.ordenes.find(o => o.id_orden === ordenId);
     this.orden = this.ordenSeleccionada;
+
+    // Cerrar selector automáticamente después de seleccionar
+    this.mostrarTodasLasOrdenes = false;
+
+    // Scroll automático al recibo
+    setTimeout(() => {
+      const elemento = document.getElementById('recibo-contenido');
+      if (elemento) {
+        elemento.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   }
 
   descargarPDF(): void {

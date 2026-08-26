@@ -543,6 +543,20 @@
   transform: translateY(0);
 }
 
+.orden-actual-badge {
+  background: linear-gradient(135deg, #fd0100 0%, #cc0000 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 16px;
+  display: inline-block;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
 @media (max-width: 768px) {
   .recibo {
     padding: 20px;

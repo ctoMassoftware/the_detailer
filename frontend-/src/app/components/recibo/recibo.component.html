@@ -55,6 +55,11 @@
 
   <!-- Recibo -->
   <div *ngIf="orden && !cargando" id="recibo-contenido" class="recibo">
+    <!-- Indicador de orden actual (si hay múltiples) -->
+    <div *ngIf="modo === 'placa' && ordenes.length > 1" class="orden-actual-badge">
+      📋 Orden {{ ordenes.indexOf(orden) + 1 }} de {{ ordenes.length }}
+    </div>
+
     <!-- Header del recibo -->
     <div class="recibo-header-content">
       <div class="empresa">
