@@ -7,6 +7,7 @@ import { Nav } from "../../shared/nav/nav";
 import { ServicioService } from '../../services/servicio.service';
 import { OrdenService } from '../../services/orden.service';
 import { OperarioService } from '../../services/operario.service';
+import { RifaService } from '../../services/rifa.service';
 
 @Component({
   selector: 'app-crear-orden',
@@ -93,12 +94,14 @@ export class CrearOrdenComponent implements OnInit {
   private servicioService = inject(ServicioService);
   private ordenService = inject(OrdenService);
   private operarioService = inject(OperarioService);
+  private rifaService = inject(RifaService);
   private router = inject(Router);
 
   serviciosUnitarios: any[] = [];
   combos: any[] = [];
   tecnicos: any[] = [];
   nombreTecnicoSeleccionado: string = '';
+  rifasDisponibles: any[] = [];
 
   rolUsuario: string = '';
 
@@ -120,7 +123,9 @@ export class CrearOrdenComponent implements OnInit {
     caja: 'Caja 1',
     notas: '',
     deja_casco: false,
-    cantidad_cascos: 0
+    cantidad_cascos: 0,
+    participa_rifa: false,
+    id_rifa: null
   };
 
   itemsSeleccionados: any[] = [];
@@ -139,6 +144,19 @@ export class CrearOrdenComponent implements OnInit {
     this.cargarUsuarioSesion();
     this.cargarServicios();
     this.cargarOperarios();
+    this.cargarRifas();
+  }
+
+  cargarRifas() {
+    this.rifaService.getTodasRifas().subscribe({
+      next: (rifas: any[]) => {
+        this.rifasDisponibles = rifas || [];
+      },
+      error: (err) => {
+        console.error('Error cargando rifas:', err);
+        this.rifasDisponibles = [];
+      }
+    });
   }
 
   capitalizarPalabras(texto: string): string {
@@ -441,7 +459,7 @@ export class CrearOrdenComponent implements OnInit {
       metodo_pago: this.datosOrden.metodo_pago,
       caja: this.datosOrden.caja,
       id_user_encargado: this.datosOrden.tecnico_asignado,
-      id_rifa: null,
+      id_rifa: this.datosOrden.participa_rifa ? this.datosOrden.id_rifa : null,
       notas: this.datosOrden.notas,
       servicios: this.itemsSeleccionados.map(item => ({
         id_servicio: item.id_servicio,
