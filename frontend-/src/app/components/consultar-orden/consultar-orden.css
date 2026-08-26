@@ -232,46 +232,114 @@ input[type="date"] {
   color: var(--text-white);
 }
 
+/* ✨ Dropdown moderno con colores dinámicos por estado */
 .estado-select {
-  background: linear-gradient(to right, #7a0000, #fd0100);
-  border: 1px solid rgba(253, 1, 0, 0.66);
-  color: white;
-  font-weight: bold;
-  border-radius: 0.5rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 10px rgba(253, 1, 0, 0.2);
-  padding: 0.5rem 1rem;
-  width: 114%;
+  padding: 0.75rem 1.25rem 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
   cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   appearance: none;
-  text-align: center;
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.2rem;
+  padding-right: 2.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  width: 114%;
+  white-space: normal;
+  max-width: 180px;
+}
+
+/* Colores dinámicos según estado */
+.estado-select.bg-proceso {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: #e2e8f0;
+  border-color: #1e293b;
+}
+
+.estado-select.bg-lista {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border-color: #047857;
+}
+
+.estado-select.bg-cancelada {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  border-color: #991b1b;
+}
+
+.estado-select.bg-finalizada {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
+  border-color: #92400e;
 }
 
 .estado-select:hover {
-  background: linear-gradient(to right, #a00000, #ff3333);
-  box-shadow: 0 0 12px rgba(253, 1, 0, 0.26);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  border-color: currentColor;
+  opacity: 0.95;
 }
 
 .estado-select:focus {
   outline: none;
-  border-color: #fd0100;
-  box-shadow: 0 0 14px rgba(253, 1, 0, 0.4);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), 0 4px 12px rgba(59, 130, 246, 0.25);
+  transform: translateY(-1px);
+}
+
+.estado-select.bg-proceso:focus {
+  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.1), 0 4px 12px rgba(100, 116, 139, 0.25);
+}
+
+.estado-select.bg-lista:focus {
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1), 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.estado-select.bg-cancelada:focus {
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1), 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.estado-select.bg-finalizada:focus {
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1), 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.estado-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .estado-select option {
-  color: rgb(9, 9, 9);
+  color: #1f2937;
+  background-color: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin: 0.25rem 0;
 }
 
-.estado-select option[value="proceso"] {
-  background-color: #b30000;
+.estado-select option[value="Proceso"] {
+  background: linear-gradient(to right, #94a3b8, #64748b);
+  color: white;
 }
 
-.estado-select option[value="lista"] {
-  background-color: #ff4d4d;
+.estado-select option[value="Lista"] {
+  background: linear-gradient(to right, #10b981, #059669);
+  color: white;
 }
 
-.estado-select option[value="cancelada"] {
-  background-color: #660000;
+.estado-select option[value="Cancelada"] {
+  background: linear-gradient(to right, #ef4444, #dc2626);
+  color: white;
+}
+
+.estado-select option[value="Orden finalizada"] {
+  background: linear-gradient(to right, #f59e0b, #d97706);
+  color: white;
 }
 
 .action-buttons {
@@ -1010,23 +1078,6 @@ input[type="date"] {
   transform: scale(1.05);
 }
 
-.bg-proceso { background-color: #a29f9b; }
-.bg-lista { background-color: #10b981; }
-.bg-cancelada { background-color: #ef4444; }
-.bg-finalizada {
-  background-color: #fbbf24;
-  color: #fff !important;
-  white-space: normal !important;
-  max-width: 180px;
-}
-
-.estado-select {
-  white-space: normal !important;
-  max-width: 180px;
-}
-.estado-select:not(.bg-proceso):not(.bg-lista):not(.bg-cancelada):not(.bg-finalizada) {
-  background-color: #4b5563;
-}
 
 .summary-container {
   display: flex;
