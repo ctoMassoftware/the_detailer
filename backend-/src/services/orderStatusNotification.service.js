@@ -26,12 +26,13 @@ export const enviarNotificacionPorCambioEstado = async (
     return { success: false, error: 'Datos incompletos' };
   }
 
-  console.log(`📱 Cambio de estado: ${estadoAnterior} → ${estadoNuevo}`);
+  console.log(`📱 Cambio de estado: "${estadoAnterior}" → "${estadoNuevo}"`);
+  console.log(`📋 Auditoría SMS - Orden #${id_orden}:`, { nombre_cliente, telefono_cliente, numeroRifa });
 
   try {
     // ✅ CUALQUIER ESTADO → PROCESO (Sin ser Proceso aún)
     if (estadoNuevo && estadoNuevo.toLowerCase().includes('proceso') && !estadoAnterior?.toLowerCase().includes('proceso')) {
-      console.log(`✉️ Enviando SMS: Orden EN PROCESO a ${telefono_cliente}`);
+      console.log(`✉️ Enviando SMS #1: Orden EN PROCESO a ${telefono_cliente}`);
       return await enviarNotificacionModificacion(
         telefono_cliente,
         nombre_cliente,
@@ -42,8 +43,8 @@ export const enviarNotificacionPorCambioEstado = async (
     }
 
     // ✅ CUALQUIER ESTADO → LISTA (Con o sin Rifa)
-    if (estadoAnterior !== 'Lista' && estadoNuevo === 'Lista') {
-      console.log(`✉️ Enviando SMS: Orden LISTA a ${telefono_cliente}`);
+    if (estadoAnterior && estadoAnterior.toLowerCase() !== 'lista' && estadoNuevo && estadoNuevo.toLowerCase() === 'lista') {
+      console.log(`✉️ Enviando SMS #2: Orden LISTA a ${telefono_cliente}`);
 
       // 📥 Generar token para descarga de recibo cuando la orden está lista
       console.log(`📥 Generando token para orden ${id_orden}, placa: ${placa_vehiculo}`);
@@ -78,8 +79,8 @@ export const enviarNotificacionPorCambioEstado = async (
     }
 
     // ✅ LISTA → FINALIZADO/FINALIZADA/COMPLETADO (flexible con estado)
-    if (estadoAnterior === 'Lista' && estadoNuevo && estadoNuevo.toLowerCase().includes('finaliz')) {
-      console.log(`✉️ Enviando SMS: Orden COMPLETADA a ${telefono_cliente}`);
+    if (estadoAnterior && estadoAnterior.toLowerCase() === 'lista' && estadoNuevo && estadoNuevo.toLowerCase().includes('finaliz')) {
+      console.log(`✉️ Enviando SMS #3: Orden COMPLETADA a ${telefono_cliente}`);
       console.log(`📊 Datos extraídos: tipo_vehiculo="${tipo_vehiculo}", cantidad_cascos=${cantidad_cascos}`);
 
       // 📥 Generar token para descarga de recibo
