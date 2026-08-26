@@ -341,8 +341,8 @@ export const updateOrden = async (req, res) => {
       const caja_final = caja !== undefined ? caja : ordenActual.caja;
       const user_final = id_user_encargado !== undefined ? id_user_encargado : ordenActual.id_user_encargado;
       const estado_final = estado !== undefined ? estado : ordenActual.estado;
-      const fecha_final = fecha !== undefined ? fecha : ordenActual.fecha;
-      const hora_final = hora ? limpiarHora(hora) : ordenActual.hora;
+      const fecha_final = (fecha !== undefined && fecha !== '') ? fecha : ordenActual.fecha;
+      const hora_final = (hora && hora !== '') ? limpiarHora(hora) : ordenActual.hora;
       const notas_final = notas !== undefined ? notas : ordenActual.notas;
 
     await client.query("BEGIN");
