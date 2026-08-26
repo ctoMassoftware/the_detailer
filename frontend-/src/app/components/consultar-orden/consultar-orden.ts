@@ -151,7 +151,9 @@ export class ConsultarOrden implements OnInit {
   mostrarTotal: boolean = false;
 
   numeroBoletaRifa: string = '';
+  rifaActiva: boolean = false;
   datosRifaActiva: any = {
+    id_evento: null,
     fecha_sorteo: '',
     descripcion_premios: 'Cargando premios...',
     encargado: 'Cargando...'
@@ -200,17 +202,30 @@ export class ConsultarOrden implements OnInit {
   cargarRifaActiva() {
     this.rifaService.getRifaActiva().subscribe({
       next: (data: any) => {
-        if (data && data.id_evento) {
-          this.datosRifaActiva = data;
+        if (data && (data.id_evento || data.id_evento === 0)) {
+          this.datosRifaActiva = { ...this.datosRifaActiva, ...data };
+          this.rifaActiva = true;
+          console.log('✅ Rifa cargada:', this.datosRifaActiva);
         } else {
-          this.datosRifaActiva.descripcion_premios = 'No hay rifa activa actualmente';
-          this.datosRifaActiva.fecha_sorteo = '';
-          this.datosRifaActiva.encargado = '---';
+          this.rifaActiva = false;
+          this.datosRifaActiva = {
+            id_evento: null,
+            fecha_sorteo: '',
+            descripcion_premios: 'No hay rifa activa actualmente',
+            encargado: '---'
+          };
+          console.log('⚠️ Sin rifa activa');
         }
       },
       error: (err: any) => {
         console.error('Error cargando rifa activa', err);
-        this.datosRifaActiva.descripcion_premios = 'Error de conexión / Sin rifa activa';
+        this.rifaActiva = false;
+        this.datosRifaActiva = {
+          id_evento: null,
+          fecha_sorteo: '',
+          descripcion_premios: 'Error de conexión / Sin rifa activa',
+          encargado: '---'
+        };
       }
     });
   }
@@ -655,25 +670,25 @@ export class ConsultarOrden implements OnInit {
   filtroRifa: string = '';
 
   aceptarRifa() {
-    // ✅ Asignar rifa a la orden
-    if (!this.datosRifaActiva?.id_evento || !this.ordenSeleccionada?.id_orden_db) {
+    if (!this.rifaActiva || !this.ordenSeleccionada?.id_orden_db) {
       console.error('⚠️ No hay rifa activa o no hay orden seleccionada');
+      Swal.fire('Atención', 'No hay rifa activa en este momento', 'warning');
       return;
     }
 
-    console.log(`📤 [ACEPTAR RIFA] Asignando rifa ${this.datosRifaActiva.id_evento} a orden ${this.ordenSeleccionada.id_orden_db}`);
+    const idRifa = this.datosRifaActiva.id_evento;
+    console.log(`📤 [ACEPTAR RIFA] Asignando rifa ${idRifa} a orden ${this.ordenSeleccionada.id_orden_db}`);
 
-    // Actualizar orden con id_rifa
     const datosUpdate = {
-      id_rifa: this.datosRifaActiva.id_evento
+      id_rifa: idRifa
     };
 
     this.ordenService.updateOrden(this.ordenSeleccionada.id_orden_db, datosUpdate).subscribe({
       next: (response) => {
         console.log('✅ Rifa asignada exitosamente');
-        // Backend crea boleta automáticamente
         this.mostrarRifa = true;
         this.cargarNumerosRifa();
+        Swal.fire('Éxito', 'Rifa asignada. Selecciona el número de boleta.', 'success');
       },
       error: (err) => {
         console.error('❌ Error asignando rifa:', err);
