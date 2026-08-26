@@ -74,6 +74,12 @@ export const createOrden = async (req, res) => {
     fecha = null
   } = req.body;
 
+  // 🔍 DEBUG: Log qué datos se reciben
+  console.log('📥 [CREATE ORDEN] Datos recibidos:');
+  console.log(`  - id_rifa: ${id_rifa} (tipo: ${typeof id_rifa})`);
+  console.log(`  - fecha: ${fecha}`);
+  console.log(`  - hora: ${req.body.hora}`);
+
   const sedeFinal = rol === "SUPER_ADMIN" && sede ? sede : sedeUsuario || "GLOBAL";
   const client = await pool.connect();
 
