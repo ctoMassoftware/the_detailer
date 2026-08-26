@@ -463,6 +463,7 @@ export class ConsultarOrden implements OnInit {
   }
 
   onEstadoChange(nuevoEstado: string, orden: Orden) {
+    console.log(`📤 onEstadoChange: ${orden.estado} → ${nuevoEstado}`);
     orden.estado = nuevoEstado;
     this.verificarCambioEstado(orden);
   }

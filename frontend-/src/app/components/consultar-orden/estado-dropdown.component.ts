@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 interface StatusOption {
@@ -259,12 +259,21 @@ interface StatusOption {
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EstadoDropdownComponent {
+export class EstadoDropdownComponent implements OnChanges {
   @Input() value: string = 'Proceso';
   @Input() isDisabled: boolean = false;
   @Output() valueChange = new EventEmitter<string>();
 
   isOpen = false;
+
+  constructor(private cdr: ChangeDetectorRef) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['value'] && !changes['value'].firstChange) {
+      console.log(`✅ Dropdown actualizado a: ${changes['value'].currentValue}`);
+      this.cdr.markForCheck();
+    }
+  }
 
   options: StatusOption[] = [
     { value: 'Proceso', label: 'En proceso', color: '#F59E0B', bgColor: '#64748b' },
@@ -276,13 +285,17 @@ export class EstadoDropdownComponent {
   toggleDropdown(): void {
     if (!this.isDisabled) {
       this.isOpen = !this.isOpen;
+      console.log(`🔽 Dropdown ${this.isOpen ? 'abierto' : 'cerrado'}`);
+      this.cdr.markForCheck();
     }
   }
 
   selectOption(value: string): void {
+    console.log(`🔄 Dropdown: Seleccionado ${value}`);
     this.value = value;
     this.valueChange.emit(value);
     this.isOpen = false;
+    this.cdr.markForCheck();
   }
 
   getStatusLabel(value: string): string {
