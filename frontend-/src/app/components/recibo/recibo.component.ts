@@ -214,6 +214,18 @@ export class ReciboComponent implements OnInit {
     return estado.toLowerCase().replace(/ /g, '-');
   }
 
+  obtenerEstadoFormato(estado: string): string {
+    if (!estado) return '⏳ En Proceso';
+    const estadoUpper = estado.toUpperCase();
+
+    if (estadoUpper.includes('PROCESO')) return '⏳ En Proceso';
+    if (estadoUpper.includes('LISTA')) return '✅ Orden Lista';
+    if (estadoUpper.includes('CANCELADA')) return '❌ Cancelada';
+    if (estadoUpper.includes('FINALIZADA') || estadoUpper.includes('ENTREGADA')) return '✨ Completada';
+
+    return `📋 ${estado}`;
+  }
+
   obtenerEmojiVehiculo(tipo: string): string {
     if (!tipo) return '🚗';
     const tipoLower = tipo.toLowerCase();
