@@ -12,7 +12,7 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./recibo.component.css']
 })
 export class ReciboComponent implements OnInit {
-  private apiUrl = 'https://thedetailer.up.railway.app/api/recibos';
+  private apiUrl = '/api/recibos';
 
   token: string = '';
   placa: string = '';
