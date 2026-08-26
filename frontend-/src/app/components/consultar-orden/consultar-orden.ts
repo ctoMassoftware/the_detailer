@@ -621,19 +621,8 @@ export class ConsultarOrden implements OnInit {
         };
         this.impresoraService.imprimirTicket(datosTicket, 'ORDEN', 'RAWBT');
       }
-      if (this.preferenciaRecibo.includes('SMS')) {
-        if (!this.ordenSeleccionada.celular) {
-          Swal.fire('Atención', 'El cliente no tiene número de celular para enviar el SMS con link de descarga.', 'warning');
-          return;
-        }
-        const notifData = {
-          nombre: this.ordenSeleccionada.cliente,
-          telefono: this.ordenSeleccionada.celular,
-          placa: this.ordenSeleccionada.vehiculoPlaca,
-          total: this.ordenSeleccionada.valorTotal
-        };
-        this.ordenService.notificarOrdenLista(notifData).subscribe();
-      }
+      // SMS es enviado automáticamente por el backend cuando cambia de estado a "Lista"
+      // No duplicar aquí para evitar envíos múltiples
     };
 
     if (this.mostrarRifa) {
