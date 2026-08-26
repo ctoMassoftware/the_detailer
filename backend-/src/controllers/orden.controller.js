@@ -442,10 +442,14 @@ export const updateOrden = async (req, res) => {
         id_orden: id
       };
 
+      // Obtener id_rifa de la orden actual (si existe)
+      const id_rifa = ordenActual.id_rifa || id_rifa_from_request;
+
       enviarNotificacionPorCambioEstado(
         estadoAnterior,
         estado,
-        ordenDatos
+        ordenDatos,
+        id_rifa // ✅ Pasar numeroRifa para SMS con rifa
       ).catch(err => {
         console.error('⚠️ Error enviando notificación automática:', err);
       });
