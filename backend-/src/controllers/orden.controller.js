@@ -297,53 +297,56 @@ export const getOrdenes = async (req, res) => {
 };
 
 export const updateOrden = async (req, res) => {
-  const { id } = req.params;
-  const {
-    cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
-    placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-    metodo_pago, caja, id_user_encargado, estado, id_rifa,
-    fecha, hora, notas, servicios, deja_casco, cantidad_cascos
-  } = req.body;
-
-  console.log(`📝 updateOrden: ID=${id}, Campos enviados:`, { id_rifa, estado, cedula_cliente: !!cedula_cliente });
-
-  const client = await pool.connect();
-
   try {
-    // ✅ PRIMERO: Obtener datos ACTUALES de la orden para campos no enviados
-    const ordenActualResult = await client.query(
-      `SELECT cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
-              placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-              metodo_pago, caja, id_user_encargado, estado, fecha, hora, notas, cantidad_cascos
-       FROM public.orden WHERE id_orden = $1`,
-      [id]
-    );
+    const { id } = req.params;
+    const body = req.body || {};
 
-    if (!ordenActualResult.rows[0]) {
-      return res.status(404).json({ error: 'Orden no encontrada' });
-    }
+    console.log(`📝 updateOrden: ID=${id}, Body type:`, typeof body, 'Keys:', Object.keys(body));
 
-    const ordenActual = ordenActualResult.rows[0];
+    const {
+      cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+      placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+      metodo_pago, caja, id_user_encargado, estado, id_rifa,
+      fecha, hora, notas, servicios, deja_casco, cantidad_cascos
+    } = body;
 
-    // ✅ Usar valores enviados O valores actuales de la BD
-    const cedula_final = cedula_cliente ?? ordenActual.cedula_cliente;
-    const nombre_final = nombre_cliente ?? ordenActual.nombre_cliente;
-    const correo_final = correo_cliente ?? ordenActual.correo_cliente;
-    const telefono_final = telefono_cliente ?? ordenActual.telefono_cliente;
-    const direccion_final = direccion_cliente ?? ordenActual.direccion_cliente;
-    const placa_final = placa_vehiculo ?? ordenActual.placa_vehiculo;
-    const marca_final = marca_vehiculo ?? ordenActual.marca_vehiculo;
-    const modelo_final = modelo_vehiculo ?? ordenActual.modelo_vehiculo;
-    const tipo_final = tipo_vehiculo ?? ordenActual.tipo_vehiculo;
-    const pago_final = metodo_pago ?? ordenActual.metodo_pago;
-    const caja_final = caja ?? ordenActual.caja;
-    const user_final = id_user_encargado ?? ordenActual.id_user_encargado;
-    const estado_final = estado ?? ordenActual.estado;
-    const fecha_final = fecha ?? ordenActual.fecha;
-    const hora_final = hora ? limpiarHora(hora) : ordenActual.hora;
-    const notas_final = notas ?? ordenActual.notas;
+    const client = await pool.connect();
 
-    await client.query("BEGIN");
+    try {
+      // ✅ PRIMERO: Obtener datos ACTUALES de la orden
+      const ordenActualResult = await client.query(
+        `SELECT cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+                placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+                metodo_pago, caja, id_user_encargado, estado, fecha, hora, notas, cantidad_cascos
+         FROM public.orden WHERE id_orden = $1`,
+        [id]
+      );
+
+      if (!ordenActualResult.rows[0]) {
+        return res.status(404).json({ error: 'Orden no encontrada' });
+      }
+
+      const ordenActual = ordenActualResult.rows[0];
+
+      // ✅ Usar valores enviados O valores actuales de la BD
+      const cedula_final = cedula_cliente !== undefined ? cedula_cliente : ordenActual.cedula_cliente;
+      const nombre_final = nombre_cliente !== undefined ? nombre_cliente : ordenActual.nombre_cliente;
+      const correo_final = correo_cliente !== undefined ? correo_cliente : ordenActual.correo_cliente;
+      const telefono_final = telefono_cliente !== undefined ? telefono_cliente : ordenActual.telefono_cliente;
+      const direccion_final = direccion_cliente !== undefined ? direccion_cliente : ordenActual.direccion_cliente;
+      const placa_final = placa_vehiculo !== undefined ? placa_vehiculo : ordenActual.placa_vehiculo;
+      const marca_final = marca_vehiculo !== undefined ? marca_vehiculo : ordenActual.marca_vehiculo;
+      const modelo_final = modelo_vehiculo !== undefined ? modelo_vehiculo : ordenActual.modelo_vehiculo;
+      const tipo_final = tipo_vehiculo !== undefined ? tipo_vehiculo : ordenActual.tipo_vehiculo;
+      const pago_final = metodo_pago !== undefined ? metodo_pago : ordenActual.metodo_pago;
+      const caja_final = caja !== undefined ? caja : ordenActual.caja;
+      const user_final = id_user_encargado !== undefined ? id_user_encargado : ordenActual.id_user_encargado;
+      const estado_final = estado !== undefined ? estado : ordenActual.estado;
+      const fecha_final = fecha !== undefined ? fecha : ordenActual.fecha;
+      const hora_final = hora ? limpiarHora(hora) : ordenActual.hora;
+      const notas_final = notas !== undefined ? notas : ordenActual.notas;
+
+      await client.query("BEGIN");
     const estadoAnterior = ordenActual.estado;
     const tipoVehiculoActual = tipo_final;
     const cantidadCascosActual = cantidad_cascos ?? (ordenActual.cantidad_cascos || 0);
