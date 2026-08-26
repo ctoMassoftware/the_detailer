@@ -70,7 +70,8 @@ export const createOrden = async (req, res) => {
     servicios,
     sede,
     deja_casco = false,
-    cantidad_cascos = 0
+    cantidad_cascos = 0,
+    fecha = null
   } = req.body;
 
   const sedeFinal = rol === "SUPER_ADMIN" && sede ? sede : sedeUsuario || "GLOBAL";
@@ -87,7 +88,38 @@ export const createOrden = async (req, res) => {
     let ordenQuery;
     let ordenValues;
 
-    if (horaFinal !== null) {
+    if (horaFinal !== null && fecha) {
+      ordenQuery = `
+        INSERT INTO public.orden (
+          cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+          placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, fecha, hora
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+        RETURNING id_orden
+      `;
+      ordenValues = [
+        cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+        placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, fecha, horaFinal
+      ];
+    } else if (fecha) {
+      // Con fecha pero sin hora → PostgreSQL usa DEFAULT para hora (Bogotá)
+      ordenQuery = `
+        INSERT INTO public.orden (
+          cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+          placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, fecha
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        RETURNING id_orden
+      `;
+      ordenValues = [
+        cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
+        placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, fecha
+      ];
+    } else if (horaFinal !== null) {
       ordenQuery = `
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
@@ -103,7 +135,7 @@ export const createOrden = async (req, res) => {
         metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, horaFinal
       ];
     } else {
-      // Sin hora → PostgreSQL usa DEFAULT (hora Bogotá automática)
+      // Sin fecha ni hora → PostgreSQL usa DEFAULTs
       ordenQuery = `
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,

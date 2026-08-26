@@ -123,10 +123,10 @@ export const initDB = async () => {
             caja VARCHAR(50),
             -- Estados posibles: PROCESO, LISTA, CANCELADA, FINALIZADA_ENTREGADA
             estado VARCHAR(50) DEFAULT 'PROCESO',
-            id_user_encargado INTEGER REFERENCES usuarios(id_user), 
+            id_user_encargado INTEGER REFERENCES usuarios(id_user),
             id_rifa INTEGER REFERENCES evento_rifa(id_evento),
             notas TEXT,
-            fecha DATE DEFAULT CURRENT_DATE,
+            fecha DATE DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::date,
             hora TIME DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::time,
             sede VARCHAR(50)
         );
