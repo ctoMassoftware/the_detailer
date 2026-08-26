@@ -42,7 +42,7 @@ router.get('/por-placa/:placa', async (req, res) => {
       return res.status(400).json({ error: 'Placa inválida' });
     }
 
-    // Obtener todas las órdenes de esa placa (case-insensitive) + info de rifa + responsable
+    // Obtener órdenes de esa placa (últimas 24 horas máximo para seguridad)
     const result = await pool.query(
       `SELECT
         o.*,
@@ -68,6 +68,7 @@ router.get('/por-placa/:placa', async (req, res) => {
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
        LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
+         AND o.fecha >= (CURRENT_DATE AT TIME ZONE 'America/Bogota') - INTERVAL '1 day'
        GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, u.nombre, u.apellido, er.descripcion_premios, er.fecha_sorteo
        ORDER BY o.fecha DESC, o.hora DESC, o.id_orden DESC`,
       [placa]
