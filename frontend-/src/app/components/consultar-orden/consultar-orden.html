@@ -447,9 +447,23 @@
 
         <!-- Sección Rifa -->
         <div class="rifa-section">
+          <div class="rifa-status">
+            <span class="rifa-status-badge" [class.active]="datosRifaActiva?.id_evento" [class.inactive]="!datosRifaActiva?.id_evento">
+              {{ datosRifaActiva?.id_evento ? '🎯 Rifa Activa' : '⚠️ Sin Rifa' }}
+            </span>
+            <span class="rifa-info" *ngIf="datosRifaActiva?.id_evento">
+              Juega: {{ datosRifaActiva.fecha_sorteo | date:'dd/MM/yyyy' }}
+            </span>
+          </div>
           <p class="rifa-question">¿Desea agregar la rifa?</p>
           <div class="rifa-buttons">
-            <button class="btn-rifa-yes" (click)="aceptarRifa()">Sí</button>
+            <button
+              class="btn-rifa-yes"
+              [disabled]="!datosRifaActiva?.id_evento"
+              [title]="datosRifaActiva?.id_evento ? 'Aceptar rifa' : 'No hay rifa activa en este momento'"
+              (click)="aceptarRifa()">
+              Sí
+            </button>
             <button class="btn-rifa-no" (click)="rechazarRifa()">No</button>
           </div>
         </div>
