@@ -60,6 +60,7 @@ router.get('/por-placa/:placa', async (req, res) => {
           '[]'::json
         ) as lista_servicios,
         er.descripcion_premios as rifa_premio,
+        er.fecha_sorteo as fecha_sorteo,
         r.numero_boleta as numero_rifa
        FROM orden o
        LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
@@ -97,9 +98,10 @@ router.get('/por-placa/:placa', async (req, res) => {
       cantidad_cascos: row.cantidad_cascos || 0,
       numero_rifa: row.numero_rifa,
       rifa_premio: row.rifa_premio,
-      responsable: row.responsable_nombre,  // Nombre del operario
+      fecha_sorteo: row.fecha_sorteo,  // Cuándo juega (fecha del sorteo)
+      responsable: row.responsable_nombre,  // Nombre del operario/responsable de rifa
       id_rifa: row.id_rifa,  // Para validar si tiene rifa
-      notas: row.notas,  // Observaciones
+      notas: row.notas,  // Observaciones de la orden
       servicios: row.lista_servicios,
       metodoPago: row.metodo_pago
     }));

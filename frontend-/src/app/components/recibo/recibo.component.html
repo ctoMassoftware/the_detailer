@@ -141,42 +141,48 @@
     <!-- Separador -->
     <div class="separator"></div>
 
+    <!-- Información Adicional (Método de Pago + Observaciones) -->
+    <div *ngIf="orden.metodoPago || orden.notas || orden.cantidad_cascos" class="info-adicional-section">
+      <h3>📋 Información Adicional</h3>
+      <div class="rifa-info">
+        <div *ngIf="orden.metodoPago" class="rifa-item">
+          <strong>💳 Método de Pago:</strong>
+          <span>{{ orden.metodoPago }}</span>
+        </div>
+        <div *ngIf="orden.cantidad_cascos && orden.cantidad_cascos > 0" class="rifa-item">
+          <strong>🧢 Cascos a Recoger:</strong>
+          <span>{{ orden.cantidad_cascos }}</span>
+        </div>
+        <div *ngIf="orden.notas" class="rifa-item">
+          <strong>📝 Observaciones:</strong>
+          <span>{{ orden.notas }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Información de Rifa (SOLO si participa) -->
     <div *ngIf="orden.id_rifa && orden.numero_rifa" class="rifa-section">
-      <h3>🎰 Información de Rifa</h3>
+      <h3>🎰 Participación en Rifa</h3>
       <div class="rifa-info">
         <div class="rifa-item rifa-participacion">
-          <strong>🎟️ Boleta:</strong>
+          <strong>🎟️ Número de Boleta:</strong>
           <span class="rifa-numero">#{{ orden.numero_rifa }}</span>
+        </div>
+        <div class="rifa-item">
+          <strong>👤 Jugador:</strong>
+          <span>{{ orden.nombre_cliente || 'N/A' }}</span>
         </div>
         <div class="rifa-item">
           <strong>🏆 Premio:</strong>
           <span class="rifa-premio">{{ orden.rifa_premio || 'N/A' }}</span>
         </div>
         <div class="rifa-item">
-          <strong>👤 Responsable:</strong>
+          <strong>📅 Cuándo Juega:</strong>
+          <span>{{ obtenerFecha(orden.fecha_sorteo) || 'Próximamente' }}</span>
+        </div>
+        <div class="rifa-item">
+          <strong>👨‍💼 Responsable de Rifa:</strong>
           <span>{{ orden.responsable || 'N/A' }}</span>
-        </div>
-      </div>
-
-      <!-- Observaciones de Rifa -->
-      <div *ngIf="orden.notas" class="rifa-notas">
-        <strong>📝 Observaciones:</strong>
-        <p>{{ orden.notas }}</p>
-      </div>
-    </div>
-
-    <!-- Información Adicional (No-Rifa) -->
-    <div *ngIf="!orden.id_rifa && (orden.cantidad_cascos || orden.metodoPago)" class="info-adicional-section">
-      <h3>📋 Información Adicional</h3>
-      <div class="rifa-info">
-        <div *ngIf="orden.cantidad_cascos && orden.cantidad_cascos > 0" class="rifa-item">
-          <strong>🧢 Cascos a Recoger:</strong>
-          <span>{{ orden.cantidad_cascos }}</span>
-        </div>
-        <div *ngIf="orden.metodoPago" class="rifa-item">
-          <strong>💳 Método de Pago:</strong>
-          <span>{{ orden.metodoPago }}</span>
         </div>
       </div>
     </div>
