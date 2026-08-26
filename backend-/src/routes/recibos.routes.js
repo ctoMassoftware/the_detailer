@@ -310,7 +310,7 @@ router.get('/datos/:token', async (req, res) => {
       });
     }
 
-    // Obtener datos completos de la orden
+    // Obtener datos completos de la orden (incluida información de rifa)
     const result = await pool.query(
       `SELECT
         o.*,
@@ -325,12 +325,18 @@ router.get('/datos/:token', async (req, res) => {
             )
           ) FILTER (WHERE d.id_servicio IS NOT NULL),
           '[]'::json
-        ) as lista_servicios
+        ) as lista_servicios,
+        er.descripcion_premios as rifa_premio,
+        er.fecha_sorteo as fecha_sorteo,
+        (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa AND UPPER(placa_vehiculo) = UPPER(o.placa_vehiculo) LIMIT 1) as numero_rifa,
+        CONCAT(u.nombre, ' ', u.apellido) as responsable_nombre
        FROM orden o
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
+       LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
+       LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
        WHERE o.id_orden = $1
-       GROUP BY o.id_orden`,
+       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, er.descripcion_premios, er.fecha_sorteo, u.nombre, u.apellido`,
       [orden.id_orden]
     );
 
@@ -344,19 +350,32 @@ router.get('/datos/:token', async (req, res) => {
     const ipCliente = req.ip || req.connection.remoteAddress;
     await marcarTokenComoDescargado(token, ipCliente);
 
-    // Retornar JSON con todos los datos
+    // Retornar JSON con todos los datos (incluida información de rifa)
     res.json({
       success: true,
       orden: {
         id_orden: ordenData.id_orden,
         fecha: formatearFecha(ordenData.fecha),
+        hora: ordenData.hora,
         nombre_cliente: ordenData.nombre_cliente,
+        cedula_cliente: ordenData.cedula_cliente,
+        telefono_cliente: ordenData.telefono_cliente,
+        correo_cliente: ordenData.correo_cliente,
         placa_vehiculo: ordenData.placa_vehiculo,
+        tipo_vehiculo: ordenData.tipo_vehiculo,
         marca_vehiculo: ordenData.marca_vehiculo,
         modelo_vehiculo: ordenData.modelo_vehiculo,
         total: ordenData.total_orden,
         estado: ordenData.estado,
-        servicios: ordenData.lista_servicios
+        cantidad_cascos: ordenData.cantidad_cascos || 0,
+        numero_rifa: ordenData.numero_rifa,
+        rifa_premio: ordenData.rifa_premio,
+        fecha_sorteo: ordenData.fecha_sorteo,
+        responsable: ordenData.responsable_nombre,
+        id_rifa: ordenData.id_rifa,
+        notas: ordenData.notas,
+        servicios: ordenData.lista_servicios,
+        metodoPago: ordenData.metodo_pago
       }
     });
 
