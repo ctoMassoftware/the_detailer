@@ -232,113 +232,137 @@ input[type="date"] {
   color: var(--text-white);
 }
 
-/* ✨ Dropdown moderno con colores dinámicos por estado */
+/* 🎨 DROPDOWN PROFESIONAL CON ESTILOS DEFINIDOS */
 .estado-select {
-  padding: 0.75rem 1.25rem 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border: 2px solid transparent;
-  border-radius: 0.75rem;
+  /* Layout */
+  padding: 1rem 2.5rem 1rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+
+  /* Bordes y esquinas */
+  border: 3px solid;
+  border-radius: 0.8rem;
+
+  /* Efecto 3D */
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  /* Comportamiento */
   cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s ease-out;
   appearance: none;
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1.2rem;
-  padding-right: 2.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  text-align: left;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   width: 114%;
-  white-space: normal;
   max-width: 180px;
+  white-space: normal;
+
+  /* Icono de dropdown */
+  background-size: 1.2rem;
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
 }
 
-/* Colores dinámicos según estado */
+/* ESTADO: En proceso */
 .estado-select.bg-proceso {
-  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-  color: #e2e8f0;
-  border-color: #1e293b;
+  background-color: #607d8b;
+  color: #ffffff;
+  border-color: #455a64;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3'%3E%3Cpath d='M12 2v20M2 12h20'/%3E%3C/svg%3E");
 }
 
+.estado-select.bg-proceso:hover {
+  background-color: #78909c;
+  border-color: #37474f;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
+}
+
+/* ESTADO: Orden lista */
 .estado-select.bg-lista {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #fff;
+  background-color: #10b981;
+  color: #ffffff;
+  border-color: #059669;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.estado-select.bg-lista:hover {
+  background-color: #059669;
   border-color: #047857;
+  box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
 }
 
+/* ESTADO: Cancelada */
 .estado-select.bg-cancelada {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: #fff;
+  background-color: #ef4444;
+  color: #ffffff;
+  border-color: #dc2626;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E");
+}
+
+.estado-select.bg-cancelada:hover {
+  background-color: #dc2626;
   border-color: #991b1b;
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
 }
 
+/* ESTADO: Orden finalizada */
 .estado-select.bg-finalizada {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #fff;
+  background-color: #f59e0b;
+  color: #ffffff;
+  border-color: #d97706;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm3.6 8.04l-4.89 4.89-2.34-2.34a1 1 0 0 0-1.415 1.414l3.75 3.75a1 1 0 0 0 1.415 0l6.305-6.305a1 1 0 1 0-1.415-1.414z'/%3E%3C/svg%3E");
+}
+
+.estado-select.bg-finalizada:hover {
+  background-color: #d97706;
   border-color: #92400e;
+  box-shadow: 0 6px 12px rgba(245, 158, 11, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
 }
 
-.estado-select:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
-  border-color: currentColor;
-  opacity: 0.95;
-}
-
+/* FOCUS: Resaltar cuando está seleccionado */
 .estado-select:focus {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), 0 4px 12px rgba(59, 130, 246, 0.25);
-  transform: translateY(-1px);
-}
-
-.estado-select.bg-proceso:focus {
-  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.1), 0 4px 12px rgba(100, 116, 139, 0.25);
-}
-
-.estado-select.bg-lista:focus {
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1), 0 4px 12px rgba(16, 185, 129, 0.25);
-}
-
-.estado-select.bg-cancelada:focus {
-  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1), 0 4px 12px rgba(239, 68, 68, 0.25);
-}
-
-.estado-select.bg-finalizada:focus {
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1), 0 4px 12px rgba(245, 158, 11, 0.25);
+  border-width: 3px;
+  box-shadow:
+    0 0 0 5px rgba(59, 130, 246, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .estado-select:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none !important;
 }
 
+/* OPCIONES del dropdown */
 .estado-select option {
-  color: #1f2937;
-  background-color: #f9fafb;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  margin: 0.25rem 0;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-radius: 0.4rem;
+  font-weight: 600;
 }
 
 .estado-select option[value="Proceso"] {
-  background: linear-gradient(to right, #94a3b8, #64748b);
+  background-color: #607d8b;
   color: white;
 }
 
 .estado-select option[value="Lista"] {
-  background: linear-gradient(to right, #10b981, #059669);
+  background-color: #10b981;
   color: white;
 }
 
 .estado-select option[value="Cancelada"] {
-  background: linear-gradient(to right, #ef4444, #dc2626);
+  background-color: #ef4444;
   color: white;
 }
 
 .estado-select option[value="Orden finalizada"] {
-  background: linear-gradient(to right, #f59e0b, #d97706);
+  background-color: #f59e0b;
   color: white;
 }
 
