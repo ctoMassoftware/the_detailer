@@ -50,6 +50,11 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
         return;
       }
 
+      // Validar longitud del mensaje
+      if (messageBody.length > 160) {
+        console.warn(`⚠️ SMS EXCEDE 160 CARACTERES: ${messageBody.length} chars - se enviará en ${Math.ceil(messageBody.length / 160)} mensajes`);
+      }
+
       // Obtener credenciales de BD
       const dbCredentials = await getLabsMobileCredentialsFromDB();
 
@@ -110,13 +115,13 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
                 phoneNumber: numeroNormalizado,
                 messageBody,
                 status: 'success',
-                twilioSid: response.subid, // Use subid from LabsMobile
+                twilioSid: response.subid,
                 notificationType: metadata.type,
                 userId: metadata.userId,
                 orderId: metadata.orderId
               });
 
-              console.log(`✓ SMS sent via LabsMobile to ${numeroNormalizado} (SubID: ${response.subid})`);
+              console.log(`✓ SMS enviado a ${numeroNormalizado} (${messageBody.length} chars)`);
               resolve({ success: true, subid: response.subid });
             } else {
               // Error response
@@ -134,7 +139,7 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
                 orderId: metadata.orderId
               });
 
-              console.error(`✗ LabsMobile failed for ${numeroNormalizado}: [${response.code}] ${errorMsg}`);
+              console.error(`✗ LabsMobile error for ${numeroNormalizado}: [${response.code}] ${errorMsg}`);
               resolve({ success: false, error: errorMsg });
             }
           } catch (parseError) {
@@ -182,48 +187,13 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
   });
 };
 
-/**
- * Format notification message for order with detailed tracking
- */
-const formatOrderNotification = (clientName, message, total, additionalInfo = '', placa = '', numeroOrden = '') => {
-  let fullMessage = `¡Hola ${clientName}! 👋\n`;
-  fullMessage += `━━━━━━━━━━━━━━━━━━━\n`;
+// EXPORTED NOTIFICATION FUNCTIONS - ALL OPTIMIZED FOR 160 CHARS MAX
 
-  if (numeroOrden) {
-    fullMessage += `📋 Orden #${numeroOrden}\n`;
-  }
-
-  if (placa) {
-    fullMessage += `🚗 Placa: ${placa}\n`;
-  }
-
-  fullMessage += `${message}\n`;
-
-  if (total) {
-    fullMessage += `\n💰 Valor total: $${total.toLocaleString('es-CO')}\n`;
-  }
-
-  if (additionalInfo) {
-    fullMessage += `\n${additionalInfo}`;
-  }
-
-  fullMessage += `\n━━━━━━━━━━━━━━━━━━━\n`;
-  fullMessage += `📍 The Detailer\n`;
-  fullMessage += `⏰ Horario: Lunes-Domingo 7am-6pm`;
-
-  return fullMessage.trim();
-};
-
-// EXPORTED NOTIFICATION FUNCTIONS
 export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
-  const mensaje = formatOrderNotification(
-    nombreCliente,
-    '✅ Tu orden ha sido RECIBIDA\nEstatus: EN PROCESO',
-    total,
-    '⏳ Nos comunicaremos cuando esté lista.\n¡Gracias por confiar en nosotros! 🙏',
-    placa,
-    numeroOrden
-  );
+  // COMPACTO: 160 chars max (1 SMS)
+  const mensaje = `Orden #${numeroOrden} recibida ✅\n${placa} | Total: $${Number(total || 0).toLocaleString('es-CO')}\n⏳ Te contactaremos cuando esté lista.\nThe Detailer`;
+
+  console.log(`📊 SMS Inicio - ${mensaje.length} chars (máx: 160)`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_inicio',
@@ -232,11 +202,10 @@ export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, 
 };
 
 export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
-  // Mensaje conciso para Orden Lista (cabe en 1-2 SMS)
-  const linkRecibo = `https://the-detailer.co/recibos?placa=${placa}`;
-  const mensaje = `¡Hola ${nombreCliente}! 🎉\n¡Tu orden #${numeroOrden} está LISTA!\n🚗 Placa: ${placa}\n💰 Total: $${total?.toLocaleString?.('es-CO') || total}\n\n📋 Ver recibo: ${linkRecibo}\n\n🏪 The Detailer | Lunes-Domingo 7am-6pm`;
+  // COMPACTO: 160 chars max (1 SMS)
+  const mensaje = `¡LISTA! Orden #${numeroOrden}\n${placa} | $${Number(total || 0).toLocaleString('es-CO')}\nVer: the-detailer.co/recibos?placa=${placa}`;
 
-  console.log(`📊 SMS Orden Lista - Caracteres: ${mensaje.length} (máx recomendado: 160)`);
+  console.log(`📊 SMS Lista - ${mensaje.length} chars (máx: 160)`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_lista_sin_rifa',
@@ -245,14 +214,10 @@ export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreClient
 };
 
 export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
-  const mensaje = formatOrderNotification(
-    nombreCliente,
-    '¡Tu vehículo está listo!',
-    total,
-    `Tu número de rifa: ${numeroRifa}\n\nPor favor dirígete a recoger tu orden.\n¡Gracias por tu preferencia!`,
-    placa,
-    numeroOrden
-  );
+  // COMPACTO: 160 chars max (1 SMS)
+  const mensaje = `¡LISTA! Orden #${numeroOrden}\n${placa} | Rifa: ${numeroRifa}\nVer: the-detailer.co/recibos?placa=${placa}`;
+
+  console.log(`📊 SMS Lista+Rifa - ${mensaje.length} chars (máx: 160)`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_lista_con_rifa',
@@ -261,45 +226,16 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
 };
 
 export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, numeroOrden = '', tokenRecibo = '', metadata = {}, credentials = null) => {
-  // Generar mensaje personalizado según tipo de vehículo
-  let mensajeAdicional = '🚗 Tu vehículo está perfecto\n¡Listo para llevarlo! 🎊\n\n💫 Pronto te esperaremos para seguir cuidando tu vehículo';
+  // COMPACTO: 160 chars max (1 SMS)
+  let mensaje = `¡COMPLETADA! Orden #${numeroOrden}\n${placa} | $${Number(total || 0).toLocaleString('es-CO')}\nVer: the-detailer.co/recibos?placa=${placa}`;
 
-  console.log(`🧢 enviarNotificacionOrdenTerminada`);
-  console.log(`   Orden: ${numeroOrden}`);
-  console.log(`   Tipo vehículo: "${tipoVehiculo}" (${typeof tipoVehiculo})`);
-  console.log(`   Cantidad cascos: ${cantidadCascos} (${typeof cantidadCascos})`);
-  console.log(`   Token recibo: ${tokenRecibo ? `✓ ${tokenRecibo.substring(0, 20)}...` : '✗ No recibido'}`);
-
-  // 📥 Agregar link de descarga de recibo si hay token
-  if (tokenRecibo) {
-    // 🔗 Link apunta a la página del frontend (no al API directamente)
-    const linkRecibo = `https://the-detailer.co/recibos/${tokenRecibo}?placa=${placa}`;
-    console.log(`📥 Link de recibo: ${linkRecibo.substring(0, 60)}...`);
-    mensajeAdicional = `📋 Descarga tu recibo:\n${linkRecibo}\n\n${mensajeAdicional}`;
-  } else {
-    console.log(`⚠️ NO se agrega link - tokenRecibo es vacío`);
-    mensajeAdicional = `📋 Descarga tu recibo\n${mensajeAdicional}`;
-  }
-
-  // Solo para MOTOS: agregar información de cascos dejados
-  // Verificar si contiene "MOTO" de manera flexible
+  // Solo agregar cascos si es moto (y cabe en 160)
   const esMoto = tipoVehiculo && String(tipoVehiculo).toUpperCase().includes('MOTO');
-
-  if (esMoto && Number(cantidadCascos) > 0) {
-    console.log(`✅ AGREGANDO MENSAJE DE CASCOS - Es MOTO y tiene ${cantidadCascos} cascos`);
-    mensajeAdicional += `\n🧢 Recuerda recoger los ${cantidadCascos} casco${cantidadCascos > 1 ? 's' : ''} que dejaste`;
-  } else {
-    console.log(`⚠️ NO agregar cascos - esMoto: ${esMoto}, cantidadCascos: ${cantidadCascos}`);
+  if (esMoto && cantidadCascos > 0 && mensaje.length < 140) {
+    mensaje += `\n🧢 Recoger ${cantidadCascos} casco(s)`;
   }
 
-  const mensaje = formatOrderNotification(
-    nombreCliente,
-    '✨ ¡Tu orden ha sido FINALIZADA!\nEstatus: COMPLETADO Y LISTO',
-    total,
-    mensajeAdicional,
-    placa,
-    numeroOrden
-  );
+  console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160)`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_terminada',
@@ -308,6 +244,8 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
 };
 
 export const enviarNotificacionSimple = async (telefono, mensaje, metadata = {}, credentials = null) => {
+  console.log(`📊 SMS Simple - ${mensaje.length} chars (máx: 160)`);
+
   return sendViaSMS(telefono, mensaje, {
     type: 'notificacion_simple',
     ...metadata
@@ -315,7 +253,10 @@ export const enviarNotificacionSimple = async (telefono, mensaje, metadata = {},
 };
 
 export const enviarNotificacionModificacion = async (telefono, nombreCliente, detallesCambio, metadata = {}, credentials = null) => {
-  const mensaje = `¡Hola ${nombreCliente}!\n\nTu orden ha sido modificada:\n\n${detallesCambio}\n\nSi tienes dudas, no dudes en contactarnos.`;
+  // COMPACTO: 160 chars max (1 SMS)
+  const mensaje = `Orden modificada 🔄\n${detallesCambio}\nGracias, The Detailer`;
+
+  console.log(`📊 SMS Modificación - ${mensaje.length} chars (máx: 160)`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_modificacion',
@@ -324,7 +265,10 @@ export const enviarNotificacionModificacion = async (telefono, nombreCliente, de
 };
 
 export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}, credentials = null) => {
-  const mensaje = `¡Hola ${nombreCliente}!\n\nGracias por tu compra.\n\n${detallesRecibo}\n\nTotal: $${total.toLocaleString('es-CO')}\n\n¡Esperamos verte pronto!`;
+  // COMPACTO: 160 chars max (1 SMS)
+  const mensaje = `Recibo Mostrador\n${detallesRecibo}\nTotal: $${Number(total || 0).toLocaleString('es-CO')}`;
+
+  console.log(`📊 SMS Recibo - ${mensaje.length} chars (máx: 160)`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'recibo_mostrador',
