@@ -423,12 +423,17 @@ export const updateOrden = async (req, res) => {
     await client.query("COMMIT");
 
     // 📱 DISPARAR NOTIFICACIÓN AUTOMÁTICA SI CAMBIÓ EL ESTADO
-    console.log(`📊 updateOrden debug:`);
-    console.log(`   estadoAnterior: "${estadoAnterior}" (${typeof estadoAnterior})`);
-    console.log(`   estado (nuevo): "${estado}" (${typeof estado})`);
-    console.log(`   ¿Son diferentes? ${estadoAnterior !== estado}`);
+    // Normalizar estadoAnterior: si es "null" (string) o null/undefined, tratar como vacío
+    const estadoAnteriorNormalizado = (estadoAnterior && estadoAnterior !== 'null') ? estadoAnterior : null;
 
-    if (estadoAnterior && estado !== undefined && estadoAnterior !== estado) {
+    console.log(`📊 updateOrden debug:`);
+    console.log(`   estadoAnterior raw: "${estadoAnterior}" (${typeof estadoAnterior})`);
+    console.log(`   estadoAnterior normalizado: "${estadoAnteriorNormalizado}"`);
+    console.log(`   estado (nuevo): "${estado}" (${typeof estado})`);
+    console.log(`   ¿Son diferentes? ${estadoAnteriorNormalizado !== estado}`);
+
+    // Enviar notificación si: estado cambió Y estado nuevo está definido
+    if (estado !== undefined && estadoAnteriorNormalizado !== estado) {
       console.log(`✅ [NOTIFICACIÓN AUTOMÁTICA] Estado cambió: ${estadoAnterior} → ${estado}`);
       console.log(`🧢 Datos para notificación: tipo=${tipoVehiculoActual}, cascos=${cantidadCascosActual}`);
 

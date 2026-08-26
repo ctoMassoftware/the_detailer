@@ -90,7 +90,6 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
         return;
       }
       console.log(`✅ SMS válido: ${validacion.charCount} caracteres (máx: 160)`);
-      logMessage('SMS', messageBody, { charCount: validacion.charCount, status: 'VALIDADO' });
 
       // Obtener credenciales de BD
       const dbCredentials = await getLabsMobileCredentialsFromDB();
