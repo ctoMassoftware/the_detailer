@@ -685,33 +685,37 @@ export class ConsultarOrden implements OnInit {
 
       this.rifaService.registrarBoleta(boletaData).subscribe({
         next: (response: any) => {
-          // 🔧 Después de registrar, obtener el id_boleta del objeto boleta retornado
-          const idBoleta = response.boleta?.id_boleta || response.id_boleta;
+          // 🔧 Extraer datos de la boleta registrada
+          const boleta = response.boleta;
+          const idEventoRifa = boleta?.id_evento_rifa;
+          const numeroBoleta = boleta?.numero_boleta;
 
-          if (idBoleta) {
-            console.log(`📍 Boleta registrada con id_boleta=${idBoleta}, numero=${response.boleta?.numero_boleta}`);
+          if (idEventoRifa && numeroBoleta) {
+            console.log(`📍 Boleta registrada: evento=${idEventoRifa}, numero=${numeroBoleta}`);
 
-            // Actualizar orden con el id_boleta de la boleta seleccionada
+            // Actualizar orden con los datos de la boleta seleccionada
             this.ordenService.http.post(
               `${this.rifaService.apiUrl}/asignar-boleta`,
               {
                 id_orden: this.ordenSeleccionada.id_orden_db,
-                id_boleta: idBoleta
+                id_evento_rifa: idEventoRifa,
+                numero_boleta: numeroBoleta
               },
               { withCredentials: true }
             ).subscribe({
               next: () => {
-                console.log(`✅ id_boleta ${idBoleta} asignado a orden ${this.ordenSeleccionada.id_orden_db}`);
+                console.log(`✅ Boleta #${numeroBoleta} asignada a orden ${this.ordenSeleccionada.id_orden_db}`);
                 procesarImpresionOSMS();
                 guardarCambioEstadoFinal(`Orden completada y Boleta #${this.numeroBoletaRifa} registrada.`);
               },
               error: (err) => {
                 console.error('❌ Error asignando boleta a orden:', err);
-                Swal.fire('Error', 'No se pudo asignar la boleta a la orden', 'error');
+                console.error('Respuesta:', err.error);
+                Swal.fire('Error', `No se pudo asignar la boleta: ${err.error?.error || err.message}`, 'error');
               }
             });
           } else {
-            console.warn('⚠️ No se obtuvo id_boleta de la respuesta');
+            console.warn('⚠️ No se obtuvo información completa de la boleta:', boleta);
             procesarImpresionOSMS();
             guardarCambioEstadoFinal(`Orden completada y Boleta #${this.numeroBoletaRifa} registrada.`);
           }
