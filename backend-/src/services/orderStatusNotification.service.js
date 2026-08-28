@@ -24,7 +24,38 @@ const obtenerNumeroBoleta = async (id_evento_rifa, placa_vehiculo, id_boleta = n
       }
     }
 
-    // ✅ Fallback: buscar por evento + placa (para órdenes sin id_boleta aún)
+    // ✅ Si no tiene id_boleta, intentar ASIGNARLE una boleta disponible (que no esté en uso)
+    if (id_orden) {
+      console.log(`📥 Orden ${id_orden} no tiene id_boleta, intentando asignar una boleta disponible...`);
+      const assignResult = await pool.query(
+        `UPDATE orden o
+         SET id_boleta = (
+           SELECT r.id_boleta
+           FROM rifa r
+           WHERE r.id_evento_rifa = $1
+             AND UPPER(r.placa_vehiculo) = UPPER($2)
+             AND r.id_boleta NOT IN (
+               SELECT DISTINCT id_boleta
+               FROM orden
+               WHERE id_boleta IS NOT NULL
+                 AND id_rifa = $1
+             )
+           ORDER BY r.numero_boleta ASC
+           LIMIT 1
+         )
+         WHERE o.id_orden = $3 AND o.id_boleta IS NULL
+         RETURNING (SELECT numero_boleta FROM rifa WHERE id_boleta = (SELECT id_boleta FROM orden WHERE id_orden = $3))
+        `,
+        [id_evento_rifa, placa_vehiculo, id_orden]
+      );
+
+      if (assignResult.rows.length > 0 && assignResult.rows[0].numero_boleta) {
+        console.log(`✅ Boleta asignada a orden ${id_orden}: ${assignResult.rows[0].numero_boleta}`);
+        return assignResult.rows[0].numero_boleta;
+      }
+    }
+
+    // ✅ Fallback final: buscar por evento + placa (para casos extremos)
     const result = await pool.query(
       `SELECT numero_boleta FROM rifa
        WHERE id_evento_rifa = $1 AND UPPER(placa_vehiculo) = UPPER($2)
@@ -33,11 +64,11 @@ const obtenerNumeroBoleta = async (id_evento_rifa, placa_vehiculo, id_boleta = n
       [id_evento_rifa, placa_vehiculo]
     );
     if (result.rows.length > 0) {
-      console.log(`⚠️ Boleta encontrada por evento+placa (fallback): ${result.rows[0].numero_boleta}`);
+      console.log(`⚠️ Boleta encontrada por evento+placa (fallback final): ${result.rows[0].numero_boleta}`);
       return result.rows[0].numero_boleta;
     }
 
-    console.log(`⚠️ No se encontró boleta para: id_boleta=${id_boleta}, evento=${id_evento_rifa}, placa=${placa_vehiculo}`);
+    console.log(`⚠️ No se encontró boleta para: id_boleta=${id_boleta}, evento=${id_evento_rifa}, placa=${placa_vehiculo}, orden=${id_orden}`);
     return null;
   } catch (error) {
     console.error('⚠️ Error obteniendo número de boleta:', error.message);
