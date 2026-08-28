@@ -55,20 +55,17 @@ const obtenerNumeroBoleta = async (id_evento_rifa, placa_vehiculo, id_boleta = n
       }
     }
 
-    // ✅ Fallback final: buscar por evento + placa (para casos extremos)
-    const result = await pool.query(
-      `SELECT numero_boleta FROM rifa
-       WHERE id_evento_rifa = $1 AND UPPER(placa_vehiculo) = UPPER($2)
-       ORDER BY numero_boleta ASC
-       LIMIT 1`,
-      [id_evento_rifa, placa_vehiculo]
-    );
-    if (result.rows.length > 0) {
-      console.log(`⚠️ Boleta encontrada por evento+placa (fallback final): ${result.rows[0].numero_boleta}`);
-      return result.rows[0].numero_boleta;
-    }
+    // ⚠️ FALLBACK FINAL: NO debería llegar aquí
+    // Si llega aquí significa que algo falló en los pasos anteriores
+    console.error(`🔴 ERROR CRÍTICO: No se pudo obtener boleta para orden ${id_orden}`);
+    console.error(`   Parámetros recibidos:
+      - id_boleta: ${id_boleta}
+      - id_evento_rifa: ${id_evento_rifa}
+      - placa_vehiculo: ${placa_vehiculo}
+      - id_orden: ${id_orden}
+    `);
 
-    console.log(`⚠️ No se encontró boleta para: id_boleta=${id_boleta}, evento=${id_evento_rifa}, placa=${placa_vehiculo}, orden=${id_orden}`);
+    // NO retornar boleta por defecto - es mejor devolver null que enviar número incorrecto
     return null;
   } catch (error) {
     console.error('⚠️ Error obteniendo número de boleta:', error.message);
