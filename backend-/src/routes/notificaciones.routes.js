@@ -219,4 +219,109 @@ router.post('/prueba-cascos', async (req, res) => {
   }
 });
 
+/**
+ * Auditoría de los 3 mensajes SMS automáticos
+ * GET /api/notificaciones/auditoria-3-mensajes
+ * Valida que se envíen los mensajes correctos en cada estado
+ */
+router.get('/auditoria-3-mensajes', async (req, res) => {
+  try {
+    // Obtener últimas 50 órdenes con mensajes registrados
+    const result = await pool.query(`
+      SELECT
+        o.id_orden,
+        o.nombre_cliente,
+        o.telefono_cliente,
+        o.placa_vehiculo,
+        o.tipo_vehiculo,
+        o.cantidad_cascos,
+        o.estado,
+        o.id_rifa,
+        COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total,
+        COUNT(DISTINCT mal.id_log) as total_mensajes,
+        json_agg(
+          json_build_object(
+            'tipo', mal.tipo_notificacion,
+            'estado_sms', mal.estado,
+            'contenido', LEFT(mal.contenido_mensaje, 100),
+            'timestamp', mal.timestamp_envio
+          )
+          ORDER BY mal.timestamp_envio ASC
+        ) as mensajes
+      FROM orden o
+      LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
+      LEFT JOIN mensaje_audit_log mal ON o.id_orden = mal.id_orden
+      WHERE mal.id_log IS NOT NULL
+      GROUP BY o.id_orden, o.nombre_cliente, o.telefono_cliente, o.placa_vehiculo, o.tipo_vehiculo, o.cantidad_cascos, o.estado, o.id_rifa
+      ORDER BY o.id_orden DESC
+      LIMIT 20
+    `);
+
+    // Analizar para los 3 tipos de mensajes
+    const analysis = result.rows.map(orden => {
+      const mensajes = orden.mensajes || [];
+      const tieneInicio = mensajes.some(m => m.tipo === 'estado_proceso');
+      const tieneLista = mensajes.some(m => m.tipo === 'estado_lista' || m.tipo === 'estado_lista_rifa');
+      const tieneCompletada = mensajes.some(m => m.tipo === 'orden_completada');
+
+      const mensajeInicio = mensajes.find(m => m.tipo === 'estado_proceso');
+      const mensajeLista = mensajes.find(m => m.tipo === 'estado_lista' || m.tipo === 'estado_lista_rifa');
+      const mensajeCompletada = mensajes.find(m => m.tipo === 'orden_completada');
+
+      return {
+        id_orden: orden.id_orden,
+        cliente: orden.nombre_cliente,
+        telefono: orden.telefono_cliente,
+        placa: orden.placa_vehiculo,
+        estado_actual: orden.estado,
+        total_mensajes: orden.total_mensajes,
+        validacion: {
+          mensaje_1_inicio: tieneInicio ? '✅ SÍ' : '❌ NO',
+          mensaje_2_lista: tieneLista ? '✅ SÍ' : '❌ NO',
+          mensaje_3_completada: tieneCompletada ? '✅ SÍ' : '❌ NO',
+          completo: (tieneInicio && tieneLista && tieneCompletada) ? '✅ COMPLETO' : '⚠️ INCOMPLETO'
+        },
+        detalles: {
+          inicio: mensajeInicio ? {
+            tipo: mensajeInicio.tipo,
+            estado: mensajeInicio.estado_sms,
+            contenido: mensajeInicio.contenido,
+            fecha: mensajeInicio.timestamp
+          } : null,
+          lista: mensajeLista ? {
+            tipo: mensajeLista.tipo,
+            estado: mensajeLista.estado_sms,
+            contenido: mensajeLista.contenido,
+            fecha: mensajeLista.timestamp
+          } : null,
+          completada: mensajeCompletada ? {
+            tipo: mensajeCompletada.tipo,
+            estado: mensajeCompletada.estado_sms,
+            contenido: mensajeCompletada.contenido,
+            fecha: mensajeCompletada.timestamp
+          } : null
+        }
+      };
+    });
+
+    const totalOrdenes = analysis.length;
+    const completas = analysis.filter(o => o.validacion.completo === '✅ COMPLETO').length;
+    const incompletas = totalOrdenes - completas;
+
+    res.json({
+      resumen: {
+        total_ordenes_analizadas: totalOrdenes,
+        ordenes_con_3_mensajes: completas,
+        ordenes_incompletas: incompletas,
+        porcentaje_completitud: Math.round((completas / totalOrdenes) * 100) + '%'
+      },
+      ordenes: analysis
+    });
+
+  } catch (error) {
+    console.error('Error en auditoría:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
