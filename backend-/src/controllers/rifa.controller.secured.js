@@ -242,7 +242,11 @@ export const asignarBoletaAOrden = async (req, res) => {
   const { id_orden, id_evento_rifa, numero_boleta } = req.body;
   const { rol, id: userId } = req.user || {};
 
+  console.log(`📥 POST /asignar-boleta recibido:`);
+  console.log(`   id_orden=${id_orden}, id_evento_rifa=${id_evento_rifa}, numero_boleta=${numero_boleta}`);
+
   if (!id_orden || !id_evento_rifa || !numero_boleta) {
+    console.error(`❌ Parámetros faltantes: id_orden=${id_orden}, id_evento_rifa=${id_evento_rifa}, numero_boleta=${numero_boleta}`);
     return res.status(400).json({ error: 'Faltan parámetros requeridos: id_orden, id_evento_rifa, numero_boleta' });
   }
 
@@ -253,6 +257,8 @@ export const asignarBoletaAOrden = async (req, res) => {
 
     // 1. Buscar la boleta en la tabla rifa por número
     const numeroFormatted = String(numero_boleta).padStart(3, '0');
+    console.log(`🔍 Buscando boleta #${numeroFormatted} en evento ${id_evento_rifa}...`);
+
     const boletaQuery = await client.query(
       `SELECT id_boleta FROM rifa
        WHERE id_evento_rifa = $1 AND numero_boleta = $2
@@ -260,8 +266,14 @@ export const asignarBoletaAOrden = async (req, res) => {
       [id_evento_rifa, numeroFormatted]
     );
 
+    console.log(`   Resultado: ${boletaQuery.rows.length} boletas encontradas`);
+    if (boletaQuery.rows.length > 0) {
+      console.log(`   id_boleta encontrado: ${boletaQuery.rows[0].id_boleta}`);
+    }
+
     if (boletaQuery.rows.length === 0) {
       await client.query('ROLLBACK');
+      console.error(`❌ Boleta #${numeroFormatted} NO encontrada en evento ${id_evento_rifa}`);
       return res.status(404).json({
         error: `Boleta #${numeroFormatted} no encontrada para el evento ${id_evento_rifa}`
       });
