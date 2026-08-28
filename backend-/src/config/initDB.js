@@ -233,6 +233,27 @@ export const initDB = async () => {
             ip_descarga VARCHAR(45),
             activo BOOLEAN DEFAULT TRUE
         );
+
+        -- 15. MÉTODOS DE PAGO CONFIGURABLES
+        CREATE TABLE IF NOT EXISTS metodos_pago (
+            id_metodo SERIAL PRIMARY KEY,
+            nombre VARCHAR(50) NOT NULL UNIQUE,
+            descripcion VARCHAR(200),
+            activo BOOLEAN DEFAULT true,
+            orden INT DEFAULT 0,
+            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        -- 16. AUDITORÍA MÉTODOS DE PAGO
+        CREATE TABLE IF NOT EXISTS auditoria_metodos_pago (
+            id SERIAL PRIMARY KEY,
+            id_metodo INT REFERENCES metodos_pago(id_metodo),
+            accion VARCHAR(50),
+            cambios JSONB,
+            usuario_id INT,
+            fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     `;
 
     try {
@@ -294,6 +315,23 @@ export const initDB = async () => {
             }
         } catch (error) {
             console.warn("⚠️ Error configurando LabsMobile en BD:", error.message);
+        }
+
+        // SEED: MÉTODOS DE PAGO PREDETERMINADOS
+        console.log("🔄 Verificando métodos de pago predeterminados...");
+        try {
+            await pool.query(`
+                INSERT INTO metodos_pago (nombre, descripcion, activo, orden) VALUES
+                  ('Efectivo', 'Pago en efectivo', true, 1),
+                  ('Transferencia', 'Transferencia bancaria', true, 2),
+                  ('Tarjeta', 'Tarjeta de crédito/débito', false, 3),
+                  ('Cheque', 'Pago con cheque', false, 4),
+                  ('PSE', 'Pagos electrónicos PSE', false, 5)
+                ON CONFLICT (nombre) DO NOTHING
+            `);
+            console.log("✅ Métodos de pago verificados");
+        } catch (error) {
+            console.warn("⚠️ Error configurando métodos de pago:", error.message);
         }
 
         // LIMPIEZA DE DATOS PARA EL DASHBOARD
