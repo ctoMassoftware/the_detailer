@@ -293,12 +293,25 @@ export const asignarBoletaAOrden = async (req, res) => {
     }
 
     // 3. Actualizar orden con id_boleta
+    console.log(`🔄 Ejecutando UPDATE: SET id_boleta=${idBoleta} WHERE id_orden=${id_orden}`);
     const updateResult = await client.query(
       `UPDATE orden SET id_boleta = $1 WHERE id_orden = $2 RETURNING id_orden, id_boleta`,
       [idBoleta, id_orden]
     );
 
+    console.log(`   UPDATE resultado: rowCount=${updateResult.rowCount}, rows=${JSON.stringify(updateResult.rows)}`);
+
+    if (updateResult.rowCount === 0) {
+      await client.query('ROLLBACK');
+      console.error(`❌ UPDATE no afectó ninguna fila. Orden ${id_orden} podría no existir`);
+      return res.status(400).json({
+        error: `No se pudo actualizar orden ${id_orden}`,
+        debug: { rowCount: updateResult.rowCount }
+      });
+    }
+
     await client.query('COMMIT');
+    console.log(`✅ COMMIT ejecutado exitosamente`);
 
     console.log(`✅ Boleta #${numeroFormatted} (id=${idBoleta}) asignada a orden ${id_orden}`);
     res.json({
@@ -306,7 +319,8 @@ export const asignarBoletaAOrden = async (req, res) => {
       message: `Boleta #${numeroFormatted} asignada correctamente`,
       id_orden,
       id_boleta: idBoleta,
-      numero_boleta: numeroFormatted
+      numero_boleta: numeroFormatted,
+      updateResult: updateResult.rows[0]
     });
   } catch (error) {
     await client.query('ROLLBACK');
