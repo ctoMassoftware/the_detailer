@@ -102,7 +102,8 @@ router.get('/por-placa/:placa', async (req, res) => {
         ) as lista_servicios,
         er.descripcion_premios as rifa_premio,
         er.fecha_sorteo as fecha_sorteo,
-        COALESCE(r_boleta.numero_boleta, (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa AND UPPER(placa_vehiculo) = UPPER(o.placa_vehiculo) ORDER BY numero_boleta ASC LIMIT 1)) as numero_rifa
+        er.encargado as encargado_rifa,
+        r_boleta.numero_boleta as numero_rifa
        FROM orden o
        LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
@@ -111,7 +112,7 @@ router.get('/por-placa/:placa', async (req, res) => {
        LEFT JOIN rifa r_boleta ON o.id_boleta = r_boleta.id_boleta
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
          AND o.fecha >= (CURRENT_DATE AT TIME ZONE 'America/Bogota') - INTERVAL '1 day'
-       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.id_boleta, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, u.nombre, u.apellido, er.descripcion_premios, er.fecha_sorteo, r_boleta.numero_boleta
+       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.id_boleta, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, u.nombre, u.apellido, er.descripcion_premios, er.fecha_sorteo, er.encargado, r_boleta.numero_boleta
        ORDER BY o.fecha DESC, o.hora DESC, o.id_orden DESC`,
       [placa]
     );
@@ -141,7 +142,8 @@ router.get('/por-placa/:placa', async (req, res) => {
       numero_rifa: row.numero_rifa,
       rifa_premio: row.rifa_premio,
       fecha_sorteo: formatearFechaUI(row.fecha_sorteo),  // Cuándo juega (DD/MM/YYYY)
-      responsable: row.responsable_nombre,  // Nombre del operario/responsable de rifa
+      responsable: row.responsable_nombre,  // Nombre del operario/responsable de la orden
+      encargado_rifa: row.encargado_rifa,  // Encargado del evento de rifa
       id_rifa: row.id_rifa,  // Para validar si tiene rifa
       notas: row.notas,  // Observaciones de la orden
       servicios: row.lista_servicios,
@@ -359,7 +361,8 @@ router.get('/datos/:token', async (req, res) => {
         ) as lista_servicios,
         er.descripcion_premios as rifa_premio,
         er.fecha_sorteo as fecha_sorteo,
-        COALESCE(r_boleta.numero_boleta, (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa AND UPPER(placa_vehiculo) = UPPER(o.placa_vehiculo) ORDER BY numero_boleta ASC LIMIT 1)) as numero_rifa,
+        er.encargado as encargado_rifa,
+        r_boleta.numero_boleta as numero_rifa,
         CONCAT(u.nombre, ' ', u.apellido) as responsable_nombre
        FROM orden o
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
@@ -368,7 +371,7 @@ router.get('/datos/:token', async (req, res) => {
        LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
        LEFT JOIN rifa r_boleta ON o.id_boleta = r_boleta.id_boleta
        WHERE o.id_orden = $1
-       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, o.id_boleta, er.descripcion_premios, er.fecha_sorteo, u.nombre, u.apellido, r_boleta.numero_boleta`,
+       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, o.id_boleta, er.descripcion_premios, er.fecha_sorteo, er.encargado, u.nombre, u.apellido, r_boleta.numero_boleta`,
       [orden.id_orden]
     );
 
@@ -403,7 +406,8 @@ router.get('/datos/:token', async (req, res) => {
         numero_rifa: ordenData.numero_rifa,
         rifa_premio: ordenData.rifa_premio,
         fecha_sorteo: formatearFechaUI(ordenData.fecha_sorteo),  // DD/MM/YYYY
-        responsable: ordenData.responsable_nombre,
+        responsable: ordenData.responsable_nombre,  // Operario encargado de la orden
+        encargado_rifa: ordenData.encargado_rifa,  // Encargado del evento de rifa
         id_rifa: ordenData.id_rifa,
         notas: ordenData.notas,
         servicios: ordenData.lista_servicios,
