@@ -14,6 +14,16 @@ function formatearFecha(fecha) {
   return `${anio}-${mes}-${dia}`;
 }
 
+// Formatear fecha a DD/MM/YYYY (para mostrar en la UI)
+function formatearFechaUI(fecha) {
+  if (!fecha) return null;
+  const d = new Date(fecha);
+  const anio = d.getUTCFullYear();
+  const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dia = String(d.getUTCDate()).padStart(2, '0');
+  return `${dia}/${mes}/${anio}`;
+}
+
 /**
  * Health check y diagnostics
  * GET /api/recibos/health
@@ -109,7 +119,7 @@ router.get('/por-placa/:placa', async (req, res) => {
       cantidad_cascos: row.cantidad_cascos || 0,
       numero_rifa: row.numero_rifa,
       rifa_premio: row.rifa_premio,
-      fecha_sorteo: row.fecha_sorteo,  // Cuándo juega (fecha del sorteo)
+      fecha_sorteo: formatearFechaUI(row.fecha_sorteo),  // Cuándo juega (DD/MM/YYYY)
       responsable: row.responsable_nombre,  // Nombre del operario/responsable de rifa
       id_rifa: row.id_rifa,  // Para validar si tiene rifa
       notas: row.notas,  // Observaciones de la orden
@@ -370,7 +380,7 @@ router.get('/datos/:token', async (req, res) => {
         cantidad_cascos: ordenData.cantidad_cascos || 0,
         numero_rifa: ordenData.numero_rifa,
         rifa_premio: ordenData.rifa_premio,
-        fecha_sorteo: ordenData.fecha_sorteo,
+        fecha_sorteo: formatearFechaUI(ordenData.fecha_sorteo),  // DD/MM/YYYY
         responsable: ordenData.responsable_nombre,
         id_rifa: ordenData.id_rifa,
         notas: ordenData.notas,
