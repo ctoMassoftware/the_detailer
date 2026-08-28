@@ -9,15 +9,36 @@ import { generarTokenRecibo } from './reciboToken.service.js';
 import { pool } from '../config/db.js';
 
 // Obtener número de boleta real de la tabla rifa
-const obtenerNumeroBoleta = async (id_evento_rifa, placa_vehiculo) => {
+// Ahora recibe id_boleta y id_orden para obtener la boleta correcta de esa orden específica
+const obtenerNumeroBoleta = async (id_evento_rifa, placa_vehiculo, id_boleta = null, id_orden = null) => {
   try {
+    // ✅ Si la orden tiene id_boleta asignado, usarlo (es la boleta correcta de esta orden)
+    if (id_boleta) {
+      const result = await pool.query(
+        `SELECT numero_boleta FROM rifa WHERE id_boleta = $1`,
+        [id_boleta]
+      );
+      if (result.rows.length > 0) {
+        console.log(`✅ Boleta encontrada por id_boleta ${id_boleta}: ${result.rows[0].numero_boleta}`);
+        return result.rows[0].numero_boleta;
+      }
+    }
+
+    // ✅ Fallback: buscar por evento + placa (para órdenes sin id_boleta aún)
     const result = await pool.query(
       `SELECT numero_boleta FROM rifa
        WHERE id_evento_rifa = $1 AND UPPER(placa_vehiculo) = UPPER($2)
+       ORDER BY numero_boleta ASC
        LIMIT 1`,
       [id_evento_rifa, placa_vehiculo]
     );
-    return result.rows.length > 0 ? result.rows[0].numero_boleta : null;
+    if (result.rows.length > 0) {
+      console.log(`⚠️ Boleta encontrada por evento+placa (fallback): ${result.rows[0].numero_boleta}`);
+      return result.rows[0].numero_boleta;
+    }
+
+    console.log(`⚠️ No se encontró boleta para: id_boleta=${id_boleta}, evento=${id_evento_rifa}, placa=${placa_vehiculo}`);
+    return null;
   } catch (error) {
     console.error('⚠️ Error obteniendo número de boleta:', error.message);
     return null;
@@ -35,7 +56,7 @@ export const enviarNotificacionPorCambioEstado = async (
   id_rifa = null,
   credentials = null
 ) => {
-  const { nombre_cliente, telefono_cliente, placa_vehiculo, tipo_vehiculo, cantidad_cascos, valorTotal, id_orden } = ordenDatos;
+  const { nombre_cliente, telefono_cliente, placa_vehiculo, tipo_vehiculo, cantidad_cascos, valorTotal, id_orden, id_boleta } = ordenDatos;
 
   // Validar datos mínimos
   if (!nombre_cliente || !telefono_cliente || !placa_vehiculo || !valorTotal) {
@@ -86,7 +107,7 @@ export const enviarNotificacionPorCambioEstado = async (
 
       // Si hay rifa, obtener número de boleta real y usar plantilla con rifa
       if (id_rifa) {
-        const numeroBoleta = await obtenerNumeroBoleta(id_rifa, placa_vehiculo);
+        const numeroBoleta = await obtenerNumeroBoleta(id_rifa, placa_vehiculo, id_boleta, id_orden);
         if (numeroBoleta) {
           console.log(`   Con rifa - Boleta #${numeroBoleta}`);
           return await enviarNotificacionOrdenListaConRifa(
