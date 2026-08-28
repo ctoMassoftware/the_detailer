@@ -169,6 +169,9 @@ export class ConsultarOrden implements OnInit {
     encargado: 'Cargando...'
   };
 
+  // 🔒 Bandera para prevenir actualizaciones duplicadas
+  private ejecutandoUpdate: boolean = false;
+
   ngOnInit() {
     const userStr = localStorage.getItem('user') || localStorage.getItem('usuario');
     if (userStr) {
@@ -510,6 +513,13 @@ export class ConsultarOrden implements OnInit {
   }
 
   private ejecutarUpdateEstado(orden: any) {
+    // 🔒 Prevenir múltiples actualizaciones simultáneas
+    if (this.ejecutandoUpdate) {
+      console.warn('⚠️ Actualización ya en progreso, ignorando llamada duplicada');
+      return;
+    }
+    this.ejecutandoUpdate = true;
+
     const serviciosMapeados = (orden.serviciosDetallados || []).map((s: any) => ({
       id_servicio: s.id_servicio || s.id,
       cantidad: s.cantidad || 1,
@@ -546,6 +556,7 @@ export class ConsultarOrden implements OnInit {
 
     this.ordenService.updateOrden(orden.id_orden_db, payload).subscribe({
       next: () => {
+        this.ejecutandoUpdate = false;  // ✅ Liberar flag
         Swal.fire({
           title: 'Orden Actualizada',
           text: `La orden ${orden.numero} fue guardada correctamente`,
@@ -556,6 +567,7 @@ export class ConsultarOrden implements OnInit {
         this.cargarOrdenes();
       },
       error: () => {
+        this.ejecutandoUpdate = false;  // ✅ Liberar flag incluso en error
         Swal.fire('Error', 'No se pudo actualizar la orden', 'error');
         this.cargarOrdenes();
       }
