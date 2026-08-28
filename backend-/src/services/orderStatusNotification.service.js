@@ -175,23 +175,32 @@ export const enviarNotificacionPorCambioEstado = async (
       console.log(`✉️ Enviando SMS #3: Orden COMPLETADA a ${telefono_cliente}`);
       console.log(`📊 Datos extraídos: tipo_vehiculo="${tipo_vehiculo}", cantidad_cascos=${cantidad_cascos}`);
 
-      // 📥 Generar token para descarga de recibo
-      console.log(`📥 Generando token para orden ${id_orden}, placa: ${placa_vehiculo}`);
-      const tokenRecibo = await generarTokenRecibo(id_orden, placa_vehiculo);
-      console.log(`📥 Token generado: ${tokenRecibo ? '✓ SÍ' : '✗ NO'}`);
+      try {
+        // 📥 Generar token para descarga de recibo
+        console.log(`📥 Generando token para orden ${id_orden}, placa: ${placa_vehiculo}`);
+        const tokenRecibo = await generarTokenRecibo(id_orden, placa_vehiculo);
+        console.log(`📥 Token generado: ${tokenRecibo ? '✓ SÍ' : '✗ NO'}`);
 
-      return await enviarNotificacionOrdenTerminada(
-        telefono_cliente,
-        nombre_cliente,
-        valorTotal,
-        placa_vehiculo,
-        tipo_vehiculo,
-        cantidad_cascos,
-        id_orden,
-        tokenRecibo,
-        { orderId: id_orden, tipo: 'orden_completada' },
-        credentials
-      );
+        const resultado = await enviarNotificacionOrdenTerminada(
+          telefono_cliente,
+          nombre_cliente,
+          valorTotal,
+          placa_vehiculo,
+          tipo_vehiculo,
+          cantidad_cascos,
+          id_orden,
+          tokenRecibo,
+          { orderId: id_orden, tipo: 'orden_completada' },
+          credentials
+        );
+
+        console.log(`✅ SMS #3 enviado exitosamente:`, resultado);
+        return resultado;
+      } catch (error) {
+        console.error(`❌ ERROR enviando SMS #3 para orden ${id_orden}:`, error.message);
+        console.error(`Stack:`, error.stack);
+        throw error;
+      }
     }
 
     // ✅ CANCELACIÓN (Cualquier estado → Cancelada)
