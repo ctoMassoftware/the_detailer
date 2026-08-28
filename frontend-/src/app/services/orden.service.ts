@@ -40,4 +40,9 @@ export class OrdenService {
   notificarModificacion(data: { nombre: string, telefono: string, placa: string, total: number }): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/notificar-modificacion`, data);
   }
+
+  // ✅ Método público para asignar rifa a orden
+  asignarRifa(idOrden: number | string, data: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${idOrden}/asignar-rifa`, data);
+  }
 }

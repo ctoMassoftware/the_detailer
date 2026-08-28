@@ -702,15 +702,11 @@ export class ConsultarOrden implements OnInit {
             console.log(`📍 Boleta registrada: evento=${idEventoRifa}, numero=${numeroBoleta}`);
 
             // Actualizar orden con los datos de la boleta seleccionada
-            this.ordenService.http.post(
-              `${this.rifaService.apiUrl}/asignar-boleta`,
-              {
-                id_orden: this.ordenSeleccionada.id_orden_db,
-                id_evento_rifa: idEventoRifa,
-                numero_boleta: numeroBoleta
-              },
-              { withCredentials: true }
-            ).subscribe({
+            this.rifaService.asignarBoleta({
+              id_orden: this.ordenSeleccionada.id_orden_db,
+              id_evento_rifa: idEventoRifa,
+              numero_boleta: numeroBoleta
+            }).subscribe({
               next: () => {
                 console.log(`✅ Boleta #${numeroBoleta} asignada a orden ${this.ordenSeleccionada.id_orden_db}`);
                 procesarImpresionOSMS();
@@ -755,7 +751,7 @@ export class ConsultarOrden implements OnInit {
     // ✅ NEW: Use separate endpoint for raffle assignment (NO SMS trigger)
     const datosRifa = { id_rifa: idRifa };
 
-    this.ordenService.http.put(`${this.ordenService.apiUrl}/${this.ordenSeleccionada.id_orden_db}/asignar-rifa`, datosRifa).subscribe({
+    this.ordenService.asignarRifa(this.ordenSeleccionada.id_orden_db, datosRifa).subscribe({
       next: (response: any) => {
         console.log('✅ Rifa asignada exitosamente (sin SMS disparado)');
         this.opcionRifaSeleccionada = true; // ✅ "Sí" está seleccionado

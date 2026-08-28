@@ -51,4 +51,9 @@ export class RifaService {
   eliminarRifa(idEvento: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/eliminar/${idEvento}`);
   }
+
+  // ✅ Método público para asignar boleta a orden
+  asignarBoleta(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/asignar-boleta`, data, { withCredentials: true });
+  }
 }
