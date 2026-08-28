@@ -471,6 +471,21 @@ export class VentaMostrador implements OnInit {
     this.mostrarAlerta = false;
   }
 
+  formatearFechaRifa(fecha: string): string {
+    if (!fecha) return '';
+    if (fecha.includes('Z/')) {
+      const parte = fecha.split('Z/')[1];
+      if (parte) return parte;
+    }
+    try {
+      const date = new Date(fecha);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      }
+    } catch (e) {}
+    return fecha;
+  }
+
   // --- BOTÓN TEMPORAL DE PRUEBA DE IMPRESORA ---
   probarImpresoraDirecto() {
     const datosTicket = {

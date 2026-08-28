@@ -261,7 +261,7 @@
               <div class="boleta-card-header">
                 <img src="assets/logo.jpeg" alt="Logo" class="boleta-logo" />
                 <div>
-                  <p class="boleta-date">Juega el {{ datosRifaActiva.fecha_sorteo | date:'dd/MM/yyyy' }}</p>
+                  <p class="boleta-date">Juega el {{ formatearFechaRifa(datosRifaActiva.fecha_sorteo) }}</p>
                 </div>
               </div>
               <div class="boleta-card-body">

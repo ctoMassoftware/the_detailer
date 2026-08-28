@@ -34,7 +34,7 @@
 
     <div class="right">
       <div class="right-content">
-        <img class="logoEspacio" src="assets/logo.jpeg" alt="logo">
+        <img class="logoEspacio" src="assets/logo.jpeg" alt="logo" loading="lazy">
         <h2 class="login-title">Inicia Sesión</h2>
         <div class="login-divider"></div>
 
@@ -77,6 +77,7 @@
                 [(ngModel)]="password" #passwordModel="ngModel"
                 required minlength="4" placeholder="••••••••" class="input password-input"
                 [class.input-error]="passwordModel.invalid && passwordModel.touched"
+                autocomplete="current-password"
                 style="width: 100%; padding-right: 38px;" />
               <button type="button"
                 (click)="toggleShowPassword()"

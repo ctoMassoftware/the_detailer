@@ -339,7 +339,7 @@
 
       <div class="factura-header">
         <div class="header-left">
-          <img src="assets/logo.jpeg" alt="Logo The Detailer" class="factura-logo" />
+          <img src="assets/logo.jpeg" alt="Logo The Detailer" class="factura-logo" loading="lazy" />
         </div>
         <div class="header-right">
           <p class="factura-title">Factura de Venta</p>
@@ -452,7 +452,7 @@
               {{ rifaActiva ? '🎯 Rifa Activa' : '⚠️ Sin Rifa' }}
             </span>
             <span class="rifa-info" *ngIf="rifaActiva">
-              Juega: {{ datosRifaActiva.fecha_sorteo | date:'dd/MM/yyyy' }}
+              Juega: {{ formatearFechaRifa(datosRifaActiva.fecha_sorteo) }}
             </span>
           </div>
           <p class="rifa-question">¿Desea agregar la rifa?</p>
@@ -497,9 +497,9 @@
 
             <div class="boleta-card">
               <div class="boleta-card-header">
-                <img src="assets/logo.jpeg" alt="Logo" class="boleta-logo" />
+                <img src="assets/logo.jpeg" alt="Logo" class="boleta-logo" loading="lazy" />
                 <div>
-                  <p class="boleta-date">Juega el {{ datosRifaActiva.fecha_sorteo | date:'dd/MM/yyyy' }}</p>
+                  <p class="boleta-date">Juega el {{ formatearFechaRifa(datosRifaActiva.fecha_sorteo) }}</p>
                 </div>
               </div>
               <div class="boleta-card-body">

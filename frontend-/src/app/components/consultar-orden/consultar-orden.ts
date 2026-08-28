@@ -201,6 +201,24 @@ export class ConsultarOrden implements OnInit {
     return true;
   }
 
+  formatearFechaRifa(fecha: string): string {
+    if (!fecha) return '';
+    // Limpia formatos malformados como "01T00:00:00.000Z/09/2026"
+    // Extrae la fecha del formato y devuelve dd/MM/yyyy
+    if (fecha.includes('Z/')) {
+      const parte = fecha.split('Z/')[1];
+      if (parte) return parte;
+    }
+    // Si es una fecha ISO válida, formatea con pipe
+    try {
+      const date = new Date(fecha);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      }
+    } catch (e) {}
+    return fecha;
+  }
+
   cargarRifaActiva() {
     this.rifaService.getRifaActiva().subscribe({
       next: (data: any) => {
@@ -625,23 +643,25 @@ export class ConsultarOrden implements OnInit {
 
     const procesarImpresionOSMS = () => {
       if (this.preferenciaRecibo.includes('FISICO')) {
-        const datosTicket = {
-          numero: this.ordenSeleccionada.numero,
-          cliente: this.ordenSeleccionada.cliente,
-          placa: this.ordenSeleccionada.vehiculoPlaca,
-          total: this.ordenSeleccionada.valorTotal,
-          metodoPago: this.ordenSeleccionada.metodoPago,
-          recibido: this.ordenSeleccionada.metodoPago === 'Efectivo' ? this.montoRecibido : null,
-          cambio: this.ordenSeleccionada.metodoPago === 'Efectivo' ? this.cambioDevolver : null,
-          numeroRifa: this.mostrarRifa ? this.numeroBoletaRifa : null,
-          servicios: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
-          serviciosDetallados: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
-          servicioPrincipal: this.ordenSeleccionada.servicioPrincipal || (this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados[0].nombre : undefined)
-        };
-        this.impresoraService.imprimirTicket(datosTicket, 'ORDEN', 'RAWBT');
+        try {
+          const datosTicket = {
+            numero: this.ordenSeleccionada.numero,
+            cliente: this.ordenSeleccionada.cliente,
+            placa: this.ordenSeleccionada.vehiculoPlaca,
+            total: this.ordenSeleccionada.valorTotal,
+            metodoPago: this.ordenSeleccionada.metodoPago,
+            recibido: this.ordenSeleccionada.metodoPago === 'Efectivo' ? this.montoRecibido : null,
+            cambio: this.ordenSeleccionada.metodoPago === 'Efectivo' ? this.cambioDevolver : null,
+            numeroRifa: this.mostrarRifa ? this.numeroBoletaRifa : null,
+            servicios: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
+            serviciosDetallados: this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados : [],
+            servicioPrincipal: this.ordenSeleccionada.servicioPrincipal || (this.ordenSeleccionada.serviciosDetallados && this.ordenSeleccionada.serviciosDetallados.length > 0 ? this.ordenSeleccionada.serviciosDetallados[0].nombre : undefined)
+          };
+          this.impresoraService.imprimirTicket(datosTicket, 'ORDEN', 'RAWBT');
+        } catch (error) {
+          console.error('Error al imprimir ticket:', error);
+        }
       }
-      // SMS es enviado automáticamente por el backend cuando cambia de estado a "Lista"
-      // No duplicar aquí para evitar envíos múltiples
     };
 
     if (this.mostrarRifa) {

@@ -211,10 +211,29 @@ export class ReciboComponent implements OnInit {
 
   obtenerFecha(fecha: string): string {
     if (!fecha) return 'N/A';
-    // Espera formato YYYY-MM-DD del backend, convierte a DD/MM/YYYY
-    const [anio, mes, dia] = fecha.split('-');
-    if (!anio || !mes || !dia) return 'N/A';
-    return `${dia}/${mes}/${anio}`;
+
+    // Limpia formatos malformados como "01T00:00:00.000Z/09/2026"
+    // Extrae la fecha del formato y devuelve DD/MM/YYYY
+    if (fecha.includes('Z/')) {
+      const parte = fecha.split('Z/')[1];
+      if (parte) return parte;
+    }
+
+    // Formato YYYY-MM-DD: convierte a DD/MM/YYYY
+    if (fecha.includes('-')) {
+      const [anio, mes, dia] = fecha.split('-');
+      if (anio && mes && dia) return `${dia}/${mes}/${anio}`;
+    }
+
+    // Intenta parsear como fecha ISO
+    try {
+      const date = new Date(fecha);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      }
+    } catch (e) {}
+
+    return fecha || 'N/A';
   }
 
   obtenerTotal(servicios: any[]): number {
