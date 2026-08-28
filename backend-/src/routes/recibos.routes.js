@@ -62,34 +62,57 @@ router.get('/por-placa/:placa', async (req, res) => {
       return res.status(400).json({ error: 'Placa inválida' });
     }
 
-    // 🔧 AUTOMIGRACIÓN: Asignar boletas a órdenes que no las tengan
+    // 🔧 AUTOMIGRACIÓN: Asignar boletas a órdenes que no las tengan (con transacción para evitar duplicados)
+    const client = await pool.connect();
     try {
-      const migracionResult = await pool.query(`
-        UPDATE orden o
-        SET id_boleta = (
-          SELECT r.id_boleta
-          FROM rifa r
-          WHERE r.id_evento_rifa = o.id_rifa
-            AND UPPER(r.placa_vehiculo) = UPPER(o.placa_vehiculo)
-            AND r.id_boleta NOT IN (
-              SELECT DISTINCT id_boleta
-              FROM orden o2
-              WHERE o2.id_boleta IS NOT NULL
-                AND o2.id_rifa = o.id_rifa
-            )
-          ORDER BY r.numero_boleta ASC
-          LIMIT 1
-        )
+      await client.query('BEGIN');
+
+      // Obtener órdenes sin boleta para esta placa
+      const ordenesSinBoleta = await client.query(`
+        SELECT o.id_orden, o.id_rifa, o.placa_vehiculo
+        FROM orden o
         WHERE o.id_boleta IS NULL
           AND o.id_rifa IS NOT NULL
           AND UPPER(o.placa_vehiculo) = UPPER($1)
+        ORDER BY o.fecha ASC, o.id_orden ASC
       `, [placa]);
 
-      if (migracionResult.rowCount > 0) {
-        console.log(`✅ Asignadas ${migracionResult.rowCount} boletas a órdenes sin id_boleta`);
+      // Para cada orden, asignar una boleta disponible
+      let asignadas = 0;
+      for (const orden of ordenesSinBoleta.rows) {
+        const boletaResult = await client.query(`
+          SELECT r.id_boleta
+          FROM rifa r
+          WHERE r.id_evento_rifa = $1
+            AND UPPER(r.placa_vehiculo) = UPPER($2)
+            AND r.id_boleta NOT IN (
+              SELECT DISTINCT id_boleta
+              FROM orden
+              WHERE id_boleta IS NOT NULL
+                AND id_rifa = $1
+            )
+          ORDER BY r.numero_boleta ASC
+          LIMIT 1
+          FOR UPDATE SKIP LOCKED
+        `, [orden.id_rifa, orden.placa_vehiculo]);
+
+        if (boletaResult.rows.length > 0) {
+          await client.query(`
+            UPDATE orden SET id_boleta = $1 WHERE id_orden = $2
+          `, [boletaResult.rows[0].id_boleta, orden.id_orden]);
+          asignadas++;
+        }
+      }
+
+      await client.query('COMMIT');
+      if (asignadas > 0) {
+        console.log(`✅ Asignadas ${asignadas} boletas a órdenes sin id_boleta (transacción segura)`);
       }
     } catch (e) {
+      await client.query('ROLLBACK');
       console.log("⚠️ Nota: Error en auto-asignación de boletas:", e.message);
+    } finally {
+      client.release();
     }
 
     // Obtener órdenes de esa placa (últimas 24 horas máximo para seguridad)
@@ -373,30 +396,46 @@ router.get('/datos/:token', async (req, res) => {
       });
     }
 
-    // 🔧 AUTOMIGRACIÓN: Asignar boleta si la orden no la tiene
+    // 🔧 AUTOMIGRACIÓN: Asignar boleta si la orden no la tiene (con transacción para evitar duplicados)
+    const client = await pool.connect();
     try {
-      await pool.query(`
-        UPDATE orden o
-        SET id_boleta = (
+      await client.query('BEGIN');
+
+      const ordenData = await client.query(`
+        SELECT id_rifa, placa_vehiculo FROM orden WHERE id_orden = $1 AND id_boleta IS NULL
+      `, [orden.id_orden]);
+
+      if (ordenData.rows.length > 0) {
+        const ord = ordenData.rows[0];
+        const boletaResult = await client.query(`
           SELECT r.id_boleta
           FROM rifa r
-          WHERE r.id_evento_rifa = o.id_rifa
-            AND UPPER(r.placa_vehiculo) = UPPER(o.placa_vehiculo)
+          WHERE r.id_evento_rifa = $1
+            AND UPPER(r.placa_vehiculo) = UPPER($2)
             AND r.id_boleta NOT IN (
               SELECT DISTINCT id_boleta
-              FROM orden o2
-              WHERE o2.id_boleta IS NOT NULL
-                AND o2.id_rifa = o.id_rifa
+              FROM orden
+              WHERE id_boleta IS NOT NULL
+                AND id_rifa = $1
             )
           ORDER BY r.numero_boleta ASC
           LIMIT 1
-        )
-        WHERE o.id_orden = $1
-          AND o.id_boleta IS NULL
-          AND o.id_rifa IS NOT NULL
-      `, [orden.id_orden]);
+          FOR UPDATE SKIP LOCKED
+        `, [ord.id_rifa, ord.placa_vehiculo]);
+
+        if (boletaResult.rows.length > 0) {
+          await client.query(`
+            UPDATE orden SET id_boleta = $1 WHERE id_orden = $2
+          `, [boletaResult.rows[0].id_boleta, orden.id_orden]);
+        }
+      }
+
+      await client.query('COMMIT');
     } catch (e) {
+      await client.query('ROLLBACK');
       console.log("⚠️ Nota: Error en auto-asignación de boleta:", e.message);
+    } finally {
+      client.release();
     }
 
     // Obtener datos completos de la orden (incluida información de rifa)
