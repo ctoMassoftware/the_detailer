@@ -241,24 +241,29 @@ export class AdminMetodosPagoComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
+        console.log(`📍 Toggle solicitado para: ${metodo.nombre} (ID: ${metodo.id_metodo})`);
         if (!metodo.activo) {
           this.metodosPagoService.activarMetodo(metodo.id_metodo).subscribe({
             next: () => {
+              console.log(`✅ Activación exitosa`);
               metodo.activo = true;
               Swal.fire('Éxito', `${metodo.nombre} ha sido activado`, 'success');
             },
-            error: () => {
-              Swal.fire('Error', 'No se pudo activar el método de pago', 'error');
+            error: (err: any) => {
+              console.error('❌ Error activando:', err);
+              Swal.fire('Error', `No se pudo activar el método de pago: ${err.message}`, 'error');
             }
           });
         } else {
           this.metodosPagoService.desactivarMetodo(metodo.id_metodo).subscribe({
             next: () => {
+              console.log(`✅ Desactivación exitosa`);
               metodo.activo = false;
               Swal.fire('Éxito', `${metodo.nombre} ha sido desactivado`, 'success');
             },
-            error: () => {
-              Swal.fire('Error', 'No se pudo desactivar el método de pago', 'error');
+            error: (err: any) => {
+              console.error('❌ Error desactivando:', err);
+              Swal.fire('Error', `No se pudo desactivar el método de pago: ${err.message}`, 'error');
             }
           });
         }
