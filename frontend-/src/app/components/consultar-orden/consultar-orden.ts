@@ -672,6 +672,8 @@ export class ConsultarOrden implements OnInit {
     };
 
     if (this.mostrarRifa) {
+      // 🔧 IMPORTANTE: Primero buscar la boleta existente con ese número
+      // para obtener su id_boleta, luego asignarlo a la orden
       const boletaData = {
         numero_boleta: this.numeroBoletaRifa,
         nombre: this.ordenSeleccionada.cliente,
@@ -682,9 +684,34 @@ export class ConsultarOrden implements OnInit {
       };
 
       this.rifaService.registrarBoleta(boletaData).subscribe({
-        next: () => {
-          procesarImpresionOSMS();
-          guardarCambioEstadoFinal(`Orden completada y Boleta #${this.numeroBoletaRifa} registrada.`);
+        next: (response: any) => {
+          // 🔧 Después de registrar, obtener el id_boleta y asignarlo a la orden
+          if (response.id_boleta) {
+            console.log(`📍 Boleta registrada con id_boleta=${response.id_boleta}`);
+
+            // Actualizar orden con el id_boleta de la boleta seleccionada
+            this.ordenService.http.post(
+              `${this.rifaService.apiUrl}/asignar-boleta`,
+              {
+                id_orden: this.ordenSeleccionada.id_orden_db,
+                id_boleta: response.id_boleta
+              },
+              { withCredentials: true }
+            ).subscribe({
+              next: () => {
+                console.log(`✅ id_boleta asignado a orden`);
+                procesarImpresionOSMS();
+                guardarCambioEstadoFinal(`Orden completada y Boleta #${this.numeroBoletaRifa} registrada.`);
+              },
+              error: (err) => {
+                console.error('❌ Error asignando boleta a orden:', err);
+                Swal.fire('Error', 'No se pudo asignar la boleta a la orden', 'error');
+              }
+            });
+          } else {
+            procesarImpresionOSMS();
+            guardarCambioEstadoFinal(`Orden completada y Boleta #${this.numeroBoletaRifa} registrada.`);
+          }
         },
         error: (err) => {
           Swal.fire('Error en Rifa', err.error?.error || 'Error al registrar la boleta', 'error');
