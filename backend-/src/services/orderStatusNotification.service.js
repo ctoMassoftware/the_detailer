@@ -165,9 +165,10 @@ export const enviarNotificacionPorCambioEstado = async (
       );
     }
 
-    // ✅ LISTA → FINALIZADO/FINALIZADA/COMPLETADO (flexible con estado)
-    // Solo envía si estado anterior es LISTA y nuevo incluye 'finaliz' O 'completad' (FINALIZADA, FINALIZADO, COMPLETADA, COMPLETADO, etc)
-    const esTransicionAFinalizada = (estadoNuevoNorm.includes('finaliz') || estadoNuevoNorm.includes('completad')) && estadoAnteriorNorm === 'lista';
+    // ✅ CUALQUIER ESTADO → FINALIZADO/FINALIZADA/COMPLETADO
+    // Envía SMS #3 cuando el estado cambia a algo que contiene 'finaliz' o 'completad'
+    // (FINALIZADA, FINALIZADO, COMPLETADA, COMPLETADO, etc)
+    const esTransicionAFinalizada = (estadoNuevoNorm.includes('finaliz') || estadoNuevoNorm.includes('completad')) && !estadoAnteriorNorm.includes('finaliz') && !estadoAnteriorNorm.includes('completad');
     console.log(`   ✓ ¿Transición a FINALIZADA/COMPLETADA? ${esTransicionAFinalizada} (anterior=${estadoAnteriorNorm}, nuevo=${estadoNuevoNorm})`);
 
     if (esTransicionAFinalizada) {
