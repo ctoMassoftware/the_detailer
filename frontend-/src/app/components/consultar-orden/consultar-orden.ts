@@ -710,21 +710,19 @@ export class ConsultarOrden implements OnInit {
     const idRifa = this.datosRifaActiva.id_evento;
     console.log(`📤 [ACEPTAR RIFA] Asignando rifa ${idRifa} a orden ${this.ordenSeleccionada.id_orden_db}`);
 
-    const datosUpdate = {
-      id_rifa: idRifa,
-      estado: this.ordenSeleccionada.estado // ✅ Enviar estado actual
-    };
+    // ✅ NEW: Use separate endpoint for raffle assignment (NO SMS trigger)
+    const datosRifa = { id_rifa: idRifa };
 
-    this.ordenService.updateOrden(this.ordenSeleccionada.id_orden_db, datosUpdate).subscribe({
-      next: (response) => {
-        console.log('✅ Rifa asignada exitosamente');
+    this.ordenService.http.put(`${this.ordenService.apiUrl}/${this.ordenSeleccionada.id_orden_db}/asignar-rifa`, datosRifa).subscribe({
+      next: (response: any) => {
+        console.log('✅ Rifa asignada exitosamente (sin SMS disparado)');
         this.opcionRifaSeleccionada = true; // ✅ "Sí" está seleccionado
         this.rifaSeleccionada = true;
         this.mostrarRifa = true;
         this.cargarNumerosRifa();
         Swal.fire('Éxito', 'Rifa asignada. Selecciona el número de boleta.', 'success');
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('❌ Error asignando rifa:', err);
         Swal.fire('Error', 'No se pudo asignar la rifa', 'error');
       }
