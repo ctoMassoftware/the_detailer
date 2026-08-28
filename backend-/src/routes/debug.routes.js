@@ -5,10 +5,10 @@ import { verifyToken } from '../controllers/auth.controller.js';
 const router = Router();
 
 /**
- * DEBUG: Analizar orden completa
+ * DEBUG: Analizar orden completa (PUBLIC - Sin autenticación)
  * GET /api/debug/orden/:id
  */
-router.get('/orden/:id', verifyToken, async (req, res) => {
+router.get('/orden/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
