@@ -707,8 +707,12 @@ export class ConsultarOrden implements OnInit {
               id_evento_rifa: idEventoRifa,
               numero_boleta: numeroBoleta
             }).subscribe({
-              next: () => {
+              next: (response: any) => {
                 console.log(`✅ Boleta #${numeroBoleta} asignada a orden ${this.ordenSeleccionada.id_orden_db}`);
+                // ✅ CRÍTICO: Actualizar id_boleta en memoria para que ejecutarUpdateEstado() lo incluya
+                this.ordenSeleccionada.id_boleta = response.id_boleta;
+                this.ordenSeleccionada.id_rifa = idEventoRifa;
+                console.log(`📝 Actualizado en memoria: id_boleta=${response.id_boleta}, id_rifa=${idEventoRifa}`);
                 procesarImpresionOSMS();
                 guardarCambioEstadoFinal(`Orden completada y Boleta #${this.numeroBoletaRifa} registrada.`);
               },
