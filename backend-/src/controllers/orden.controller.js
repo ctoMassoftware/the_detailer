@@ -446,7 +446,8 @@ export const updateOrden = async (req, res) => {
         tipo_vehiculo: tipoVehiculoActual,
         cantidad_cascos: cantidadCascosActual,
         valorTotal: valorTotalActual,
-        id_orden: id
+        id_orden: id,
+        id_boleta: ordenActual.id_boleta  // ✅ Agregado para SMS con boleta correcta
       };
 
       // Obtener id_rifa: usar el del request si viene, si no usar el actual de BD
