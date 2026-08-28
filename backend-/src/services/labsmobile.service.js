@@ -262,19 +262,19 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
 };
 
 export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, numeroOrden = '', tokenRecibo = '', metadata = {}, credentials = null) => {
-  // COMPACTO: 160 chars max - SOLO CON LINK A FACTURA (sin líneas extra)
-  const linkFactura = `https://the-detailer.co/recibos?placa=${placa}`;
+  // 🔧 SIN LINK: Los operadores Colombianos (Claro, Movistar) bloquean SMS con URLs
+  // El recibo ya se envió en SMS #2 (orden LISTA) con acceso a descargar
+  // Este SMS #3 es solo confirmación de entrega
 
-  // Mensaje ultra-compacto: solo link sin líneas extra
-  let mensaje = `¡Orden #${numeroOrden} completada! ✅\n${linkFactura}`;
+  let mensaje = `¡Orden #${numeroOrden} completada! ✅\nGracias por confiar en The Detailer`;
 
   // Solo agregar cascos si es moto Y hay espacio (máx 160)
   const esMoto = tipoVehiculo && String(tipoVehiculo).toUpperCase().includes('MOTO');
-  if (esMoto && cantidadCascos > 0 && mensaje.length <= 150) {
+  if (esMoto && cantidadCascos > 0 && mensaje.length <= 140) {
     mensaje += `\n🧢 Recoger ${cantidadCascos} casco(s)`;
   }
 
-  console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160) - LINK DIRECTO SIN LINEAS EXTRA`);
+  console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160) - SIN LINK (operadores bloquean URLs)`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_terminada',
