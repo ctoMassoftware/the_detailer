@@ -297,6 +297,17 @@ export const initDB = async () => {
         }
         console.log("✅ Columnas de servicio, sedes, semaforización y zona horaria verificadas.");
 
+        // NUEVA MIGRACIÓN: Agregar columna id_boleta a orden si no existe
+        try {
+            await pool.query(`
+                ALTER TABLE orden
+                ADD COLUMN IF NOT EXISTS id_boleta INTEGER REFERENCES rifa(id_boleta) ON DELETE SET NULL
+            `);
+            console.log("✅ Columna id_boleta agregada a tabla orden (relación con boletas de rifa)");
+        } catch (e) {
+            console.log("Nota: id_boleta ya existe o error menor:", e.message);
+        }
+
         // SEED: CONFIGURACIÓN LABSMOBILE
         try {
             const existingConfig = await pool.query('SELECT * FROM config_labsmobile WHERE activo = true LIMIT 1');

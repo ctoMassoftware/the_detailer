@@ -101,12 +101,13 @@ router.get('/por-placa/:placa', async (req, res) => {
         ) as lista_servicios,
         er.descripcion_premios as rifa_premio,
         er.fecha_sorteo as fecha_sorteo,
-        (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa AND UPPER(placa_vehiculo) = UPPER(o.placa_vehiculo) LIMIT 1) as numero_rifa
+        COALESCE(r_boleta.numero_boleta, (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa AND UPPER(placa_vehiculo) = UPPER(o.placa_vehiculo) ORDER BY numero_boleta ASC LIMIT 1)) as numero_rifa
        FROM orden o
        LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
        LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
+       LEFT JOIN rifa r_boleta ON o.id_boleta = r_boleta.id_boleta
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
          AND o.fecha >= (CURRENT_DATE AT TIME ZONE 'America/Bogota') - INTERVAL '1 day'
        GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, u.nombre, u.apellido, er.descripcion_premios, er.fecha_sorteo
@@ -357,15 +358,16 @@ router.get('/datos/:token', async (req, res) => {
         ) as lista_servicios,
         er.descripcion_premios as rifa_premio,
         er.fecha_sorteo as fecha_sorteo,
-        (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa AND UPPER(placa_vehiculo) = UPPER(o.placa_vehiculo) LIMIT 1) as numero_rifa,
+        COALESCE(r_boleta.numero_boleta, (SELECT numero_boleta FROM rifa WHERE id_evento_rifa = o.id_rifa AND UPPER(placa_vehiculo) = UPPER(o.placa_vehiculo) ORDER BY numero_boleta ASC LIMIT 1)) as numero_rifa,
         CONCAT(u.nombre, ' ', u.apellido) as responsable_nombre
        FROM orden o
        LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
        LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
        LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
        LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
+       LEFT JOIN rifa r_boleta ON o.id_boleta = r_boleta.id_boleta
        WHERE o.id_orden = $1
-       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, er.descripcion_premios, er.fecha_sorteo, u.nombre, u.apellido`,
+       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, o.id_boleta, er.descripcion_premios, er.fecha_sorteo, u.nombre, u.apellido, r_boleta.numero_boleta`,
       [orden.id_orden]
     );
 
