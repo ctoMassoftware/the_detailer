@@ -28,7 +28,10 @@ export const generarTokenRecibo = async (idOrden, placaVehiculo) => {
     console.log(`✓ Token generado para orden ${idOrden}`);
     return token; // Retornar token sin hash (para enviar en SMS)
   } catch (error) {
-    console.error('❌ Error generando token:', error.message);
+    console.error('❌ CRÍTICO: Error generando token para orden', idOrden);
+    console.error('   Mensaje:', error.message);
+    console.error('   Código:', error.code);
+    console.error('   Stack:', error.stack);
     return null;
   }
 };
