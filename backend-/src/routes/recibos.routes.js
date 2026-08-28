@@ -81,6 +81,7 @@ router.get('/por-placa/:placa', async (req, res) => {
         o.estado,
         o.id_user_encargado,
         o.id_rifa,
+        o.id_boleta,
         o.notas,
         o.fecha,
         o.hora,
@@ -110,7 +111,7 @@ router.get('/por-placa/:placa', async (req, res) => {
        LEFT JOIN rifa r_boleta ON o.id_boleta = r_boleta.id_boleta
        WHERE UPPER(o.placa_vehiculo) = UPPER($1)
          AND o.fecha >= (CURRENT_DATE AT TIME ZONE 'America/Bogota') - INTERVAL '1 day'
-       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, u.nombre, u.apellido, er.descripcion_premios, er.fecha_sorteo
+       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.id_boleta, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, u.nombre, u.apellido, er.descripcion_premios, er.fecha_sorteo, r_boleta.numero_boleta
        ORDER BY o.fecha DESC, o.hora DESC, o.id_orden DESC`,
       [placa]
     );
