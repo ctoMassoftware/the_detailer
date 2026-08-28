@@ -303,24 +303,6 @@ export const asignarBoletaAOrden = async (req, res) => {
       error: 'Error al asignar boleta',
       details: error.message
     });
-    );
-
-    await client.query('COMMIT');
-
-    console.log(`✅ Boleta asignada: Orden ${id_orden} - Rifa ${id_evento_rifa} - Número ${numero_boleta}`);
-
-    res.json({
-      message: 'Boleta asignada exitosamente',
-      boleta: {
-        id_orden,
-        id_evento_rifa,
-        numero_boleta: numeroFormatted
-      }
-    });
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error asignando boleta:', error);
-    res.status(500).json({ error: 'Error al asignar boleta' });
   } finally {
     client.release();
   }
