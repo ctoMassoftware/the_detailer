@@ -117,6 +117,62 @@ router.get('/orden/:id', async (req, res) => {
 });
 
 /**
+ * DEBUG: Verificar número telefónico guardado
+ * GET /api/debug/telefono/:orderId
+ * Muestra exactamente qué número se usará para SMS
+ */
+router.get('/telefono/:orderId', async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const result = await pool.query(`
+      SELECT
+        id_orden,
+        nombre_cliente,
+        telefono_cliente,
+        LENGTH(telefono_cliente) as longitud,
+        OCTET_LENGTH(telefono_cliente) as bytes,
+        telefono_cliente::bytea as bytes_hex
+      FROM orden
+      WHERE id_orden = $1
+    `, [orderId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: `Orden ${orderId} no encontrada` });
+    }
+
+    const row = result.rows[0];
+    const telefonoLimpio = row.telefono_cliente.trim();
+    const tieneEspacios = telefonoLimpio !== row.telefono_cliente;
+    const esValido = /^3\d{9}$/.test(telefonoLimpio);
+
+    res.json({
+      orden_id: row.id_orden,
+      cliente: row.nombre_cliente,
+      telefono_original: `"${row.telefono_cliente}"`,
+      telefono_limpio: telefonoLimpio,
+      caracteres: row.longitud,
+      bytes: row.bytes,
+      tiene_espacios: tieneEspacios,
+      formato_valido: esValido,
+      normalizacion_labsmobile: `+57${telefonoLimpio}`,
+      validacion: {
+        '¿Empieza con 3?': telefonoLimpio.startsWith('3'),
+        '¿Tiene 10 dígitos?': telefonoLimpio.length === 10,
+        '¿Solo números?': /^\d+$/.test(telefonoLimpio),
+        '¿Formato válido?': esValido
+      },
+      diagnostico: esValido ? '✅ Teléfono OK' : '❌ Formato incorrecto',
+      recomendacion: tieneEspacios ? 'Limpiar espacios en BD' : 'Verificar con operador'
+    });
+
+  } catch (error) {
+    console.error('Error en debug/telefono:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * DEBUG: Prueba SMS #3 (Orden Completada)
  * POST /api/debug/test-sms3/:orderId
  * Simula una transición de LISTA → FINALIZADA para disparar SMS #3
