@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { pool } from '../config/db.js';
+import { verifyToken } from '../controllers/auth.controller.js';
 
 const router = Router();
 
@@ -63,9 +64,9 @@ router.get('/nombre/:nombre', async (req, res) => {
 
 /**
  * GET /api/metodos-pago
- * Obtener todos los métodos de pago
+ * Obtener todos los métodos de pago (requiere autenticación para admin)
  */
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id_metodo, nombre, descripcion, activo, orden
@@ -87,7 +88,7 @@ router.get('/', async (req, res) => {
  * PUT /api/metodos-pago/:id
  * Activar/desactivar método de pago (solo admin)
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { activo } = req.body;

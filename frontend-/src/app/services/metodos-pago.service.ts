@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -8,7 +8,14 @@ import { tap } from 'rxjs/operators';
 })
 export class MetodosPagoService {
   private http = inject(HttpClient);
-  private apiUrl = 'https://thedetailer.up.railway.app/api/metodos-pago';
+  private apiUrl = this.getApiUrl();
+
+  private getApiUrl(): string {
+    const isDev = !window.location.hostname.includes('the-detailer.co');
+    return isDev
+      ? 'http://localhost:3000/api/metodos-pago'
+      : 'https://thedetailer.up.railway.app/api/metodos-pago';
+  }
 
   private metodosActivos$ = new BehaviorSubject<any[]>([]);
 
@@ -30,7 +37,11 @@ export class MetodosPagoService {
 
   activarMetodo(id: number): Observable<any> {
     console.log(`🔄 Activando método ${id}...`);
-    return this.http.put(`${this.apiUrl}/${id}`, { activo: true }).pipe(
+    return this.http.put(
+      `${this.apiUrl}/${id}`,
+      { activo: true },
+      { withCredentials: true }
+    ).pipe(
       tap((response) => {
         console.log(`✅ Método ${id} activado:`, response);
         this.cargarMetodosActivos();
@@ -40,7 +51,11 @@ export class MetodosPagoService {
 
   desactivarMetodo(id: number): Observable<any> {
     console.log(`🔄 Desactivando método ${id}...`);
-    return this.http.put(`${this.apiUrl}/${id}`, { activo: false }).pipe(
+    return this.http.put(
+      `${this.apiUrl}/${id}`,
+      { activo: false },
+      { withCredentials: true }
+    ).pipe(
       tap((response) => {
         console.log(`✅ Método ${id} desactivado:`, response);
         this.cargarMetodosActivos();
