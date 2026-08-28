@@ -62,6 +62,36 @@ router.get('/por-placa/:placa', async (req, res) => {
       return res.status(400).json({ error: 'Placa inválida' });
     }
 
+    // 🔧 AUTOMIGRACIÓN: Asignar boletas a órdenes que no las tengan
+    try {
+      const migracionResult = await pool.query(`
+        UPDATE orden o
+        SET id_boleta = (
+          SELECT r.id_boleta
+          FROM rifa r
+          WHERE r.id_evento_rifa = o.id_rifa
+            AND UPPER(r.placa_vehiculo) = UPPER(o.placa_vehiculo)
+            AND r.id_boleta NOT IN (
+              SELECT DISTINCT id_boleta
+              FROM orden o2
+              WHERE o2.id_boleta IS NOT NULL
+                AND o2.id_rifa = o.id_rifa
+            )
+          ORDER BY r.numero_boleta ASC
+          LIMIT 1
+        )
+        WHERE o.id_boleta IS NULL
+          AND o.id_rifa IS NOT NULL
+          AND UPPER(o.placa_vehiculo) = UPPER($1)
+      `, [placa]);
+
+      if (migracionResult.rowCount > 0) {
+        console.log(`✅ Asignadas ${migracionResult.rowCount} boletas a órdenes sin id_boleta`);
+      }
+    } catch (e) {
+      console.log("⚠️ Nota: Error en auto-asignación de boletas:", e.message);
+    }
+
     // Obtener órdenes de esa placa (últimas 24 horas máximo para seguridad)
     // SIN LIMIT para retornar TODAS las órdenes de esa placa
     const result = await pool.query(
@@ -341,6 +371,32 @@ router.get('/datos/:token', async (req, res) => {
       return res.status(401).json({
         error: 'Token inválido, expirado o ya descargado'
       });
+    }
+
+    // 🔧 AUTOMIGRACIÓN: Asignar boleta si la orden no la tiene
+    try {
+      await pool.query(`
+        UPDATE orden o
+        SET id_boleta = (
+          SELECT r.id_boleta
+          FROM rifa r
+          WHERE r.id_evento_rifa = o.id_rifa
+            AND UPPER(r.placa_vehiculo) = UPPER(o.placa_vehiculo)
+            AND r.id_boleta NOT IN (
+              SELECT DISTINCT id_boleta
+              FROM orden o2
+              WHERE o2.id_boleta IS NOT NULL
+                AND o2.id_rifa = o.id_rifa
+            )
+          ORDER BY r.numero_boleta ASC
+          LIMIT 1
+        )
+        WHERE o.id_orden = $1
+          AND o.id_boleta IS NULL
+          AND o.id_rifa IS NOT NULL
+      `, [orden.id_orden]);
+    } catch (e) {
+      console.log("⚠️ Nota: Error en auto-asignación de boleta:", e.message);
     }
 
     // Obtener datos completos de la orden (incluida información de rifa)
