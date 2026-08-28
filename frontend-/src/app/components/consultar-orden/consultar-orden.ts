@@ -37,6 +37,9 @@ interface Orden {
   // ✅ Campos de casco
   dejoCasco?: boolean;
   cantidadCascos?: number;
+  // ✅ Campos de rifa (CRÍTICO para preservar en PUT)
+  id_rifa?: number | null;
+  id_boleta?: number | null;
 }
 
 @Component({
@@ -420,6 +423,9 @@ export class ConsultarOrden implements OnInit {
             // ✅ Campos de casco
             dejoCasco: o.deja_casco ?? false,
             cantidadCascos: o.cantidad_cascos ?? 0,
+            // ✅ Campos de rifa (CRÍTICO para preservar en PUT)
+            id_rifa: o.id_rifa || null,
+            id_boleta: o.id_boleta || null,
           };
         });
 

@@ -26,6 +26,7 @@ import smsRoutes from './routes/sms.routes.js'; // 👈 RUTA DE SMS DINÁMICO
 import recibosRoutes from './routes/recibos.routes.js'; // 👈 RUTA DE RECIBOS CON TOKEN
 import adminRoutes from './routes/admin.routes.js'; // 👈 RUTA DE ADMIN (MIGRATIONS, ETC)
 import metodosPageRoutes from './routes/metodos-pago.routes.js'; // 👈 RUTA DE MÉTODOS DE PAGO
+import debugRoutes from './routes/debug.routes.js'; // 👈 RUTA DE DEBUG/ANÁLISIS
 
 // Configuración de variables de entorno
 dotenv.config();
@@ -101,6 +102,7 @@ app.use('/api/sms', smsRoutes); // 👈 ENDPOINT DE SMS DINÁMICO
 app.use('/api/recibos', recibosRoutes); // 👈 ENDPOINT DE RECIBOS CON TOKEN
 app.use('/api/admin', adminRoutes); // 👈 ENDPOINT DE ADMIN (SUPER_ADMIN ONLY)
 app.use('/api/metodos-pago', metodosPageRoutes); // 👈 ENDPOINT DE MÉTODOS DE PAGO
+app.use('/api/debug', debugRoutes); // 👈 ENDPOINT DE DEBUG/ANÁLISIS
 
 const PORT = process.env.PORT || 3000;
 

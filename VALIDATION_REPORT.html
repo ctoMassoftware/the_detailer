@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Validación - Orden 358</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .status-box {
+            background: #f8f9fa;
+            border-left: 5px solid #28a745;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+
+        .status-box.error {
+            border-left-color: #dc3545;
+        }
+
+        .status-box.warning {
+            border-left-color: #ffc107;
+        }
+
+        .status-box h3 {
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-box p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .flow-diagram {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 2px solid #e9ecef;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+            margin-right: 15px;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .step-detail {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .arrow {
+            text-align: center;
+            color: #667eea;
+            font-size: 1.5em;
+            margin: 5px 0;
+        }
+
+        .validation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .validation-table thead {
+            background: #667eea;
+            color: white;
+        }
+
+        .validation-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .validation-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .validation-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-pass {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .status-fail {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .comparison-box {
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        .before {
+            background: #ffe5e5;
+            border-left: 4px solid #dc3545;
+        }
+
+        .after {
+            background: #e5ffe5;
+            border-left: 4px solid #28a745;
+        }
+
+        .comparison-box h4 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .comparison-box .label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .comparison-box .value {
+            font-family: monospace;
+            background: rgba(0,0,0,0.05);
+            padding: 8px;
+            border-radius: 3px;
+            word-break: break-all;
+        }
+
+        .checklist {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .checklist li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 3px;
+            border-left: 4px solid #667eea;
+        }
+
+        .checklist li.pass {
+            border-left-color: #28a745;
+            background: #f0f9f4;
+        }
+
+        .checklist li.pending {
+            border-left-color: #ffc107;
+            background: #fffdf0;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #333;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .action-required {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .action-required strong {
+            color: #856404;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            border-top: 1px solid #e9ecef;
+            text-align: center;
+            color: #666;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ Reporte de Validación del Fix</h1>
+            <p>Análisis Completo - Orden #358 - Asignación de Boleta de Rifa</p>
+        </div>
+
+        <div class="content">
+            <!-- Status General -->
+            <div class="status-box">
+                <h3>🔍 Estado General del Fix</h3>
+                <p><strong>Conclusión:</strong> El fix ha sido correctamente implementado en el código. Todas las validaciones de código pasan ✅. La validación en base de datos de Railway está PENDIENTE.</p>
+            </div>
+
+            <!-- Problema Original -->
+            <h2 class="section-title">📋 El Problema Original</h2>
+            <p style="color: #666; line-height: 1.8; margin-bottom: 20px;">
+                Al completar una orden y seleccionar una boleta de rifa (ej: #008), la orden mostraba siempre #003 en el recibo.
+                El análisis reveló que <code>id_boleta</code> quedaba en NULL en la base de datos, indicando que el valor NO se estaba guardando correctamente.
+            </p>
+
+            <!-- Flujo Completo -->
+            <h2 class="section-title">🔄 Flujo Completo de Asignación</h2>
+
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Usuario Selecciona Boleta</div>
+                        <div class="step-detail">Frontend: Usuario hace click en boleta #008</div>
+                        <div class="step-detail">Resultado: <code>numeroBoletaRifa = "008"</code> ✅</div>
+                    </div>
+                </div>
+
+                <div class="arrow">↓</div>
+
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">POST /api/rifas/registrar-boleta</div>
+                        <div class="step-detail">Se registra boleta nueva en tabla <code>rifa</code></div>
+                        <div class="step-detail">Respuesta: <code>id_boleta = 357, numero_boleta = "008"</code> ✅</div>
+                    </div>
+                </div>
+
+                <div class="arrow">↓</div>
+
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">POST /api/rifas/asignar-boleta</div>
+                        <div class="step-detail">Se actualiza orden 358 con <code>id_boleta = 357</code></div>
+                        <div class="step-detail">En BD: <code>UPDATE orden SET id_boleta = 357 WHERE id_orden = 358</code> ✅</div>
+                    </div>
+                </div>
+
+                <div class="arrow">↓</div>
+
+                <div class="flow-step" style="border-left-color: #ffc107;">
+                    <div class="step-number" style="background: #ffc107;">4</div>
+                    <div class="step-content">
+                        <div class="step-title">🔴 CRÍTICO: PUT /api/ordenes/358</div>
+                        <div class="step-detail"><strong>ANTES DEL FIX:</strong> Payload NO incluía <code>id_boleta</code></div>
+                        <div class="step-detail">Resultado: <code>id_boleta = NULL</code> ❌ (sobrescrito)</div>
+                        <div class="step-detail" style="margin-top: 10px; color: #28a745;"><strong>DESPUÉS DEL FIX:</strong> Payload INCLUYE <code>id_boleta: 357</code></div>
+                        <div class="step-detail" style="color: #28a745;">Resultado: <code>id_boleta = 357</code> ✅</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparación Antes/Después -->
+            <h2 class="section-title">🔧 El Fix Aplicado</h2>
+
+            <div class="comparison">
+                <div class="comparison-box before">
+                    <h4>❌ ANTES (Línea 519-539)</h4>
+                    <div class="label">Archivo: consultar-orden.ts</div>
+                    <div class="code-block" style="background: #2d2d2d;">
+const payload = {
+  cedula_cliente: ...,
+  nombre_cliente: ...,
+  metodo_pago: ...,
+  // ❌ id_boleta NO estaba aquí
+  estado: ...,
+  servicios: ...
+};
+                    </div>
+                </div>
+
+                <div class="comparison-box after">
+                    <h4>✅ DESPUÉS (Línea 519-539)</h4>
+                    <div class="label">Archivo: consultar-orden.ts</div>
+                    <div class="code-block" style="background: #2d2d2d;">
+const payload = {
+  cedula_cliente: ...,
+  nombre_cliente: ...,
+  metodo_pago: ...,
+  id_rifa: orden.id_rifa,
+  id_boleta: orden.id_boleta,
+  estado: ...,
+  servicios: ...
+};
+                    </div>
+                </div>
+            </div>
+
+            <!-- Validaciones de Código -->
+            <h2 class="section-title">✅ Validaciones de Código</h2>
+
+            <table class="validation-table">
+                <thead>
+                    <tr>
+                        <th>Validación</th>
+                        <th>Archivo</th>
+                        <th>Línea</th>
+                        <th>Estado</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>id_boleta en payload</strong></td>
+                        <td>consultar-orden.ts</td>
+                        <td>533</td>
+                        <td><span class="status-pass">✅ PASS</span></td>
+                        <td>Incluido en PUT request</td>
+                    </tr>
+                    <tr>
+                        <td><strong>id_rifa en payload</strong></td>
+                        <td>consultar-orden.ts</td>
+                        <td>532</td>
+                        <td><span class="status-pass">✅ PASS</span></td>
+                        <td>Incluido en PUT request</td>
+                    </tr>
+                    <tr>
+                        <td><strong>URL dinámica rifaService</strong></td>
+                        <td>rifa.service.ts</td>
+                        <td>20-25</td>
+                        <td><span class="status-pass">✅ PASS</span></td>
+                        <td>Detecta dev vs prod correctamente</td>
+                    </tr>
+                    <tr>
+                        <td><strong>URL dinámica metodosPago</strong></td>
+                        <td>metodos-pago.service.ts</td>
+                        <td>13-18</td>
+                        <td><span class="status-pass">✅ PASS</span></td>
+                        <td>Detecta dev vs prod correctamente</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Transacciones backend</strong></td>
+                        <td>rifa.controller.secured.js</td>
+                        <td>N/A</td>
+                        <td><span class="status-pass">✅ PASS</span></td>
+                        <td>BEGIN/COMMIT/ROLLBACK implementado</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Race condition prevention</strong></td>
+                        <td>orderStatusNotification.service.js</td>
+                        <td>N/A</td>
+                        <td><span class="status-pass">✅ PASS</span></td>
+                        <td>FOR UPDATE SKIP LOCKED implementado</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Endpoint debug disponible</strong></td>
+                        <td>debug.routes.js</td>
+                        <td>N/A</td>
+                        <td><span class="status-pass">✅ PASS</span></td>
+                        <td>GET /api/debug/orden/:id creado</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Checklist de Validación -->
+            <h2 class="section-title">🎯 Checklist de Validación</h2>
+
+            <ul class="checklist">
+                <li class="pass">✅ Código modificado contiene <code>id_boleta</code> en payload de PUT</li>
+                <li class="pass">✅ Backend tiene lógica transaccional para asignar boleta</li>
+                <li class="pass">✅ Frontend extrae correctamente datos de POST /registrar-boleta</li>
+                <li class="pass">✅ URLs son dinámicas (dev vs prod)</li>
+                <li class="pass">✅ Race conditions prevenidas con FOR UPDATE SKIP LOCKED</li>
+                <li class="pass">✅ Endpoint debug créado para validación sin acceso DB</li>
+                <li class="pending">⏳ BD de Railway refleja cambios (PENDIENTE validación)</li>
+                <li class="pending">⏳ Orden 358 tiene id_boleta ≠ NULL (PENDIENTE validación)</li>
+                <li class="pending">⏳ Número boleta es el seleccionado, NO #003 (PENDIENTE validación)</li>
+            </ul>
+
+            <!-- Validación Requerida -->
+            <div class="action-required">
+                <strong>⚠️ ACCIÓN REQUERIDA - Validación en Railway</strong>
+                <p style="margin-top: 10px;">El fix está correctamente implementado en el código. Para confirmar que funciona en producción:</p>
+                <ol style="margin-top: 10px; margin-left: 20px; line-height: 2;">
+                    <li>Espera a que Railway reconstruya la aplicación</li>
+                    <li>Ejecuta el script SQL en <code>RAILWAY_VALIDATION_QUERY.sql</code> en tu base de datos</li>
+                    <li>O usa el endpoint: <code>GET /api/debug/orden/358</code> con token JWT</li>
+                    <li>Confirma que <code>id_boleta ≠ NULL</code> y <code>numero_boleta = "008"</code></li>
+                </ol>
+            </div>
+
+            <!-- Cómo Validar -->
+            <h2 class="section-title">🧪 Cómo Validar en Railway</h2>
+
+            <h3 style="color: #333; margin: 20px 0 10px 0;">Opción 1: SQL Query (Directo en BD)</h3>
+            <div class="code-block">
+SELECT
+  o.id_orden,
+  o.nombre_cliente,
+  o.id_boleta,          -- Debe ser 357, NO NULL
+  r.numero_boleta,      -- Debe ser "008", NO "003"
+  o.estado
+FROM orden o
+LEFT JOIN rifa r ON o.id_boleta = r.id_boleta
+WHERE o.id_orden = 358;
+            </div>
+
+            <h3 style="color: #333; margin: 20px 0 10px 0;">Opción 2: Endpoint Debug</h3>
+            <div class="code-block">
+curl https://thedetailer.up.railway.app/api/debug/orden/358 \
+  -H "Authorization: Bearer TU_TOKEN_JWT"
+            </div>
+
+            <h3 style="color: #333; margin: 20px 0 10px 0;">Resultado Esperado</h3>
+            <div class="code-block" style="background: #e5ffe5; color: #155724;">
+{
+  "validacion": {
+    "Tiene id_boleta": "✅",
+    "Boleta registrada en tabla rifa": "✅",
+    "numero_boleta correcto": "✅"
+  },
+  "resumen": {
+    "boleta_asignada": "#008"
+  }
+}
+            </div>
+
+            <!-- Documentación Generada -->
+            <h2 class="section-title">📚 Archivos Generados</h2>
+
+            <div style="margin: 20px 0;">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+                    <strong>DEBUG_ENDPOINT_GUIDE.md</strong>
+                    <p style="color: #666; margin-top: 5px;">Guía completa de uso del endpoint /api/debug/orden/:id con ejemplos curl</p>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+                    <strong>RAILWAY_VALIDATION_QUERY.sql</strong>
+                    <p style="color: #666; margin-top: 5px;">Script SQL listo para ejecutar en Railway PostgreSQL</p>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+                    <strong>ANALYSIS_ORDER_358_FIX.md</strong>
+                    <p style="color: #666; margin-top: 5px;">Análisis técnico detallado del flujo completo y el fix</p>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #667eea;">
+                    <strong>VALIDATION_REPORT.html</strong>
+                    <p style="color: #666; margin-top: 5px;">Este reporte visual (lo estás viendo)</p>
+                </div>
+            </div>
+
+            <!-- Conclusión -->
+            <h2 class="section-title">🎯 Conclusión</h2>
+
+            <div class="status-box">
+                <h3>Estado Final del Fix</h3>
+                <p style="line-height: 1.8;">
+                    ✅ <strong>Código:</strong> Fix correctamente implementado<br>
+                    ✅ <strong>Transacciones:</strong> ACID compliance verificado<br>
+                    ✅ <strong>URLs:</strong> Dinámicas funcionando<br>
+                    ✅ <strong>Race Conditions:</strong> Prevenidas<br>
+                    ⏳ <strong>BD de Railway:</strong> Pendiente validación<br><br>
+
+                    <strong style="color: #28a745;">Próximo Paso:</strong> Ejecutar validación en Railway cuando reconstruya.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Análisis completado: 2026-08-28 | Orden #358 | Asignación de Boleta de Rifa</p>
+        </div>
+    </div>
+</body>
+</html>

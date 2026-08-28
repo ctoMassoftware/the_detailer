@@ -305,7 +305,7 @@ export const updateOrden = async (req, res) => {
   const {
     cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
     placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-    metodo_pago, caja, id_user_encargado, estado, id_rifa,
+    metodo_pago, caja, id_user_encargado, estado, id_rifa, id_boleta,
     fecha, hora, notas, servicios, deja_casco, cantidad_cascos
   } = body;
 
@@ -316,7 +316,8 @@ export const updateOrden = async (req, res) => {
       const ordenActualResult = await client.query(
         `SELECT cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
                 placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-                metodo_pago, caja, id_user_encargado, estado, fecha, hora, notas, cantidad_cascos
+                metodo_pago, caja, id_user_encargado, estado, fecha, hora, notas, cantidad_cascos,
+                id_rifa, id_boleta
          FROM public.orden WHERE id_orden = $1`,
         [id]
       );
@@ -383,6 +384,13 @@ export const updateOrden = async (req, res) => {
     if (id_rifa !== undefined && id_rifa !== null) {
       updateQuery += `, id_rifa = $${paramIndex}`;
       values.push(id_rifa);
+      paramIndex++;
+    }
+
+    // ✅ Agregar id_boleta si viene (CRÍTICO para preservar boleta asignada)
+    if (id_boleta !== undefined && id_boleta !== null) {
+      updateQuery += `, id_boleta = $${paramIndex}`;
+      values.push(id_boleta);
       paramIndex++;
     }
 
