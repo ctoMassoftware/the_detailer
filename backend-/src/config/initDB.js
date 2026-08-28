@@ -308,21 +308,32 @@ export const initDB = async () => {
             console.log("Nota: id_boleta ya existe o error menor:", e.message);
         }
 
-        // MIGRACIÓN: Asociar órdenes con boletas basándose en nombre_cliente + placa_vehiculo
+        // MIGRACIÓN: Asociar órdenes con boletas usando FIFO (First In, First Out)
+        // Cada orden obtiene la próxima boleta disponible del evento, evitando duplicados
         try {
             await pool.query(`
                 UPDATE orden o
-                SET id_boleta = r.id_boleta
-                FROM rifa r
+                SET id_boleta = (
+                    SELECT r.id_boleta
+                    FROM rifa r
+                    WHERE r.id_evento_rifa = o.id_rifa
+                      AND UPPER(r.placa_vehiculo) = UPPER(o.placa_vehiculo)
+                      AND r.id_boleta NOT IN (
+                        SELECT DISTINCT id_boleta
+                        FROM orden o2
+                        WHERE o2.id_boleta IS NOT NULL
+                          AND o2.id_rifa = o.id_rifa
+                      )
+                    ORDER BY r.numero_boleta ASC
+                    LIMIT 1
+                )
                 WHERE o.id_boleta IS NULL
-                  AND o.id_rifa = r.id_evento_rifa
-                  AND UPPER(o.placa_vehiculo) = UPPER(r.placa_vehiculo)
-                  AND LOWER(o.nombre_cliente) = LOWER(r.nombre)
+                  AND o.id_rifa IS NOT NULL
             `);
             const result = await pool.query('SELECT COUNT(*) as count FROM orden WHERE id_boleta IS NOT NULL');
-            console.log(`✅ Órdenes asociadas con boletas: ${result.rows[0].count}`);
+            console.log(`✅ Órdenes asociadas con boletas (FIFO): ${result.rows[0].count}`);
         } catch (e) {
-            console.log("Nota: Error en migración de boletas:", e.message);
+            console.log("Nota: Error en migración de boletas FIFO:", e.message);
         }
 
         // SEED: CONFIGURACIÓN LABSMOBILE
