@@ -279,18 +279,18 @@ export class ReciboComponent implements OnInit {
           console.log('✓ Rifa cargada:', this.rifaInfo);
 
           // Cargar boletas de esta rifa
-          this.rifaService.getBoletasPorRifa(idRifa).subscribe(
+          this.rifaService.getBoletasPorEvento(idRifa).subscribe(
             (boletas: any[]) => {
               this.boletasRifa = boletas;
               console.log(`✓ ${boletas.length} boletas cargadas para rifa #${idRifa}`);
             },
-            (error) => {
+            (error: any) => {
               console.warn('⚠️ Error cargando boletas:', error);
             }
           );
         }
       },
-      (error) => {
+      (error: any) => {
         console.warn('⚠️ Error cargando rifa:', error);
       }
     );
