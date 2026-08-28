@@ -106,30 +106,47 @@ app.use('/api/debug', debugRoutes); // 👈 ENDPOINT DE DEBUG/ANÁLISIS
 
 const PORT = process.env.PORT || 3000;
 
-// 5. FUNCIÓN DE ARRANQUE DEL SERVIDOR
-const startServer = async () => {
+// 5. FUNCIÓN DE ARRANQUE DEL SERVIDOR CON REINTENTOS
+const startServer = async (attempt = 1, maxAttempts = 5) => {
     try {
-        // Primero inicializamos las tablas de la base de datos
-        await initDB();
-        
-        // Verificamos la conexión con el pool
+        console.log(`\n🚀 Intento ${attempt}/${maxAttempts} de iniciar servidor...`);
+
+        // Verificamos la conexión con el pool (reintentamos si falla)
         await pool.query('SELECT NOW()');
         console.log("✅ Base de datos conectada correctamente");
 
-        // Ejecutamos el seed para asegurar que existan los usuarios (Admin, Galán, Centenario)
+        // Inicializamos las tablas de la base de datos
+        console.log("🔄 Inicializando base de datos...");
+        await initDB();
+        console.log("✅ Base de datos inicializada");
+
+        // Ejecutamos el seed para asegurar que existan los usuarios
         console.log("🔄 Verificando usuarios iniciales...");
-        await seedUsuarios(); 
+        await seedUsuarios();
         console.log("✅ Verificación de usuarios completada");
 
-        // Finalmente, levantamos el servidor
+        // Levantamos el servidor
         app.listen(PORT, () => {
-            console.log(`🚀 Servidor corriendo con éxito en el puerto ${PORT}`);
+            console.log(`\n${'═'.repeat(50)}`);
+            console.log(`🚀 ¡SERVIDOR INICIADO EXITOSAMENTE!`);
+            console.log(`${'═'.repeat(50)}`);
+            console.log(`📍 Puerto: ${PORT}`);
             console.log(`🔗 Local: http://localhost:${PORT}`);
+            console.log(`${'═'.repeat(50)}\n`);
         });
 
     } catch (error) {
-        console.error("❌ Error fatal al iniciar el servidor:", error);
-        process.exit(1); // Cerramos el proceso si hay un error crítico
+        console.error(`\n❌ Error en intento ${attempt}/${maxAttempts}:`, error.message);
+
+        if (attempt < maxAttempts) {
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Backoff exponencial
+            console.log(`⏳ Reintentando en ${delay}ms...\n`);
+            setTimeout(() => startServer(attempt + 1, maxAttempts), delay);
+        } else {
+            console.error("\n❌ FATAL: No se pudo conectar a la base de datos después de", maxAttempts, "intentos");
+            console.error("   Verifica que la base de datos esté disponible en:", process.env.DB_HOST);
+            process.exit(1);
+        }
     }
 };
 
