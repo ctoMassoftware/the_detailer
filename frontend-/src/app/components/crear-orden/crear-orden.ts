@@ -9,6 +9,7 @@ import { Nav } from "../../shared/nav/nav";
 import { ServicioService } from '../../services/servicio.service';
 import { OrdenService } from '../../services/orden.service';
 import { OperarioService } from '../../services/operario.service';
+import { MetodosPagoService } from '../../services/metodos-pago.service';
 
 @Component({
   selector: 'app-crear-orden',
@@ -96,12 +97,14 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
   private servicioService = inject(ServicioService);
   private ordenService = inject(OrdenService);
   private operarioService = inject(OperarioService);
+  private metodosPagoService = inject(MetodosPagoService);
   private router = inject(Router);
 
   serviciosUnitarios: any[] = [];
   combos: any[] = [];
   tecnicos: any[] = [];
   nombreTecnicoSeleccionado: string = '';
+  metodospagoDisponibles: any[] = [];
 
   rolUsuario: string = '';
 
@@ -158,6 +161,7 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
     this.cargarUsuarioSesion();
     this.cargarServicios();
     this.cargarOperarios();
+    this.cargarMetodosPago();
   }
 
   capitalizarPalabras(texto: string): string {
@@ -512,6 +516,21 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
   }
 
   // ✅ Limpiar subscripciones al destruir componente
+  cargarMetodosPago(): void {
+    this.metodosPagoService.getMetodosActivos().subscribe({
+      next: (response: any) => {
+        this.metodospagoDisponibles = response.metodos || [];
+      },
+      error: (err: any) => {
+        console.error('Error cargando métodos de pago:', err);
+        this.metodospagoDisponibles = [
+          { nombre: 'Efectivo' },
+          { nombre: 'Transferencia' }
+        ];
+      }
+    });
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();

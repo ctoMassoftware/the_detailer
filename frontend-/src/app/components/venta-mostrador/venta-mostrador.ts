@@ -5,8 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { Nav } from '../../shared/nav/nav';
 import { VentaMostradorService } from '../../services/venta-mostrador.service';
 import { InventarioVentaService } from '../../services/inventario-venta.service';
-import { RifaService } from '../../services/rifa.service'; 
+import { RifaService } from '../../services/rifa.service';
 import { ImpresoraService } from '../../services/impresora.service';
+import { MetodosPagoService } from '../../services/metodos-pago.service';
 
 @Component({
   selector: 'app-venta-mostrador',
@@ -94,10 +95,12 @@ export class VentaMostrador implements OnInit {
   
   private ventaMostradorService = inject(VentaMostradorService);
   private inventarioService = inject(InventarioVentaService);
-  private rifaService = inject(RifaService); 
+  private rifaService = inject(RifaService);
   private impresoraService = inject(ImpresoraService);
+  private metodosPagoService = inject(MetodosPagoService);
 
   productosDisponibles: any[] = [];
+  metodospagoDisponibles: any[] = [];
   productosFiltrados: any[] = [];
   terminoBusqueda: string = '';
 
@@ -133,7 +136,8 @@ export class VentaMostrador implements OnInit {
 
   ngOnInit() {
     this.cargarProductos();
-    this.cargarRifaActiva(); 
+    this.cargarRifaActiva();
+    this.cargarMetodosPago();
   }
 
   // GETTER PARA CALCULAR EL CAMBIO AUTOMÁTICAMENTE
@@ -484,6 +488,21 @@ export class VentaMostrador implements OnInit {
       }
     } catch (e) {}
     return fecha;
+  }
+
+  cargarMetodosPago(): void {
+    this.metodosPagoService.getMetodosActivos().subscribe({
+      next: (response: any) => {
+        this.metodospagoDisponibles = response.metodos || [];
+      },
+      error: (err: any) => {
+        console.error('Error cargando métodos de pago:', err);
+        this.metodospagoDisponibles = [
+          { nombre: 'Efectivo' },
+          { nombre: 'Transferencia' }
+        ];
+      }
+    });
   }
 
   // --- BOTÓN TEMPORAL DE PRUEBA DE IMPRESORA ---

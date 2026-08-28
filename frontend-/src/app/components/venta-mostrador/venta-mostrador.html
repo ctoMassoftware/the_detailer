@@ -99,9 +99,9 @@
               <div class="form-group full-width">
                 <label>Método de Pago</label>
                 <select class="input-dark" [(ngModel)]="metodoPago">
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="Transferencia">Transferencia</option>
-                  <option value="Tarjeta">Tarjeta / Datáfono</option>
+                  <option *ngFor="let metodo of metodospagoDisponibles" [value]="metodo.nombre">
+                    {{ metodo.nombre }}
+                  </option>
                 </select>
               </div>
             </div>

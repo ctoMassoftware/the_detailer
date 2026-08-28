@@ -13,6 +13,7 @@ import { CombosServicios } from './components/combos-servicios/combos-servicios'
 import { VentaMostrador } from './components/venta-mostrador/venta-mostrador';
 import { CuadernoRecibos } from './components/cuaderno-recibos/cuaderno-recibos'; // 👈 NUEVA IMPORTACIÓN
 import { ReciboComponent } from './components/recibo/recibo.component'; // 👈 RECIBOS
+import { AdminMetodosPagoComponent } from './components/admin-metodos-pago/admin-metodos-pago';
 import { authGuard } from './guards/auth.guard';
 import { Landing } from './components/landing/landing';
 
@@ -66,6 +67,12 @@ export const routes: Routes = [
   {
     path: 'gestion-rifas',
     component: GestionRifasComponent,
+    canActivate: [authGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'ADMIN_SEDE'] }
+  },
+  {
+    path: 'admin-metodos-pago',
+    component: AdminMetodosPagoComponent,
     canActivate: [authGuard],
     data: { roles: ['SUPER_ADMIN', 'ADMIN', 'ADMIN_SEDE'] }
   },
