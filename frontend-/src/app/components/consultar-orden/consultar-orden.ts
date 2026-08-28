@@ -529,6 +529,8 @@ export class ConsultarOrden implements OnInit {
       metodo_pago: orden.metodoPago,
       caja: orden.caja,
       id_user_encargado: orden.id_operario,
+      id_rifa: orden.id_rifa,
+      id_boleta: orden.id_boleta,  // ✅ CRÍTICO: Incluir para no sobrescribir con NULL
       estado: estadoBackend,
       fecha: orden.fecha,
       hora: orden.hora,
