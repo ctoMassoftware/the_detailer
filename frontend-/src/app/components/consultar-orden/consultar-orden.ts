@@ -685,21 +685,23 @@ export class ConsultarOrden implements OnInit {
 
       this.rifaService.registrarBoleta(boletaData).subscribe({
         next: (response: any) => {
-          // 🔧 Después de registrar, obtener el id_boleta y asignarlo a la orden
-          if (response.id_boleta) {
-            console.log(`📍 Boleta registrada con id_boleta=${response.id_boleta}`);
+          // 🔧 Después de registrar, obtener el id_boleta del objeto boleta retornado
+          const idBoleta = response.boleta?.id_boleta || response.id_boleta;
+
+          if (idBoleta) {
+            console.log(`📍 Boleta registrada con id_boleta=${idBoleta}, numero=${response.boleta?.numero_boleta}`);
 
             // Actualizar orden con el id_boleta de la boleta seleccionada
             this.ordenService.http.post(
               `${this.rifaService.apiUrl}/asignar-boleta`,
               {
                 id_orden: this.ordenSeleccionada.id_orden_db,
-                id_boleta: response.id_boleta
+                id_boleta: idBoleta
               },
               { withCredentials: true }
             ).subscribe({
               next: () => {
-                console.log(`✅ id_boleta asignado a orden`);
+                console.log(`✅ id_boleta ${idBoleta} asignado a orden ${this.ordenSeleccionada.id_orden_db}`);
                 procesarImpresionOSMS();
                 guardarCambioEstadoFinal(`Orden completada y Boleta #${this.numeroBoletaRifa} registrada.`);
               },
@@ -709,6 +711,7 @@ export class ConsultarOrden implements OnInit {
               }
             });
           } else {
+            console.warn('⚠️ No se obtuvo id_boleta de la respuesta');
             procesarImpresionOSMS();
             guardarCambioEstadoFinal(`Orden completada y Boleta #${this.numeroBoletaRifa} registrada.`);
           }
