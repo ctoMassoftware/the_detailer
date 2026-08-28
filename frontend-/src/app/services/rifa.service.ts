@@ -15,7 +15,14 @@ export class RifaService {
       return this.http.get<any[]>(`${this.apiUrl}/historial-ganadores`);
     }
   private http = inject(HttpClient);
-  private apiUrl = 'https://thedetailer.up.railway.app/api/rifas';
+  private apiUrl = this.getApiUrl();
+
+  private getApiUrl(): string {
+    const isDev = !window.location.hostname.includes('the-detailer.co');
+    return isDev
+      ? 'http://localhost:3000/api/rifas'
+      : 'https://thedetailer.up.railway.app/api/rifas';
+  }
 
   crearRifa(datos: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/crear`, datos);
