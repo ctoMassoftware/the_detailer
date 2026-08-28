@@ -243,37 +243,35 @@ export const asignarBoletaAOrden = async (req, res) => {
   const { rol, id: userId } = req.user || {};
 
   if (!id_orden || !id_evento_rifa || !numero_boleta) {
-    return res.status(400).json({ error: 'Faltan parámetros requeridos' });
+    return res.status(400).json({ error: 'Faltan parámetros requeridos: id_orden, id_evento_rifa, numero_boleta' });
   }
 
-  const sedeUsuario = await obtenerSedeUsuario(userId);
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    // 1. Validar que la rifa existe y pertenece a su sede
-    const rifaCheck = await client.query(
-      'SELECT * FROM evento_rifa WHERE id_evento = $1',
-      [id_evento_rifa]
+    // 1. Buscar la boleta en la tabla rifa por número
+    const numeroFormatted = String(numero_boleta).padStart(3, '0');
+    const boletaQuery = await client.query(
+      `SELECT id_boleta FROM rifa
+       WHERE id_evento_rifa = $1 AND numero_boleta = $2
+       LIMIT 1`,
+      [id_evento_rifa, numeroFormatted]
     );
 
-    if (rifaCheck.rows.length === 0) {
+    if (boletaQuery.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Rifa no encontrada' });
+      return res.status(404).json({
+        error: `Boleta #${numeroFormatted} no encontrada para el evento ${id_evento_rifa}`
+      });
     }
 
-    const rifa = rifaCheck.rows[0];
-
-    // Validar acceso
-    if (!validarAccesoRifa(rol, sedeUsuario, rifa.sede)) {
-      await client.query('ROLLBACK');
-      return res.status(403).json({ error: 'No tienes permiso para asignar boletas de esta rifa' });
-    }
+    const idBoleta = boletaQuery.rows[0].id_boleta;
 
     // 2. Validar que la orden existe
     const ordenCheck = await client.query(
-      'SELECT * FROM orden WHERE id_orden = $1',
+      'SELECT id_orden FROM orden WHERE id_orden = $1',
       [id_orden]
     );
 
@@ -282,62 +280,29 @@ export const asignarBoletaAOrden = async (req, res) => {
       return res.status(404).json({ error: 'Orden no encontrada' });
     }
 
-    // 3. Validar que el número de boleta está disponible
-    const boletaCheck = await client.query(
-      `SELECT * FROM rifa_numero_disponible
-       WHERE id_evento_rifa = $1 AND numero_boleta = $2 AND disponible = true`,
-      [id_evento_rifa, numero_boleta]
+    // 3. Actualizar orden con id_boleta
+    const updateResult = await client.query(
+      `UPDATE orden SET id_boleta = $1 WHERE id_orden = $2 RETURNING id_orden, id_boleta`,
+      [idBoleta, id_orden]
     );
 
-    if (boletaCheck.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Este número de boleta no está disponible' });
-    }
+    await client.query('COMMIT');
 
-    // 4. Validar que la orden no tenga ya una boleta de esta rifa
-    const boletaExistente = await client.query(
-      `SELECT * FROM rifa_asignacion_audit
-       WHERE id_orden = $1 AND id_evento_rifa = $2`,
-      [id_orden, id_evento_rifa]
-    );
-
-    if (boletaExistente.rows.length > 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({
-        error: 'Esta orden ya tiene asignada una boleta para esta rifa',
-        boleta_asignada: boletaExistente.rows[0].numero_boleta
-      });
-    }
-
-    // 5. Marcar número como no disponible
-    await client.query(
-      `UPDATE rifa_numero_disponible
-       SET disponible = false, asignado_a_orden = $1, fecha_asignacion = NOW()
-       WHERE id_evento_rifa = $2 AND numero_boleta = $3`,
-      [id_orden, id_evento_rifa, numero_boleta]
-    );
-
-    // 6. Insertar en tabla de auditoría
-    await client.query(
-      `INSERT INTO rifa_asignacion_audit
-       (id_evento_rifa, id_orden, numero_boleta, usuario_asigno, sede)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [id_evento_rifa, id_orden, numero_boleta, userId, sedeUsuario]
-    );
-
-    // 7. Insertar/actualizar en tabla de rifas
-    const numeroFormatted = String(numero_boleta).padStart(3, '0');
-    await client.query(
-      `INSERT INTO rifa (id_evento_rifa, numero_boleta, nombre, telefono, placa_vehiculo)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT DO NOTHING`,
-      [
-        id_evento_rifa,
-        numeroFormatted,
-        ordenCheck.rows[0].nombre_cliente,
-        ordenCheck.rows[0].telefono_cliente,
-        ordenCheck.rows[0].placa_vehiculo
-      ]
+    console.log(`✅ Boleta #${numeroFormatted} (id=${idBoleta}) asignada a orden ${id_orden}`);
+    res.json({
+      success: true,
+      message: `Boleta #${numeroFormatted} asignada correctamente`,
+      id_orden,
+      id_boleta: idBoleta,
+      numero_boleta: numeroFormatted
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error asignando boleta:', error.message);
+    res.status(500).json({
+      error: 'Error al asignar boleta',
+      details: error.message
+    });
     );
 
     await client.query('COMMIT');
