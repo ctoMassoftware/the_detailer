@@ -8,6 +8,7 @@ import { OperarioService } from '../../services/operario.service';
 import { RifaService } from '../../services/rifa.service';
 import { ServicioService } from '../../services/servicio.service';
 import { ImpresoraService } from '../../services/impresora.service';
+import { MetodosPagoService } from '../../services/metodos-pago.service';
 import Swal from 'sweetalert2';
 
 interface Orden {
@@ -49,6 +50,9 @@ export class ConsultarOrden implements OnInit {
 
   totalEfectivoFiltrado: number = 0;
   totalTransferenciaFiltrado: number = 0;
+
+  // --- Métodos de Pago ---
+  metodospagoDisponibles: any[] = [];
 
   // --- Adicional (modal y lógica) ---
   mostrarModalAdicional: boolean = false;
@@ -114,6 +118,7 @@ export class ConsultarOrden implements OnInit {
   private rifaService = inject(RifaService);
   private servicioService = inject(ServicioService);
   private impresoraService = inject(ImpresoraService);
+  private metodosPagoService = inject(MetodosPagoService);
   private route = inject(ActivatedRoute);
 
   sedeSeleccionada: string | null = null;
@@ -172,6 +177,8 @@ export class ConsultarOrden implements OnInit {
     if (!this.rolUsuario) {
       this.rolUsuario = localStorage.getItem('rol') || localStorage.getItem('role') || '';
     }
+
+    this.cargarMetodosPago();
 
     this.route.queryParams.subscribe(params => {
       this.sedeSeleccionada = params['sede'] || null;
@@ -773,5 +780,21 @@ export class ConsultarOrden implements OnInit {
     if (anterior) anterior.estado = 'libre';
     item.estado = 'seleccionado';
     this.numeroBoletaRifa = item.valor;
+  }
+
+  cargarMetodosPago(): void {
+    this.metodosPagoService.getMetodosActivos().subscribe({
+      next: (response: any) => {
+        this.metodospagoDisponibles = response.metodos || [];
+      },
+      error: (err: any) => {
+        console.error('Error cargando métodos de pago:', err);
+        // Fallback a opciones por defecto
+        this.metodospagoDisponibles = [
+          { nombre: 'Efectivo' },
+          { nombre: 'Transferencia' }
+        ];
+      }
+    });
   }
 }

@@ -287,9 +287,9 @@
           <div class="form-group">
             <label>Método de Pago</label>
             <select [(ngModel)]="ordenSeleccionada.metodoPago" [disabled]="!modoEdicion" class="input-dark">
-              <option value="Efectivo">Efectivo</option>
-              <option value="Tarjeta">Tarjeta</option>
-              <option value="Transferencia">Transferencia</option>
+              <option *ngFor="let metodo of metodospagoDisponibles" [value]="metodo.nombre">
+                {{ metodo.nombre }}
+              </option>
             </select>
           </div>
           <div class="form-group">
@@ -411,9 +411,9 @@
               <p class="label" style="color: white; font-weight: bold;">Forma de Pago:</p>
               <select [(ngModel)]="ordenSeleccionada.metodoPago" class="input-dark select-pago-factura"
                 (change)="resetCalculadora()">
-                <option value="Efectivo">Efectivo</option>
-                <option value="Tarjeta">Tarjeta</option>
-                <option value="Transferencia">Transferencia</option>
+                <option *ngFor="let metodo of metodospagoDisponibles" [value]="metodo.nombre">
+                  {{ metodo.nombre }}
+                </option>
               </select>
             </div>
           </div>
