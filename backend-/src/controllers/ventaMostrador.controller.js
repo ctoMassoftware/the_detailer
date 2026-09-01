@@ -58,13 +58,18 @@ export const registrarVentaMostrador = async (req, res) => {
             }
         }
 
-        await client.query('COMMIT');
-
-        // 3. Generar token de recibo para la venta
+        // 3. Generar token de recibo para la venta (ANTES de COMMIT)
         let tokenRecibo = null;
         if (telefono_cliente) {
-            tokenRecibo = await generarTokenRecibo(null, null, idVenta);
+            try {
+                tokenRecibo = await generarTokenRecibo(null, null, idVenta);
+            } catch (tokenError) {
+                console.error('⚠️ Error generando token (continuando sin token):', tokenError.message);
+                // Continuar aunque falle el token - no bloquear la venta
+            }
         }
+
+        await client.query('COMMIT');
 
         // 4. Disparar SMS con Recibo (No bloquea la respuesta si la API demora)
         if (telefono_cliente) {
