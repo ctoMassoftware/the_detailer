@@ -309,7 +309,8 @@ export const enviarNotificacionModificacion = async (telefono, nombreCliente, de
 export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}, credentials = null) => {
   // COMPACTO: 160 chars max (1 SMS)
   const totalFormato = Number(total || 0).toLocaleString('es-CO');
-  let mensaje = `Recibo: ${detallesRecibo}\nTotal: $${totalFormato}`;
+  const numeroRecibo = metadata.idVenta ? `#${metadata.idVenta}` : '';
+  let mensaje = `Recibo ${numeroRecibo}: ${detallesRecibo}\nTotal: $${totalFormato}`;
 
   // ✅ Si tenemos token, incluir link en el SMS
   if (metadata.tokenRecibo) {
@@ -321,21 +322,25 @@ export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRec
     if (mensajeConLink.length <= 160) {
       mensaje = mensajeConLink;
     } else {
-      // Versión ultra-compacta con link corto
+      // Versión ultra-compacta sin detalles de productos
       const totalAbrev = Math.round(total / 1000) + 'K';
-      mensaje = `Compra: $${totalAbrev}\n${linkRecibo}`;
+      mensaje = `Recibo ${numeroRecibo}: $${totalAbrev}\n${linkRecibo}`;
 
-      // Si aún es muy largo, intentar acortar el link
+      // Si aún es muy largo, versión mínima
       if (mensaje.length > 160) {
-        // Versión solo con total
-        mensaje = `Compra registrada\nTotal: $${totalFormato}`;
+        mensaje = `Recibo ${numeroRecibo}\n$${totalFormato}\n${linkRecibo}`;
+      }
+
+      // Último recurso: solo recibo y link
+      if (mensaje.length > 160) {
+        mensaje = `Recibo ${numeroRecibo}: ${linkRecibo}`;
       }
     }
   } else {
-    // Sin token: versión compacta anterior
+    // Sin token: versión sin link
     if (mensaje.length > 160) {
       const totalAbrev = Math.round(total / 1000) + 'K';
-      mensaje = `Compra registrada\nTotal: $${totalAbrev}`;
+      mensaje = `Recibo ${numeroRecibo}: $${totalAbrev}`;
     }
   }
 
