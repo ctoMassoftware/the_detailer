@@ -438,77 +438,136 @@ router.get('/datos/:token', async (req, res) => {
       client.release();
     }
 
-    // Obtener datos completos de la orden (incluida información de rifa)
-    const result = await pool.query(
-      `SELECT
-        o.*,
-        COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total_orden,
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'servicio', s.nombre_servicio,
-              'cantidad', d.cantidad,
-              'precio_unitario', d.precio_servicio_aplicado,
-              'subtotal', (d.cantidad * d.precio_servicio_aplicado)
-            )
-          ) FILTER (WHERE d.id_servicio IS NOT NULL),
-          '[]'::json
-        ) as lista_servicios,
-        er.descripcion_premios as rifa_premio,
-        er.fecha_sorteo as fecha_sorteo,
-        er.encargado as encargado_rifa,
-        r_boleta.numero_boleta as numero_rifa,
-        CONCAT(u.nombre, ' ', u.apellido) as responsable_nombre
-       FROM orden o
-       LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
-       LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
-       LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
-       LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
-       LEFT JOIN rifa r_boleta ON o.id_boleta = r_boleta.id_boleta
-       WHERE o.id_orden = $1
-       GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, o.id_boleta, er.descripcion_premios, er.fecha_sorteo, er.encargado, u.nombre, u.apellido, r_boleta.numero_boleta`,
-      [orden.id_orden]
-    );
+    // Obtener datos según el tipo de recibo (orden o venta de mostrador)
+    let result, data;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Orden no encontrada' });
-    }
+    if (orden.tipo_recibo === 'orden') {
+      // ORDEN DE SERVICIO
+      result = await pool.query(
+        `SELECT
+          o.*,
+          COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total_orden,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'servicio', s.nombre_servicio,
+                'cantidad', d.cantidad,
+                'precio_unitario', d.precio_servicio_aplicado,
+                'subtotal', (d.cantidad * d.precio_servicio_aplicado)
+              )
+            ) FILTER (WHERE d.id_servicio IS NOT NULL),
+            '[]'::json
+          ) as lista_servicios,
+          er.descripcion_premios as rifa_premio,
+          er.fecha_sorteo as fecha_sorteo,
+          er.encargado as encargado_rifa,
+          r_boleta.numero_boleta as numero_rifa,
+          CONCAT(u.nombre, ' ', u.apellido) as responsable_nombre
+         FROM orden o
+         LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
+         LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
+         LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
+         LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
+         LEFT JOIN rifa r_boleta ON o.id_boleta = r_boleta.id_boleta
+         WHERE o.id_orden = $1
+         GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, o.id_boleta, er.descripcion_premios, er.fecha_sorteo, er.encargado, u.nombre, u.apellido, r_boleta.numero_boleta`,
+        [orden.id_orden]
+      );
 
-    const ordenData = result.rows[0];
-
-    // 📥 Registrar descarga (solo cuando acceden, no cuando solo obtienen datos)
-    const ipCliente = req.ip || req.connection.remoteAddress;
-    await marcarTokenComoDescargado(token, ipCliente);
-
-    // Retornar JSON con todos los datos (incluida información de rifa)
-    res.json({
-      success: true,
-      orden: {
-        id_orden: ordenData.id_orden,
-        fecha: formatearFecha(ordenData.fecha),
-        hora: ordenData.hora,
-        nombre_cliente: ordenData.nombre_cliente,
-        cedula_cliente: ordenData.cedula_cliente,
-        telefono_cliente: ordenData.telefono_cliente,
-        correo_cliente: ordenData.correo_cliente,
-        placa_vehiculo: ordenData.placa_vehiculo,
-        tipo_vehiculo: ordenData.tipo_vehiculo,
-        marca_vehiculo: ordenData.marca_vehiculo,
-        modelo_vehiculo: ordenData.modelo_vehiculo,
-        total: ordenData.total_orden,
-        estado: ordenData.estado,
-        cantidad_cascos: ordenData.cantidad_cascos || 0,
-        numero_rifa: ordenData.numero_rifa,
-        rifa_premio: ordenData.rifa_premio,
-        fecha_sorteo: formatearFechaUI(ordenData.fecha_sorteo),  // DD/MM/YYYY
-        responsable: ordenData.responsable_nombre,  // Operario encargado de la orden
-        encargado_rifa: ordenData.encargado_rifa,  // Encargado del evento de rifa
-        id_rifa: ordenData.id_rifa,
-        notas: ordenData.notas,
-        servicios: ordenData.lista_servicios,
-        metodoPago: ordenData.metodo_pago
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Orden no encontrada' });
       }
-    });
+
+      const ordenData = result.rows[0];
+
+      // 📥 Registrar descarga
+      const ipCliente = req.ip || req.connection.remoteAddress;
+      await marcarTokenComoDescargado(token, ipCliente);
+
+      // Retornar JSON con datos de ORDEN
+      res.json({
+        success: true,
+        tipo: 'orden',
+        orden: {
+          id_orden: ordenData.id_orden,
+          fecha: formatearFecha(ordenData.fecha),
+          hora: ordenData.hora,
+          nombre_cliente: ordenData.nombre_cliente,
+          cedula_cliente: ordenData.cedula_cliente,
+          telefono_cliente: ordenData.telefono_cliente,
+          correo_cliente: ordenData.correo_cliente,
+          placa_vehiculo: ordenData.placa_vehiculo,
+          tipo_vehiculo: ordenData.tipo_vehiculo,
+          marca_vehiculo: ordenData.marca_vehiculo,
+          modelo_vehiculo: ordenData.modelo_vehiculo,
+          total: ordenData.total_orden,
+          estado: ordenData.estado,
+          cantidad_cascos: ordenData.cantidad_cascos || 0,
+          numero_rifa: ordenData.numero_rifa,
+          rifa_premio: ordenData.rifa_premio,
+          fecha_sorteo: formatearFechaUI(ordenData.fecha_sorteo),  // DD/MM/YYYY
+          responsable: ordenData.responsable_nombre,  // Operario encargado de la orden
+          encargado_rifa: ordenData.encargado_rifa,  // Encargado del evento de rifa
+          id_rifa: ordenData.id_rifa,
+          notas: ordenData.notas,
+          servicios: ordenData.lista_servicios,
+          metodoPago: ordenData.metodo_pago
+        }
+      });
+    } else {
+      // VENTA DE MOSTRADOR
+      result = await pool.query(
+        `SELECT
+          v.*,
+          COALESCE(SUM(d.cantidad_vendida * d.precio_unitario), 0) as total_venta,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'producto', d.nombre_producto,
+                'cantidad', d.cantidad_vendida,
+                'precio_unitario', d.precio_unitario,
+                'subtotal', (d.cantidad_vendida * d.precio_unitario)
+              )
+            ) FILTER (WHERE d.nombre_producto IS NOT NULL),
+            '[]'::json
+          ) as lista_productos,
+          CONCAT(u.nombre, ' ', u.apellido) as vendedor_nombre
+         FROM venta_mostrador v
+         LEFT JOIN detalle_venta_mostrador d ON v.id_venta = d.id_venta
+         LEFT JOIN usuarios u ON v.id_user_vendedor = u.id_user
+         WHERE v.id_venta = $1
+         GROUP BY v.id_venta, v.cliente_nombre, v.telefono_cliente, v.metodo_pago, v.total, v.sede, v.id_user_vendedor, v.fecha, v.hora, u.nombre, u.apellido`,
+        [orden.id_venta]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Venta no encontrada' });
+      }
+
+      const ventaData = result.rows[0];
+
+      // 📥 Registrar descarga
+      const ipCliente = req.ip || req.connection.remoteAddress;
+      await marcarTokenComoDescargado(token, ipCliente);
+
+      // Retornar JSON con datos de VENTA
+      res.json({
+        success: true,
+        tipo: 'venta',
+        venta: {
+          id_venta: ventaData.id_venta,
+          fecha: formatearFecha(ventaData.fecha),
+          hora: ventaData.hora,
+          cliente_nombre: ventaData.cliente_nombre,
+          telefono_cliente: ventaData.telefono_cliente,
+          total: ventaData.total_venta,
+          metodo_pago: ventaData.metodo_pago,
+          sede: ventaData.sede,
+          vendedor: ventaData.vendedor_nombre,
+          productos: ventaData.lista_productos
+        }
+      });
+    }
 
   } catch (error) {
     console.error('Error obteniendo datos de recibo:', error);
@@ -517,7 +576,7 @@ router.get('/datos/:token', async (req, res) => {
 });
 
 /**
- * Descargar recibo como HTML (legacy - para compatibilidad)
+ * Descargar recibo como HTML (soporta órdenes y ventas de mostrador)
  * GET /api/recibos/descargar/:token?placa=ABC123
  */
 router.get('/descargar/:token', async (req, res) => {
@@ -539,38 +598,70 @@ router.get('/descargar/:token', async (req, res) => {
       });
     }
 
-    // Obtener datos completos de la orden para el recibo
-    const result = await pool.query(
-      `SELECT
-        o.*,
-        COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total_orden,
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'servicio', s.nombre_servicio,
-              'cantidad', d.cantidad,
-              'precio_unitario', d.precio_servicio_aplicado,
-              'subtotal', (d.cantidad * d.precio_servicio_aplicado)
-            )
-          ) FILTER (WHERE d.id_servicio IS NOT NULL),
-          '[]'::json
-        ) as lista_servicios
-       FROM orden o
-       LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
-       LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
-       WHERE o.id_orden = $1
-       GROUP BY o.id_orden`,
-      [orden.id_orden]
-    );
+    let html;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Orden no encontrada' });
+    if (orden.tipo_recibo === 'orden') {
+      // ORDEN DE SERVICIO
+      const result = await pool.query(
+        `SELECT
+          o.*,
+          COALESCE(SUM(d.cantidad * d.precio_servicio_aplicado), 0) as total_orden,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'servicio', s.nombre_servicio,
+                'cantidad', d.cantidad,
+                'precio_unitario', d.precio_servicio_aplicado,
+                'subtotal', (d.cantidad * d.precio_servicio_aplicado)
+              )
+            ) FILTER (WHERE d.id_servicio IS NOT NULL),
+            '[]'::json
+          ) as lista_servicios
+         FROM orden o
+         LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
+         LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
+         WHERE o.id_orden = $1
+         GROUP BY o.id_orden`,
+        [orden.id_orden]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Orden no encontrada' });
+      }
+
+      html = generarHTMLRecibo(result.rows[0]);
+    } else {
+      // VENTA DE MOSTRADOR
+      const result = await pool.query(
+        `SELECT
+          v.*,
+          COALESCE(SUM(d.cantidad_vendida * d.precio_unitario), 0) as total_venta,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'producto', d.nombre_producto,
+                'cantidad', d.cantidad_vendida,
+                'precio_unitario', d.precio_unitario,
+                'subtotal', (d.cantidad_vendida * d.precio_unitario)
+              )
+            ) FILTER (WHERE d.nombre_producto IS NOT NULL),
+            '[]'::json
+          ) as lista_productos,
+          CONCAT(u.nombre, ' ', u.apellido) as vendedor_nombre
+         FROM venta_mostrador v
+         LEFT JOIN detalle_venta_mostrador d ON v.id_venta = d.id_venta
+         LEFT JOIN usuarios u ON v.id_user_vendedor = u.id_user
+         WHERE v.id_venta = $1
+         GROUP BY v.id_venta, v.cliente_nombre, v.telefono_cliente, v.metodo_pago, v.total, v.sede, v.id_user_vendedor, v.fecha, v.hora, u.nombre, u.apellido`,
+        [orden.id_venta]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Venta no encontrada' });
+      }
+
+      html = generarHTMLReciboVenta(result.rows[0]);
     }
-
-    const ordenData = result.rows[0];
-
-    // Generar HTML del recibo
-    const html = generarHTMLRecibo(ordenData);
 
     // Registrar descarga
     const ipCliente = req.ip || req.connection.remoteAddress;
@@ -586,6 +677,148 @@ router.get('/descargar/:token', async (req, res) => {
     res.status(500).json({ error: 'Error descargando recibo' });
   }
 });
+
+/**
+ * Generar HTML del recibo de VENTA DE MOSTRADOR
+ */
+const generarHTMLReciboVenta = (venta) => {
+  const fechaStr = formatearFecha(venta.fecha);
+  const [anio, mes, dia] = fechaStr.split('-');
+  const fecha = `${dia}/${mes}/${anio}`;
+  const total = venta.total_venta || 0;
+
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recibo de Compra - The Detailer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    .toolbar { text-align: center; margin-bottom: 20px; }
+    .btn-descargar {
+      background: #2c3e50;
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .btn-descargar:hover { background: #34495e; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    @media print { .toolbar { display: none; } }
+    .header { text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }
+    .header h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
+    .header p { color: #7f8c8d; font-size: 14px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .info-box { padding: 15px; background: #ecf0f1; border-radius: 4px; }
+    .info-box strong { display: block; color: #2c3e50; margin-bottom: 5px; }
+    .info-box span { color: #34495e; font-size: 14px; }
+    .productos { margin: 30px 0; }
+    .productos h3 { color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #34495e; color: white; padding: 10px; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
+    .total-row { background: #ecf0f1; font-weight: bold; color: #2c3e50; font-size: 16px; }
+    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1; color: #7f8c8d; font-size: 12px; }
+    .badge { display: inline-block; padding: 5px 12px; background: #27ae60; color: white; border-radius: 4px; font-weight: bold; margin-top: 10px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="btn-descargar" onclick="descargarPDF()">📥 Descargar como PDF</button>
+  </div>
+
+  <div class="container" id="recibo">
+    <div class="header">
+      <h1>🛍️ The Detailer</h1>
+      <p>Recibo de Compra - Venta de Mostrador</p>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-box">
+        <strong>Número de Venta</strong>
+        <span>#${venta.id_venta}</span>
+      </div>
+      <div class="info-box">
+        <strong>Fecha</strong>
+        <span>${fecha}</span>
+      </div>
+      <div class="info-box">
+        <strong>Cliente</strong>
+        <span>${venta.cliente_nombre || 'Cliente General'}</span>
+      </div>
+      <div class="info-box">
+        <strong>Sede</strong>
+        <span>${venta.sede || 'N/A'}</span>
+      </div>
+    </div>
+
+    <div class="productos">
+      <h3>Productos Comprados</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th style="text-align: center;">Cantidad</th>
+            <th style="text-align: right;">Precio Unitario</th>
+            <th style="text-align: right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${venta.lista_productos.map(p => \`
+            <tr>
+              <td>\${p.producto}</td>
+              <td style="text-align: center;">\${p.cantidad}</td>
+              <td style="text-align: right;">$\${p.precio_unitario.toLocaleString('es-CO')}</td>
+              <td style="text-align: right;">$\${p.subtotal.toLocaleString('es-CO')}</td>
+            </tr>
+          \`).join('')}
+          <tr class="total-row">
+            <td colspan="3" style="text-align: right;">TOTAL:</td>
+            <td style="text-align: right;">$${total.toLocaleString('es-CO')}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="text-align: center;">
+      <span class="badge">✅ Compra Completada</span>
+    </div>
+
+    <div class="footer">
+      <p>📍 The Detailer | ⏰ Lunes-Viernes 8am-6pm</p>
+      <p>Método de pago: ${venta.metodo_pago || 'N/A'}</p>
+      <p>Vendedor: ${venta.vendedor_nombre || 'N/A'}</p>
+      <p style="margin-top: 15px; font-size: 11px; color: #95a5a6;">
+        Este recibo fue generado digitalmente. Para cualquier duda, contáctanos.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    function descargarPDF() {
+      const elemento = document.getElementById('recibo');
+      const opt = {
+        margin: 10,
+        filename: 'recibo-compra-${venta.id_venta}.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+      };
+
+      html2pdf().set(opt).from(elemento).save();
+    }
+  </script>
+</body>
+</html>
+  `;
+};
 
 /**
  * Generar HTML del recibo (puede convertirse a PDF con librería externa)

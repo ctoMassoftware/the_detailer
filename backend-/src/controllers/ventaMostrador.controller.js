@@ -1,5 +1,6 @@
 import { pool } from '../config/db.js';
 import { enviarReciboMostrador } from '../services/notificationRouter.service.js';
+import { generarTokenRecibo } from '../services/reciboToken.service.js';
 
 export const registrarVentaMostrador = async (req, res) => {
     const { id: id_user_vendedor, sede } = req.user; 
@@ -59,7 +60,13 @@ export const registrarVentaMostrador = async (req, res) => {
 
         await client.query('COMMIT');
 
-        // 3. Disparar SMS con Recibo (No bloquea la respuesta si la API demora)
+        // 3. Generar token de recibo para la venta
+        let tokenRecibo = null;
+        if (telefono_cliente) {
+            tokenRecibo = await generarTokenRecibo(null, null, idVenta);
+        }
+
+        // 4. Disparar SMS con Recibo (No bloquea la respuesta si la API demora)
         if (telefono_cliente) {
             // Formatear detalles de productos de forma compacta (≤160 chars)
             const detallesCompacto = productos
@@ -76,7 +83,13 @@ export const registrarVentaMostrador = async (req, res) => {
                 cliente_nombre,        // ✓ Correcto: nombreCliente
                 detallesProductos,     // ✓ Correcto: detalles de productos
                 total,
-                { sede, metodo_pago }  // ✓ Metadata adicional
+                {
+                    sede,
+                    metodo_pago,
+                    tokenRecibo,       // ✓ Nuevo: token para incluir en SMS
+                    idVenta,           // ✓ Nuevo: ID de la venta
+                    tipo: 'venta_mostrador'
+                }
             ).catch(console.error);
         }
 

@@ -308,18 +308,38 @@ export const enviarNotificacionModificacion = async (telefono, nombreCliente, de
 
 export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}, credentials = null) => {
   // COMPACTO: 160 chars max (1 SMS)
-  // Formato: "Recibo: [detalles]\nTotal: $[monto]"
   const totalFormato = Number(total || 0).toLocaleString('es-CO');
   let mensaje = `Recibo: ${detallesRecibo}\nTotal: $${totalFormato}`;
 
-  // ✅ VALIDAR Y TRUNCAR si supera 160 chars
-  if (mensaje.length > 160) {
-    // Si es muy largo, usar versión ultra-compacta
-    const totalAbrev = Math.round(total / 1000) + 'K';
-    mensaje = `Compra registrada\nTotal: $${totalAbrev}`;
+  // ✅ Si tenemos token, incluir link en el SMS
+  if (metadata.tokenRecibo) {
+    const baseUrl = process.env.BASE_URL || 'https://the-detailer.co';
+    const linkRecibo = `${baseUrl}/recibos?token=${metadata.tokenRecibo}`;
+    const mensajeConLink = `${mensaje}\nVer: ${linkRecibo}`;
+
+    // Si el mensaje con link supera 160, usar versión compacta
+    if (mensajeConLink.length <= 160) {
+      mensaje = mensajeConLink;
+    } else {
+      // Versión ultra-compacta con link corto
+      const totalAbrev = Math.round(total / 1000) + 'K';
+      mensaje = `Compra: $${totalAbrev}\n${linkRecibo}`;
+
+      // Si aún es muy largo, intentar acortar el link
+      if (mensaje.length > 160) {
+        // Versión solo con total
+        mensaje = `Compra registrada\nTotal: $${totalFormato}`;
+      }
+    }
+  } else {
+    // Sin token: versión compacta anterior
+    if (mensaje.length > 160) {
+      const totalAbrev = Math.round(total / 1000) + 'K';
+      mensaje = `Compra registrada\nTotal: $${totalAbrev}`;
+    }
   }
 
-  console.log(`📊 SMS Recibo - ${mensaje.length} chars (máx: 160) - Validado ✅`);
+  console.log(`📊 SMS Recibo - ${mensaje.length} chars (máx: 160) - ${metadata.tokenRecibo ? 'CON LINK' : 'SIN LINK'} - Validado ✅`);
 
   const validacion = validarSMS(mensaje);
   if (!validacion.valid) {

@@ -3,12 +3,18 @@ import crypto from 'crypto';
 
 /**
  * Generar token seguro para descarga de recibo
- * @param {number} idOrden
- * @param {string} placaVehiculo
+ * @param {number} idOrden - ID de orden (null si es venta de mostrador)
+ * @param {string} placaVehiculo - Placa del vehículo (null si es venta de mostrador)
+ * @param {number} idVenta - ID de venta de mostrador (opcional)
  * @returns {Promise<string>} Token único o null si falla
  */
-export const generarTokenRecibo = async (idOrden, placaVehiculo) => {
+export const generarTokenRecibo = async (idOrden, placaVehiculo, idVenta = null) => {
   try {
+    // Validar que al menos tengamos idOrden o idVenta
+    if (!idOrden && !idVenta) {
+      throw new Error('Se requiere idOrden o idVenta');
+    }
+
     // Generar token aleatorio (32 bytes = 64 caracteres hex)
     const token = crypto.randomBytes(32).toString('hex');
 
@@ -20,27 +26,27 @@ export const generarTokenRecibo = async (idOrden, placaVehiculo) => {
 
     // Insertar en BD
     await pool.query(
-      `INSERT INTO recibo_token (id_orden, placa_vehiculo, token_hash)
-       VALUES ($1, $2, $3)`,
-      [idOrden, placaVehiculo, tokenHash]
+      `INSERT INTO recibo_token (id_orden, id_venta, placa_vehiculo, token_hash)
+       VALUES ($1, $2, $3, $4)`,
+      [idOrden || null, idVenta || null, placaVehiculo || null, tokenHash]
     );
 
-    console.log(`✓ Token generado para orden ${idOrden}`);
+    const tipo = idVenta ? `venta ${idVenta}` : `orden ${idOrden}`;
+    console.log(`✓ Token generado para ${tipo}`);
     return token; // Retornar token sin hash (para enviar en SMS)
   } catch (error) {
-    console.error('❌ CRÍTICO: Error generando token para orden', idOrden);
+    console.error('❌ CRÍTICO: Error generando token');
     console.error('   Mensaje:', error.message);
-    console.error('   Código:', error.code);
     console.error('   Stack:', error.stack);
     return null;
   }
 };
 
 /**
- * Validar token y retornar datos de orden
+ * Validar token y retornar datos de orden o venta
  * @param {string} token - Token enviado en URL
- * @param {string} placa - Placa del vehículo (para validación adicional)
- * @returns {Promise<Object|null>} Datos de orden o null si inválido
+ * @param {string} placa - Placa del vehículo (opcional, solo para órdenes)
+ * @returns {Promise<Object|null>} Datos de recibo (orden o venta) o null si inválido
  */
 export const validarTokenRecibo = async (token, placa = null) => {
   try {
@@ -50,12 +56,15 @@ export const validarTokenRecibo = async (token, placa = null) => {
       .update(token)
       .digest('hex');
 
-    // Buscar token válido - NO requiere que descargado_at sea NULL
-    // Solo verifica que esté activo y no expirado
+    // Buscar token válido (puede ser de orden o venta)
     const result = await pool.query(
-      `SELECT rt.id_orden, rt.placa_vehiculo, o.nombre_cliente, o.correo_cliente
+      `SELECT rt.id_orden, rt.id_venta, rt.placa_vehiculo, rt.activo, rt.expira_at,
+              COALESCE(o.nombre_cliente, v.cliente_nombre) as nombre_cliente,
+              COALESCE(o.correo_cliente, '') as correo_cliente,
+              CASE WHEN rt.id_orden IS NOT NULL THEN 'orden' ELSE 'venta' END as tipo_recibo
        FROM recibo_token rt
-       JOIN orden o ON rt.id_orden = o.id_orden
+       LEFT JOIN orden o ON rt.id_orden = o.id_orden
+       LEFT JOIN venta_mostrador v ON rt.id_venta = v.id_venta
        WHERE rt.token_hash = $1
          AND rt.activo = true
          AND rt.expira_at > CURRENT_TIMESTAMP`,
@@ -69,8 +78,8 @@ export const validarTokenRecibo = async (token, placa = null) => {
 
     const row = result.rows[0];
 
-    // Validar placa (seguridad adicional) - case-insensitive
-    if (placa && String(row.placa_vehiculo).toUpperCase() !== String(placa).toUpperCase()) {
+    // Validar placa (seguridad adicional) - solo si es orden
+    if (row.tipo_recibo === 'orden' && placa && String(row.placa_vehiculo).toUpperCase() !== String(placa).toUpperCase()) {
       console.warn(`⚠️ Placa no coincide: ${placa} != ${row.placa_vehiculo}`);
       return null;
     }

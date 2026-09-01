@@ -224,14 +224,16 @@ export const initDB = async () => {
         -- 14. TOKENS DE DESCARGA DE RECIBOS (SEGURIDAD)
         CREATE TABLE IF NOT EXISTS recibo_token (
             id SERIAL PRIMARY KEY,
-            id_orden INTEGER NOT NULL REFERENCES orden(id_orden) ON DELETE CASCADE,
-            placa_vehiculo VARCHAR(20) NOT NULL,
+            id_orden INTEGER REFERENCES orden(id_orden) ON DELETE CASCADE,
+            id_venta INTEGER REFERENCES venta_mostrador(id_venta) ON DELETE CASCADE,
+            placa_vehiculo VARCHAR(20),
             token_hash VARCHAR(255) NOT NULL UNIQUE,
             creado_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             expira_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours'),
             descargado_at TIMESTAMP,
             ip_descarga VARCHAR(45),
-            activo BOOLEAN DEFAULT TRUE
+            activo BOOLEAN DEFAULT TRUE,
+            descargas_count INTEGER DEFAULT 0
         );
 
         -- 15. MÉTODOS DE PAGO CONFIGURABLES
@@ -286,6 +288,11 @@ export const initDB = async () => {
             // Esto corrige que Railway (UTC) guardaba la hora 5 horas adelantada
             `ALTER TABLE orden ALTER COLUMN hora SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::time`,
             `ALTER TABLE venta_mostrador ALTER COLUMN hora SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::time`,
+
+            // ✅ NUEVA: Soportar tokens de recibos para ventas de mostrador
+            "ALTER TABLE recibo_token ALTER COLUMN id_orden DROP NOT NULL",
+            "ALTER TABLE recibo_token ADD COLUMN IF NOT EXISTS id_venta INTEGER REFERENCES venta_mostrador(id_venta) ON DELETE CASCADE",
+            "ALTER TABLE recibo_token ADD COLUMN IF NOT EXISTS descargas_count INTEGER DEFAULT 0",
         ];
         
         for (const sql of migraciones) {
