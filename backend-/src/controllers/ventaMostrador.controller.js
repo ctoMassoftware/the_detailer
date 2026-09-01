@@ -1,6 +1,6 @@
 import { pool } from '../config/db.js';
 import { enviarReciboMostrador } from '../services/notificationRouter.service.js';
-import { generarTokenRecibo } from '../services/reciboToken.service.js';
+import { generarSoloToken, insertarTokenEnTransaccion } from '../services/reciboToken.service.js';
 
 export const registrarVentaMostrador = async (req, res) => {
     const { id: id_user_vendedor, sede } = req.user; 
@@ -58,11 +58,14 @@ export const registrarVentaMostrador = async (req, res) => {
             }
         }
 
-        // 3. Generar token de recibo para la venta (ANTES de COMMIT)
+        // 3. Generar token de recibo para la venta (DENTRO de la transacción)
         let tokenRecibo = null;
         if (telefono_cliente) {
             try {
-                tokenRecibo = await generarTokenRecibo(null, null, idVenta);
+                const { token, tokenHash } = generarSoloToken();
+                await insertarTokenEnTransaccion(client, null, null, idVenta, tokenHash);
+                tokenRecibo = token;
+                console.log(`✓ Token generado para venta ${idVenta}`);
             } catch (tokenError) {
                 console.error('⚠️ Error generando token (continuando sin token):', tokenError.message);
                 // Continuar aunque falle el token - no bloquear la venta

@@ -2,6 +2,20 @@ import { pool } from '../config/db.js';
 import crypto from 'crypto';
 
 /**
+ * Generar solo el token (sin insertar en BD)
+ * Útil para usar dentro de transacciones
+ * @returns {Object} {token: string, tokenHash: string}
+ */
+export const generarSoloToken = () => {
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+  return { token, tokenHash };
+};
+
+/**
  * Generar token seguro para descarga de recibo
  * @param {number} idOrden - ID de orden (null si es venta de mostrador)
  * @param {string} placaVehiculo - Placa del vehículo (null si es venta de mostrador)
@@ -15,16 +29,9 @@ export const generarTokenRecibo = async (idOrden, placaVehiculo, idVenta = null)
       throw new Error('Se requiere idOrden o idVenta');
     }
 
-    // Generar token aleatorio (32 bytes = 64 caracteres hex)
-    const token = crypto.randomBytes(32).toString('hex');
+    const { token, tokenHash } = generarSoloToken();
 
-    // Crear hash del token para almacenar (nunca guardar token en texto plano)
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-
-    // Insertar en BD
+    // Insertar en BD (usa pool global)
     await pool.query(
       `INSERT INTO recibo_token (id_orden, id_venta, placa_vehiculo, token_hash)
        VALUES ($1, $2, $3, $4)`,
@@ -40,6 +47,23 @@ export const generarTokenRecibo = async (idOrden, placaVehiculo, idVenta = null)
     console.error('   Stack:', error.stack);
     return null;
   }
+};
+
+/**
+ * Insertar token en BD dentro de una transacción existente
+ * @param {Object} client - Pool client con transacción iniciada
+ * @param {number} idOrden - ID de orden (null si es venta)
+ * @param {string} placaVehiculo - Placa del vehículo
+ * @param {number} idVenta - ID de venta de mostrador
+ * @param {string} tokenHash - Hash SHA256 del token
+ * @returns {Promise<void>}
+ */
+export const insertarTokenEnTransaccion = async (client, idOrden, placaVehiculo, idVenta, tokenHash) => {
+  await client.query(
+    `INSERT INTO recibo_token (id_orden, id_venta, placa_vehiculo, token_hash)
+     VALUES ($1, $2, $3, $4)`,
+    [idOrden || null, idVenta || null, placaVehiculo || null, tokenHash]
+  );
 };
 
 /**
