@@ -36,6 +36,7 @@ export class ReciboComponent implements OnInit {
   error: string = '';
   modo: 'token' | 'placa' = 'token';
   mostrarTodasLasOrdenes: boolean = false;  // Toggle para mostrar selector
+  tipoRecibo: 'orden' | 'venta' = 'orden';  // Nuevo: detecta tipo de recibo
 
   // Rifas del módulo administrador
   rifaInfo: any = null;
@@ -86,11 +87,12 @@ export class ReciboComponent implements OnInit {
         (response: any) => {
           // Maneja ambos tipos: response.orden (para órdenes) y response.venta (para ventas)
           if (response.success) {
+            this.tipoRecibo = response.tipo === 'venta' ? 'venta' : 'orden';
             this.orden = response.orden || response.venta;
-            console.log('✓ Recibo cargado:', this.orden);
+            console.log(`✓ ${this.tipoRecibo === 'venta' ? 'Venta' : 'Orden'} cargada:`, this.orden);
 
             // ✅ Cargar datos de la rifa si la orden tiene id_rifa (solo para órdenes de servicio)
-            if (this.orden.id_rifa) {
+            if (this.tipoRecibo === 'orden' && this.orden.id_rifa) {
               this.cargarRifaInfo(this.orden.id_rifa);
             }
           } else {

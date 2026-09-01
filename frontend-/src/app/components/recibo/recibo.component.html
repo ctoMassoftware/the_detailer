@@ -53,8 +53,8 @@
     </div>
   </div>
 
-  <!-- Recibo -->
-  <div *ngIf="orden && !cargando" id="recibo-contenido" class="recibo">
+  <!-- Recibo ORDEN DE SERVICIO -->
+  <div *ngIf="orden && !cargando && tipoRecibo === 'orden'" id="recibo-contenido" class="recibo">
     <!-- Indicador de orden actual (si hay múltiples) -->
     <div *ngIf="modo === 'placa' && ordenes.length > 1" class="orden-actual-badge">
       📋 Orden {{ ordenes.indexOf(orden) + 1 }} de {{ ordenes.length }}
@@ -205,6 +205,109 @@
     <div class="recibo-footer">
       <p>📍 The Detailer</p>
       <p>⏰ Lunes-Domingo 7am-6pm</p>
+      <p class="gracias">Gracias por confiar en nosotros 🙏</p>
+      <p class="disclaimer">Este recibo fue generado digitalmente.<br>Para cualquier duda, contáctanos.</p>
+    </div>
+  </div>
+
+  <!-- Recibo VENTA DE MOSTRADOR -->
+  <div *ngIf="orden && !cargando && tipoRecibo === 'venta'" id="recibo-contenido" class="recibo recibo-venta">
+    <!-- Header del recibo -->
+    <div class="recibo-header-content">
+      <div class="empresa">
+        <img src="assets/logo.jpeg" alt="Logo" style="height: 40px; margin-bottom: 0.5rem; border-radius: 4px;">
+        <h2>🛍️ The Detailer</h2>
+        <p>Recibo de Compra - Venta de Mostrador</p>
+        <p style="font-size: 11px; color: #95a5a6; margin-top: 5px;">NIT 100002212-9</p>
+      </div>
+      <div class="numero-orden">
+        <span class="label">Recibo #</span>
+        <span class="numero">{{ orden.id_venta }}</span>
+      </div>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
+    <!-- Información del cliente y venta -->
+    <div class="info-grid">
+      <div class="info-box">
+        <strong>👤 Cliente</strong>
+        <p>{{ orden.cliente_nombre }}</p>
+      </div>
+
+      <div class="info-box">
+        <strong>📅 Fecha de Compra</strong>
+        <p>{{ obtenerFecha(orden.fecha) }} {{ orden.hora ? '⏰ ' + orden.hora : '' }}</p>
+      </div>
+
+      <div class="info-box">
+        <strong>📍 Sede</strong>
+        <p>{{ orden.sede }}</p>
+      </div>
+
+      <div class="info-box">
+        <strong>💳 Método de Pago</strong>
+        <p>{{ orden.metodo_pago || 'N/A' }}</p>
+      </div>
+
+      <div class="info-box" *ngIf="orden.vendedor">
+        <strong>👨‍💼 Vendedor</strong>
+        <p>{{ orden.vendedor }}</p>
+      </div>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
+    <!-- Productos comprados -->
+    <div class="servicios-section">
+      <h3>🛍️ Productos Comprados</h3>
+
+      <table class="servicios-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="cantidad">Cantidad</th>
+            <th class="precio">Precio Unitario</th>
+            <th class="subtotal">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let producto of orden.productos" class="servicio-row">
+            <td>{{ producto.producto }}</td>
+            <td class="cantidad">{{ producto.cantidad }}</td>
+            <td class="precio">${{ producto.precio_unitario.toLocaleString('es-CO') }}</td>
+            <td class="subtotal">${{ producto.subtotal.toLocaleString('es-CO') }}</td>
+          </tr>
+
+          <!-- Fila de total -->
+          <tr class="total-row">
+            <td colspan="3" class="label-total">TOTAL:</td>
+            <td class="monto-total">${{ orden.total.toLocaleString('es-CO') }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
+    <!-- Estado -->
+    <div class="estado-section">
+      <p><strong>Estado:</strong></p>
+      <div class="estado estado-completada">
+        ✅ Compra Completada
+      </div>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
+    <!-- Footer -->
+    <div class="recibo-footer">
+      <p>📍 The Detailer</p>
+      <p>⏰ Lunes-Viernes 8am-6pm</p>
       <p class="gracias">Gracias por confiar en nosotros 🙏</p>
       <p class="disclaimer">Este recibo fue generado digitalmente.<br>Para cualquier duda, contáctanos.</p>
     </div>
