@@ -364,7 +364,7 @@ router.get('/sms-stats', async (req, res) => {
         estado,
         COUNT(*) as total,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 1) as porcentaje
-      FROM mensaje_log
+      FROM mensaje_audit_log
       WHERE timestamp_envio >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
       GROUP BY estado
       ORDER BY total DESC
@@ -443,7 +443,7 @@ router.get('/db-structure', async (req, res) => {
 router.get('/mensaje-log-content', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT * FROM mensaje_log
+      SELECT * FROM mensaje_audit_log
       ORDER BY timestamp_envio DESC
       LIMIT 20
     `);
@@ -548,7 +548,7 @@ router.get('/venta/:idVenta', async (req, res) => {
     // Buscar SMS enviados para esta venta
     const smsResult = await pool.query(`
       SELECT
-        id_mensaje,
+        id_log as id_mensaje,
         numero_telefono,
         contenido_mensaje,
         estado,
@@ -556,7 +556,7 @@ router.get('/venta/:idVenta', async (req, res) => {
         tipo_notificacion,
         error_detalles,
         timestamp_envio
-      FROM mensaje_log
+      FROM mensaje_audit_log
       WHERE numero_telefono = $1
       ORDER BY timestamp_envio DESC
       LIMIT 5

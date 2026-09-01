@@ -97,6 +97,9 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
       // Resolver credenciales: parámetro → BD → variables de entorno
       const resolvedCreds = resolveCredentials(credentials, dbCredentials);
 
+      // Logging
+      console.log(`📱 SMS a ${numeroNormalizado}: ${messageBody.substring(0, 50)}...`);
+
       const username = resolvedCreds?.username;
       const apiToken = resolvedCreds?.apiToken;
       const sender = resolvedCreds?.sender || 'DETAILER';
