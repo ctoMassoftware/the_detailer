@@ -685,4 +685,76 @@ router.get('/recibo-token-structure', async (req, res) => {
   }
 });
 
+/**
+ * DEBUG: Validar token específico
+ * GET /api/debug/validar-token/:token
+ */
+router.get('/validar-token/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const crypto = await import('crypto');
+
+    // Hash del token
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    console.log(`🔍 Buscando token: ${token.substring(0, 20)}...`);
+    console.log(`   Hash: ${tokenHash.substring(0, 20)}...`);
+
+    // Buscar en BD
+    const result = await pool.query(`
+      SELECT
+        rt.id,
+        rt.id_orden,
+        rt.id_venta,
+        rt.token_hash,
+        rt.creado_at,
+        rt.expira_at,
+        rt.activo,
+        rt.placa_vehiculo,
+        o.id_orden as orden_existe,
+        v.id_venta as venta_existe
+      FROM recibo_token rt
+      LEFT JOIN orden o ON rt.id_orden = o.id_orden
+      LEFT JOIN venta_mostrador v ON rt.id_venta = v.id_venta
+      WHERE rt.token_hash = $1
+    `, [tokenHash]);
+
+    if (result.rows.length === 0) {
+      return res.json({
+        found: false,
+        message: 'Token NO encontrado en BD',
+        token: token.substring(0, 20) + '...',
+        hash_buscado: tokenHash.substring(0, 20) + '...'
+      });
+    }
+
+    const row = result.rows[0];
+    const ahora = new Date();
+    const expira = new Date(row.expira_at);
+    const vigente = row.activo && expira > ahora;
+
+    res.json({
+      found: true,
+      token: row,
+      vigente: vigente,
+      activo: row.activo,
+      expirado: expira < ahora,
+      fecha_expira: row.expira_at,
+      orden_vinculada_existe: !!row.orden_existe,
+      venta_vinculada_existe: !!row.venta_existe,
+      problema: !vigente ? 'Token inactivo o expirado' : 'Token válido'
+    });
+
+  } catch (error) {
+    console.error('Error en debug/validar-token:', error);
+    res.status(500).json({
+      error: error.message,
+      detalle: error.toString()
+    });
+  }
+});
+
 export default router;
