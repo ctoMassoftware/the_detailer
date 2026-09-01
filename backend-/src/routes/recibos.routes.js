@@ -634,8 +634,16 @@ router.get('/descargar/:token', async (req, res) => {
       // VENTA DE MOSTRADOR
       const result = await pool.query(
         `SELECT
-          v.*,
-          COALESCE(SUM(d.cantidad_vendida * d.precio_unitario), 0) as total_venta,
+          v.id_venta,
+          v.cliente_nombre,
+          v.telefono_cliente,
+          v.metodo_pago,
+          v.total as total_venta,
+          v.sede,
+          v.id_user_vendedor,
+          v.fecha,
+          v.hora,
+          CONCAT(u.nombre, ' ', u.apellido) as vendedor_nombre,
           COALESCE(
             json_agg(
               json_build_object(
@@ -646,13 +654,12 @@ router.get('/descargar/:token', async (req, res) => {
               )
             ) FILTER (WHERE d.nombre_producto IS NOT NULL),
             '[]'::json
-          ) as lista_productos,
-          CONCAT(u.nombre, ' ', u.apellido) as vendedor_nombre
+          ) as lista_productos
          FROM venta_mostrador v
          LEFT JOIN detalle_venta_mostrador d ON v.id_venta = d.id_venta
          LEFT JOIN usuarios u ON v.id_user_vendedor = u.id_user
          WHERE v.id_venta = $1
-         GROUP BY v.id_venta, v.cliente_nombre, v.telefono_cliente, v.metodo_pago, v.total, v.sede, v.id_user_vendedor, v.fecha, v.hora, u.nombre, u.apellido`,
+         GROUP BY v.id_venta, u.nombre, u.apellido`,
         [orden.id_venta]
       );
 
