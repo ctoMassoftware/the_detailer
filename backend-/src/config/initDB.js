@@ -291,6 +291,7 @@ export const initDB = async () => {
 
             // ✅ NUEVA: Soportar tokens de recibos para ventas de mostrador
             "ALTER TABLE recibo_token ALTER COLUMN id_orden DROP NOT NULL",
+            "ALTER TABLE recibo_token ALTER COLUMN placa_vehiculo DROP NOT NULL",
             "ALTER TABLE recibo_token ADD COLUMN IF NOT EXISTS id_venta INTEGER REFERENCES venta_mostrador(id_venta) ON DELETE CASCADE",
             "ALTER TABLE recibo_token ADD COLUMN IF NOT EXISTS descargas_count INTEGER DEFAULT 0",
         ];
