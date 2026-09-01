@@ -799,7 +799,7 @@ const generarHTMLReciboVenta = (venta) => {
     </div>
 
     <div class="footer">
-      <p>📍 The Detailer | ⏰ Lunes-Viernes 8am-6pm</p>
+      <p>📍 The Detailer | ⏰ Lunes-Domingo 7am-6pm</p>
       <p>Método de pago: ${venta.metodo_pago || 'N/A'}</p>
       <p>Vendedor: ${venta.vendedor_nombre || 'N/A'}</p>
       <p style="margin-top: 15px; font-size: 11px; color: #95a5a6;">
@@ -944,7 +944,7 @@ const generarHTMLRecibo = (orden) => {
     </div>
 
     <div class="footer">
-      <p>📍 The Detailer | ⏰ Lunes-Viernes 8am-6pm</p>
+      <p>📍 The Detailer | ⏰ Lunes-Domingo 7am-6pm</p>
       <p>Gracias por confiar en nosotros 🙏</p>
       <p style="margin-top: 15px; font-size: 11px; color: #95a5a6;">
         Este recibo fue generado digitalmente. Para cualquier duda, contáctanos.
