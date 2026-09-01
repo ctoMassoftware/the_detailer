@@ -305,9 +305,24 @@ export const enviarNotificacionModificacion = async (telefono, nombreCliente, de
 
 export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}, credentials = null) => {
   // COMPACTO: 160 chars max (1 SMS)
-  const mensaje = `Recibo Mostrador\n${detallesRecibo}\nTotal: $${Number(total || 0).toLocaleString('es-CO')}`;
+  // Formato: "Recibo: [detalles]\nTotal: $[monto]"
+  const totalFormato = Number(total || 0).toLocaleString('es-CO');
+  let mensaje = `Recibo: ${detallesRecibo}\nTotal: $${totalFormato}`;
 
-  console.log(`📊 SMS Recibo - ${mensaje.length} chars (máx: 160)`);
+  // ✅ VALIDAR Y TRUNCAR si supera 160 chars
+  if (mensaje.length > 160) {
+    // Si es muy largo, usar versión ultra-compacta
+    const totalAbrev = Math.round(total / 1000) + 'K';
+    mensaje = `Compra registrada\nTotal: $${totalAbrev}`;
+  }
+
+  console.log(`📊 SMS Recibo - ${mensaje.length} chars (máx: 160) - Validado ✅`);
+
+  const validacion = validarSMS(mensaje);
+  if (!validacion.valid) {
+    console.error(`❌ ${validacion.error}`);
+    return { success: false, error: validacion.error };
+  }
 
   return sendViaSMS(telefono, mensaje, {
     type: 'recibo_mostrador',

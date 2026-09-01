@@ -59,9 +59,25 @@ export const registrarVentaMostrador = async (req, res) => {
 
         await client.query('COMMIT');
 
-        // 3. Disparar WhatsApp (No bloquea la respuesta si el API de Twilio demora)
+        // 3. Disparar SMS con Recibo (No bloquea la respuesta si la API demora)
         if (telefono_cliente) {
-            enviarReciboMostrador(cliente_nombre, telefono_cliente, sede, total, productos).catch(console.error);
+            // Formatear detalles de productos de forma compacta (≤160 chars)
+            const detallesCompacto = productos
+                .slice(0, 3)  // Máximo 3 productos
+                .map(p => `${p.nombre_producto.substring(0, 15)}(${p.cantidad})`)
+                .join(', ');
+
+            const detallesProductos = productos.length > 3
+                ? `${detallesCompacto}...`
+                : detallesCompacto;
+
+            enviarReciboMostrador(
+                telefono_cliente,      // ✓ Correcto: telefono primero
+                cliente_nombre,        // ✓ Correcto: nombreCliente
+                detallesProductos,     // ✓ Correcto: detalles de productos
+                total,
+                { sede, metodo_pago }  // ✓ Metadata adicional
+            ).catch(console.error);
         }
 
         res.status(201).json({ message: 'Venta registrada con éxito', id_venta: idVenta });

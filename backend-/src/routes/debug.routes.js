@@ -275,4 +275,344 @@ router.post('/test-sms3/:orderId', async (req, res) => {
   }
 });
 
+/**
+ * DEBUG: Ver últimos SMS enviados
+ * GET /api/debug/sms-log?limit=10
+ */
+router.get('/sms-log', async (req, res) => {
+  const { limit = 10 } = req.query;
+
+  try {
+    const result = await pool.query(`
+      SELECT
+        id_mensaje,
+        numero_telefono,
+        SUBSTRING(contenido_mensaje, 1, 80) as contenido_preview,
+        estado,
+        sid_twilio as subid_labsmobile,
+        tipo_notificacion,
+        error_detalles,
+        TO_CHAR(timestamp_envio, 'YYYY-MM-DD HH24:MI:SS') as fecha_envio
+      FROM mensaje_log
+      ORDER BY timestamp_envio DESC
+      LIMIT $1
+    `, [parseInt(limit)]);
+
+    res.json({
+      total: result.rows.length,
+      sms: result.rows
+    });
+
+  } catch (error) {
+    console.error('Error en debug/sms-log:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DEBUG: Ver credenciales LabsMobile en BD
+ * GET /api/debug/labsmobile-config
+ */
+router.get('/labsmobile-config', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        username,
+        SUBSTRING(api_token, 1, 10) || '...' as api_token_preview,
+        LENGTH(api_token) as token_length,
+        sender,
+        activo,
+        TO_CHAR(actualizado_at, 'YYYY-MM-DD HH24:MI:SS') as ultima_actualizacion
+      FROM config_labsmobile
+      WHERE activo = true
+      LIMIT 1
+    `);
+
+    if (result.rows.length === 0) {
+      return res.json({
+        error: 'No hay credenciales activas',
+        config: null
+      });
+    }
+
+    const config = result.rows[0];
+    res.json({
+      configurado: true,
+      config,
+      validacion: {
+        'Username presente': !!config.username,
+        'Token presente': config.token_length > 0,
+        'Sender configurado': !!config.sender,
+        'Activo': config.activo
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en debug/labsmobile-config:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DEBUG: Resumen de SMS por estado (últimas 24 horas)
+ * GET /api/debug/sms-stats
+ */
+router.get('/sms-stats', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        estado,
+        COUNT(*) as total,
+        ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 1) as porcentaje
+      FROM mensaje_log
+      WHERE timestamp_envio >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+      GROUP BY estado
+      ORDER BY total DESC
+    `);
+
+    res.json({
+      periodo: 'Últimas 24 horas',
+      estadisticas: result.rows
+    });
+
+  } catch (error) {
+    console.error('Error en debug/sms-stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DEBUG: Ver estructura de tablas relacionadas con mensajes
+ * GET /api/debug/db-structure
+ */
+router.get('/db-structure', async (req, res) => {
+  try {
+    // 1. Ver tablas que existen
+    const tablesResult = await pool.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+      AND (table_name LIKE '%mensaje%' OR table_name LIKE '%log%' OR table_name LIKE '%sms%' OR table_name LIKE '%config%')
+      ORDER BY table_name
+    `);
+
+    const tables = tablesResult.rows.map(r => r.table_name);
+
+    // 2. Para cada tabla, obtener columnas
+    const estructura = {};
+
+    for (const table of tables) {
+      const columnsResult = await pool.query(`
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = $1
+        ORDER BY ordinal_position
+      `, [table]);
+
+      estructura[table] = {
+        columnas: columnsResult.rows,
+        total_columnas: columnsResult.rows.length
+      };
+
+      // Obtener count de registros
+      const countResult = await pool.query(`SELECT COUNT(*) as total FROM ${table}`);
+      estructura[table].total_registros = parseInt(countResult.rows[0].total);
+    }
+
+    res.json({
+      tablas_encontradas: tables,
+      estructura,
+      diagnostico: {
+        'mensaje_log existe': tables.includes('mensaje_log'),
+        'mensaje_audit_log existe': tables.includes('mensaje_audit_log'),
+        'config_labsmobile existe': tables.includes('config_labsmobile'),
+        'total_tablas': tables.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en debug/db-structure:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DEBUG: Ver contenido de mensaje_log (últimos 20 registros)
+ * GET /api/debug/mensaje-log-content
+ */
+router.get('/mensaje-log-content', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM mensaje_log
+      ORDER BY timestamp_envio DESC
+      LIMIT 20
+    `);
+
+    res.json({
+      total: result.rows.length,
+      registros: result.rows
+    });
+
+  } catch (error) {
+    console.error('Error en debug/mensaje-log-content:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DEBUG: Ver contenido de config_labsmobile
+ * GET /api/debug/config-content
+ */
+router.get('/config-content', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM config_labsmobile
+      LIMIT 5
+    `);
+
+    res.json({
+      total: result.rows.length,
+      registros: result.rows.map(r => ({
+        ...r,
+        api_token: r.api_token ? r.api_token.substring(0, 20) + '...' : null
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error en debug/config-content:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DEBUG: Ver últimas ventas de mostrador (PUBLIC)
+ * GET /api/debug/ultimas-ventas
+ */
+router.get('/ultimas-ventas', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        v.id_venta,
+        v.cliente_nombre,
+        v.telefono_cliente,
+        v.metodo_pago,
+        v.total,
+        v.sede,
+        v.fecha,
+        v.hora,
+        u.nombre as vendedor,
+        COUNT(d.id_detalle) as items
+      FROM venta_mostrador v
+      LEFT JOIN usuarios u ON v.id_user_vendedor = u.id_user
+      LEFT JOIN detalle_venta_mostrador d ON v.id_venta = d.id_venta
+      GROUP BY v.id_venta, u.nombre
+      ORDER BY v.fecha DESC, v.hora DESC
+      LIMIT 10
+    `);
+
+    res.json({
+      total: result.rows.length,
+      ventas: result.rows
+    });
+
+  } catch (error) {
+    console.error('Error en debug/ultimas-ventas:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DEBUG: Ver detalles de una venta (PUBLIC)
+ * GET /api/debug/venta/:idVenta
+ */
+router.get('/venta/:idVenta', async (req, res) => {
+  const { idVenta } = req.params;
+
+  try {
+    // Datos de la venta
+    const ventaResult = await pool.query(`
+      SELECT * FROM venta_mostrador WHERE id_venta = $1
+    `, [idVenta]);
+
+    if (ventaResult.rows.length === 0) {
+      return res.status(404).json({ error: `Venta ${idVenta} no encontrada` });
+    }
+
+    const venta = ventaResult.rows[0];
+
+    // Detalles de la venta
+    const detallesResult = await pool.query(`
+      SELECT * FROM detalle_venta_mostrador WHERE id_venta = $1
+    `, [idVenta]);
+
+    // Buscar SMS enviados para esta venta
+    const smsResult = await pool.query(`
+      SELECT
+        id_mensaje,
+        numero_telefono,
+        contenido_mensaje,
+        estado,
+        sid_twilio,
+        tipo_notificacion,
+        error_detalles,
+        timestamp_envio
+      FROM mensaje_log
+      WHERE numero_telefono = $1
+      ORDER BY timestamp_envio DESC
+      LIMIT 5
+    `, [venta.telefono_cliente]);
+
+    res.json({
+      venta,
+      detalles: detallesResult.rows,
+      sms_enviados: {
+        total: smsResult.rows.length,
+        registros: smsResult.rows
+      },
+      diagnostico: {
+        'Venta registrada': !!venta.id_venta,
+        'Tiene teléfono': !!venta.telefono_cliente,
+        'SMS encontrados': smsResult.rows.length > 0,
+        'Primer SMS estado': smsResult.rows[0]?.estado || 'N/A'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en debug/venta:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DEBUG: Ver últimas órdenes (PUBLIC)
+ * GET /api/debug/ultimas-ordenes
+ */
+router.get('/ultimas-ordenes', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        id_orden,
+        nombre_cliente,
+        telefono_cliente,
+        placa_vehiculo,
+        estado,
+        fecha_creacion,
+        id_rifa,
+        id_boleta
+      FROM orden
+      ORDER BY fecha_creacion DESC
+      LIMIT 10
+    `);
+
+    res.json({
+      total: result.rows.length,
+      ordenes: result.rows
+    });
+
+  } catch (error) {
+    console.error('Error en debug/ultimas-ordenes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
