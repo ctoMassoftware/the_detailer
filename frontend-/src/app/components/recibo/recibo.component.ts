@@ -48,25 +48,25 @@ export class ReciboComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Combinar ambas subscripciones: route params + query params
-    this.route.params.subscribe(params => {
-      this.token = params['token'] || '';
+    // Obtener token y placa de query params (no route params)
+    this.route.queryParams.subscribe(queryParams => {
+      this.token = queryParams['token'] || '';
+      this.placa = queryParams['placa'] || '';
 
-      this.route.queryParams.subscribe(queryParams => {
-        this.placa = queryParams['placa'] || '';
-
-        // Cargar basado en token o placa
-        if (this.token) {
-          this.modo = 'token';
-          this.obtenerRecibo();
-        } else if (this.placa) {
-          this.modo = 'placa';
-          this.obtenerOrdenesPorPlaca();
-        } else {
-          this.error = 'Datos inválidos. Token o placa requerida.';
-          this.cargando = false;
-        }
-      });
+      // Cargar basado en token o placa
+      if (this.token) {
+        // Token: puede ser orden o venta de mostrador
+        this.modo = 'token';
+        this.obtenerRecibo();
+      } else if (this.placa) {
+        // Placa: solo para búsqueda de órdenes por placa
+        this.modo = 'placa';
+        this.obtenerOrdenesPorPlaca();
+      } else {
+        // Ni token ni placa
+        this.error = 'Datos inválidos. Token o placa requerida.';
+        this.cargando = false;
+      }
     });
   }
 
@@ -74,17 +74,22 @@ export class ReciboComponent implements OnInit {
     this.cargando = true;
     this.error = '';
 
-    const url = `${this.apiUrl}/datos/${this.token}?placa=${this.placa}`;
+    // Construir URL: placa es opcional (solo para órdenes)
+    let url = `${this.apiUrl}/datos/${this.token}`;
+    if (this.placa) {
+      url += `?placa=${this.placa}`;
+    }
     console.log('📥 Obteniendo recibo:', url);
 
     this.http.get(url)
       .subscribe(
         (response: any) => {
-          if (response.success && response.orden) {
-            this.orden = response.orden;
+          // Maneja ambos tipos: response.orden (para órdenes) y response.venta (para ventas)
+          if (response.success) {
+            this.orden = response.orden || response.venta;
             console.log('✓ Recibo cargado:', this.orden);
 
-            // ✅ Cargar datos de la rifa si la orden tiene id_rifa
+            // ✅ Cargar datos de la rifa si la orden tiene id_rifa (solo para órdenes de servicio)
             if (this.orden.id_rifa) {
               this.cargarRifaInfo(this.orden.id_rifa);
             }
