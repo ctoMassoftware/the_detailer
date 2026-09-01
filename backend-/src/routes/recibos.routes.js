@@ -771,14 +771,14 @@ const generarHTMLReciboVenta = (venta) => {
           </tr>
         </thead>
         <tbody>
-          ${venta.lista_productos.map(p => \`
+          ${venta.lista_productos.map(p => `
             <tr>
-              <td>\${p.producto}</td>
-              <td style="text-align: center;">\${p.cantidad}</td>
-              <td style="text-align: right;">$\${p.precio_unitario.toLocaleString('es-CO')}</td>
-              <td style="text-align: right;">$\${p.subtotal.toLocaleString('es-CO')}</td>
+              <td>${p.producto}</td>
+              <td style="text-align: center;">${p.cantidad}</td>
+              <td style="text-align: right;">$${p.precio_unitario.toLocaleString('es-CO')}</td>
+              <td style="text-align: right;">$${p.subtotal.toLocaleString('es-CO')}</td>
             </tr>
-          \`).join('')}
+          `).join('')}
           <tr class="total-row">
             <td colspan="3" style="text-align: right;">TOTAL:</td>
             <td style="text-align: right;">$${total.toLocaleString('es-CO')}</td>
