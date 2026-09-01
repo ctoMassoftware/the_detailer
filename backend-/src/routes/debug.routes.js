@@ -615,4 +615,74 @@ router.get('/ultimas-ordenes', async (req, res) => {
   }
 });
 
+/**
+ * DEBUG: Verificar estructura de tabla recibo_token
+ * GET /api/debug/recibo-token-structure
+ */
+router.get('/recibo-token-structure', async (req, res) => {
+  try {
+    // Verificar si tabla existe
+    const tableExists = await pool.query(`
+      SELECT EXISTS(
+        SELECT FROM information_schema.tables
+        WHERE table_name = 'recibo_token'
+      ) as existe
+    `);
+
+    if (!tableExists.rows[0].existe) {
+      return res.json({
+        error: 'Tabla recibo_token NO existe',
+        status: 'CRÍTICO'
+      });
+    }
+
+    // Obtener estructura de la tabla
+    const structure = await pool.query(`
+      SELECT
+        column_name,
+        data_type,
+        is_nullable,
+        column_default
+      FROM information_schema.columns
+      WHERE table_name = 'recibo_token'
+      ORDER BY ordinal_position
+    `);
+
+    // Verificar registros
+    const records = await pool.query(`
+      SELECT COUNT(*) as total FROM recibo_token
+    `);
+
+    // Verificar últimos registros
+    const latestRecords = await pool.query(`
+      SELECT
+        id,
+        id_orden,
+        id_venta,
+        token_hash,
+        creado_at,
+        expira_at,
+        activo
+      FROM recibo_token
+      ORDER BY creado_at DESC
+      LIMIT 5
+    `);
+
+    res.json({
+      status: 'OK',
+      tabla_existe: true,
+      columnas: structure.rows,
+      total_registros: records.rows[0].total,
+      ultimos_registros: latestRecords.rows
+    });
+
+  } catch (error) {
+    console.error('Error en debug/recibo-token-structure:', error);
+    res.status(500).json({
+      error: error.message,
+      detalle: error.toString()
+    });
+  }
+});
+
 export default router;
