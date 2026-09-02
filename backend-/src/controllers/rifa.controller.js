@@ -148,7 +148,7 @@ export const getTodasRifas = async (req, res) => {
 };
 
 export const registrarBoleta = async (req, res) => {
-  const { numero_boleta, nombre, telefono, placa_vehiculo, total_pagar, preferencia_recibo } = req.body;
+  const { numero_boleta, nombre, telefono, placa_vehiculo, total_pagar, preferencia_recibo, id_venta } = req.body;
 
   const numeroFormatted = numero_boleta.toString().padStart(3, '0');
 
@@ -202,22 +202,36 @@ export const registrarBoleta = async (req, res) => {
       );
 
       if (eventoInfo.rows.length > 0) {
-        // Buscar venta de mostrador reciente con este teléfono y nombre
-        const ventasResult = await client.query(
-          `SELECT id_venta FROM venta_mostrador
-           WHERE cliente_nombre = $1 AND telefono_cliente = $2
-           ORDER BY id_venta DESC LIMIT 1`,
-          [nombre, telefono]
-        );
+        let idVentaToUpdate = null;
 
-        if (ventasResult.rows.length > 0) {
-          const idVenta = ventasResult.rows[0].id_venta;
+        // Opción 1: Si viene id_venta en el body, usar ese
+        if (id_venta) {
+          idVentaToUpdate = id_venta;
+        } else {
+          // Opción 2: Buscar por nombre y teléfono (fallback)
+          const ventasResult = await client.query(
+            `SELECT id_venta FROM venta_mostrador
+             WHERE cliente_nombre = $1 AND telefono_cliente = $2
+             ORDER BY id_venta DESC LIMIT 1`,
+            [nombre, telefono]
+          );
+
+          if (ventasResult.rows.length > 0) {
+            idVentaToUpdate = ventasResult.rows[0].id_venta;
+          }
+        }
+
+        // Actualizar venta_mostrador si se encontró/proporcionó el id
+        if (idVentaToUpdate) {
           await client.query(
             `UPDATE venta_mostrador
              SET id_rifa = $1, id_boleta = $2, numero_rifa = $3, fecha_sorteo = $4
              WHERE id_venta = $5`,
-            [idEvento, idBoleta, numeroFormatted, eventoInfo.rows[0].fecha_sorteo, idVenta]
+            [idEvento, idBoleta, numeroFormatted, eventoInfo.rows[0].fecha_sorteo, idVentaToUpdate]
           );
+          console.log(`✅ Rifa actualizada en venta_mostrador ${idVentaToUpdate}`);
+        } else {
+          console.warn(`⚠️ No se encontró venta para actualizar rifa (nombre: ${nombre}, teléfono: ${telefono})`);
         }
       }
     }
