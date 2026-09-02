@@ -373,7 +373,8 @@ export class VentaMostrador implements OnInit {
             telefono: payloadVenta.telefono_cliente,
             placa_vehiculo: 'N/A',
             total_pagar: this.facturaActual.valorTotal,
-            preferencia_recibo: this.preferenciaRecibo
+            preferencia_recibo: this.preferenciaRecibo,
+            id_venta: res.id_venta
           };
 
           this.rifaService.registrarBoleta(boletaData).subscribe({
