@@ -220,27 +220,70 @@ export class ReciboComponent implements OnInit {
     if (!fecha) return 'N/A';
 
     // Limpia formatos malformados como "01T00:00:00.000Z/09/2026"
-    // Extrae la fecha del formato y devuelve DD/MM/YYYY
+    // Extrae la fecha del formato y devuelve DD/MM/AA
     if (fecha.includes('Z/')) {
       const parte = fecha.split('Z/')[1];
-      if (parte) return parte;
+      if (parte) {
+        // Convierte DD/MM/YYYY a DD/MM/AA
+        const [dia, mes, anio] = parte.split('/');
+        if (anio && anio.length === 4) {
+          return `${dia}/${mes}/${anio.slice(-2)}`;
+        }
+        return parte;
+      }
     }
 
-    // Formato YYYY-MM-DD: convierte a DD/MM/YYYY
+    // Formato YYYY-MM-DD: convierte a DD/MM/AA
     if (fecha.includes('-')) {
-      const [anio, mes, dia] = fecha.split('-');
-      if (anio && mes && dia) return `${dia}/${mes}/${anio}`;
+      const partes = fecha.split('T')[0].split('-');
+      if (partes.length === 3) {
+        const [anio, mes, dia] = partes;
+        if (anio && mes && dia) {
+          return `${dia}/${mes}/${anio.slice(-2)}`;
+        }
+      }
     }
 
     // Intenta parsear como fecha ISO
     try {
       const date = new Date(fecha);
       if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const dia = String(date.getDate()).padStart(2, '0');
+        const mes = String(date.getMonth() + 1).padStart(2, '0');
+        const anio = String(date.getFullYear()).slice(-2);
+        return `${dia}/${mes}/${anio}`;
       }
     } catch (e) {}
 
     return fecha || 'N/A';
+  }
+
+  obtenerHora(hora: string | undefined): string {
+    if (!hora) return '';
+
+    // Si es un timestamp ISO (2024-01-15T14:30:45.123Z)
+    if (hora.includes('T')) {
+      try {
+        const date = new Date(hora);
+        if (!isNaN(date.getTime())) {
+          const horas = String(date.getHours()).padStart(2, '0');
+          const minutos = String(date.getMinutes()).padStart(2, '0');
+          return `${horas}:${minutos}`;
+        }
+      } catch (e) {}
+    }
+
+    // Si es un formato HH:MM:SS o HH:MM:SS.mmm
+    if (hora.includes(':')) {
+      const partes = hora.split(':');
+      if (partes.length >= 2) {
+        const horas = partes[0].padStart(2, '0');
+        const minutos = partes[1].padStart(2, '0');
+        return `${horas}:${minutos}`;
+      }
+    }
+
+    return '';
   }
 
   obtenerTotal(servicios: any[]): number {

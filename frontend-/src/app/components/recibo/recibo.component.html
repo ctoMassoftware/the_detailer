@@ -86,7 +86,7 @@
 
       <div class="info-box">
         <strong>📅 Fecha de Servicio</strong>
-        <p>{{ obtenerFecha(orden.fecha) }} {{ orden.hora ? '⏰ ' + orden.hora : '' }}</p>
+        <p>{{ obtenerFecha(orden.fecha) }} {{ obtenerHora(orden.hora) ? '⏰ ' + obtenerHora(orden.hora) : '' }}</p>
       </div>
 
       <div class="info-box">
@@ -238,7 +238,7 @@
 
       <div class="info-box">
         <strong>📅 Fecha de Compra</strong>
-        <p>{{ obtenerFecha(orden.fecha) }} {{ orden.hora ? '⏰ ' + orden.hora : '' }}</p>
+        <p>{{ obtenerFecha(orden.fecha) }} {{ obtenerHora(orden.hora) ? '⏰ ' + obtenerHora(orden.hora) : '' }}</p>
       </div>
 
       <div class="info-box">
