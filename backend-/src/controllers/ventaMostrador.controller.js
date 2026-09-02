@@ -15,6 +15,12 @@ export const registrarVentaMostrador = async (req, res) => {
       return res.status(400).json({ error: '❌ Teléfono del cliente es requerido para registrar la venta' });
     }
 
+    // Validar formato de teléfono (solo números, mínimo 10 dígitos)
+    const telefonoLimpio = telefono_cliente.toString().replace(/\D/g, '');
+    if (telefonoLimpio.length < 10) {
+      return res.status(400).json({ error: '❌ Teléfono debe tener al menos 10 dígitos válidos' });
+    }
+
     if (!productos || productos.length === 0) {
       return res.status(400).json({ error: '❌ Debe seleccionar al menos un producto' });
     }

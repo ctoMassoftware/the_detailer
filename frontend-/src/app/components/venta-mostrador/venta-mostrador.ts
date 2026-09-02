@@ -134,6 +134,19 @@ export class VentaMostrador implements OnInit {
   mensajeAlerta: string = '';
   tipoAlerta: 'success' | 'error' | 'confirm' = 'success';
 
+  telefonoValido = false;
+
+  // Validar formato de teléfono (10+ dígitos)
+  validarTelefono(valor: string): boolean {
+    const telefonoLimpio = valor.replace(/\D/g, '');
+    return telefonoLimpio.length >= 10;
+  }
+
+  onTelefonoChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.telefonoValido = this.validarTelefono(input.value);
+  }
+
   ngOnInit() {
     this.cargarProductos();
     this.cargarRifaActiva();

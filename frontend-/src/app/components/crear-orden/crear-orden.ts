@@ -24,6 +24,18 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
   private rifaService = inject(RifaService);
 
   rifaActiva: any = null;
+  telefonoValido = false;
+
+  // Validar formato de teléfono (10+ dígitos)
+  validarTelefono(valor: string): boolean {
+    const telefonoLimpio = valor.replace(/\D/g, '');
+    return telefonoLimpio.length >= 10;
+  }
+
+  onTelefonoChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.telefonoValido = this.validarTelefono(input.value);
+  }
 
     // --- Autocompletar clientes/placas para el input de nombre_cliente ---
     sugerenciasClientes: any[] = [];

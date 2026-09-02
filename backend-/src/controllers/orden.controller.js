@@ -96,6 +96,12 @@ export const createOrden = async (req, res) => {
     return res.status(400).json({ error: '❌ Teléfono del cliente es requerido para registrar la orden' });
   }
 
+  // Validar formato de teléfono (solo números, mínimo 10 dígitos)
+  const telefonoLimpio = telefono_cliente.toString().replace(/\D/g, '');
+  if (telefonoLimpio.length < 10) {
+    return res.status(400).json({ error: '❌ Teléfono debe tener al menos 10 dígitos válidos' });
+  }
+
   if (!placa_vehiculo || !placa_vehiculo.trim()) {
     return res.status(400).json({ error: '❌ Placa del vehículo es requerida' });
   }
