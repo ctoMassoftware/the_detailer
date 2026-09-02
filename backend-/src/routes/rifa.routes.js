@@ -70,6 +70,61 @@ router.post('/debug/reparar', async (req, res) => {
   }
 });
 
+// 🔧 Endpoint para migrar órdenes de rifas inactivas a la rifa activa
+router.post('/debug/migrar-ordenes', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Obtener la rifa activa
+    const rifaActiva = await client.query('SELECT id_evento FROM evento_rifa WHERE estado = true LIMIT 1');
+    if (rifaActiva.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'No hay rifa activa' });
+    }
+
+    const idRifaActiva = rifaActiva.rows[0].id_evento;
+
+    // Migrar órdenes de servicio que usan rifas inactivas
+    const ordenesActualizadas = await client.query(
+      `UPDATE public.orden
+       SET id_rifa = $1
+       WHERE id_rifa IS NOT NULL
+       AND id_rifa != $1
+       AND id_rifa IN (SELECT id_evento FROM evento_rifa WHERE estado = false)
+       RETURNING id_orden, id_rifa`,
+      [idRifaActiva]
+    );
+
+    // Migrar ventas de mostrador que usan rifas inactivas
+    const ventasActualizadas = await client.query(
+      `UPDATE venta_mostrador
+       SET id_rifa = $1
+       WHERE id_rifa IS NOT NULL
+       AND id_rifa != $1
+       AND id_rifa IN (SELECT id_evento FROM evento_rifa WHERE estado = false)
+       RETURNING id_venta, id_rifa`,
+      [idRifaActiva]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      mensaje: 'Órdenes y ventas migradas a rifa activa',
+      ordenesActualizadas: ordenesActualizadas.rowCount,
+      ventasActualizadas: ventasActualizadas.rowCount,
+      rifaActiva: idRifaActiva
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error migrando órdenes:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 router.post('/crear', verifyToken, crearRifa);
 router.get('/activa', verifyToken, getRifaActiva);
 router.get('/historial', verifyToken, getTodasRifas);
