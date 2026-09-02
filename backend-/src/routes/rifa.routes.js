@@ -170,10 +170,12 @@ router.post('/debug/asignar-boleta-venta/:id_venta/:numero_boleta', async (req, 
 
     await client.query('BEGIN');
 
-    // Obtener la boleta
+    // Obtener la boleta y fecha_sorteo del evento
     const boletaRes = await client.query(
-      `SELECT id_boleta, id_evento_rifa, fecha_sorteo FROM rifa
-       WHERE numero_boleta = $1 AND id_evento_rifa IN (SELECT id_evento FROM evento_rifa WHERE estado = true)`,
+      `SELECT r.id_boleta, r.id_evento_rifa, e.fecha_sorteo
+       FROM rifa r
+       JOIN evento_rifa e ON r.id_evento_rifa = e.id_evento
+       WHERE r.numero_boleta = $1 AND e.estado = true`,
       [numeroFormatted]
     );
 
