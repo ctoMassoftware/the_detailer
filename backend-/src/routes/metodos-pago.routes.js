@@ -68,6 +68,15 @@ router.get('/nombre/:nombre', async (req, res) => {
  */
 router.get('/', verifyToken, async (req, res) => {
   try {
+    const userRole = req.user?.rol?.toUpperCase() || '';
+
+    if (!['SUPER_ADMIN', 'ADMIN', 'ADMIN_SEDE'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'No tienes permisos para acceder a esta sección'
+      });
+    }
+
     const result = await pool.query(
       `SELECT id_metodo, nombre, descripcion, activo, orden
        FROM metodos_pago
@@ -80,7 +89,10 @@ router.get('/', verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error obteniendo métodos de pago:', error);
-    res.status(500).json({ error: 'Error obteniendo métodos de pago' });
+    res.status(500).json({
+      success: false,
+      error: 'Error obteniendo métodos de pago'
+    });
   }
 });
 
@@ -90,11 +102,31 @@ router.get('/', verifyToken, async (req, res) => {
  */
 router.put('/:id', verifyToken, async (req, res) => {
   try {
+    const userRole = req.user?.rol?.toUpperCase() || '';
+
+    if (!['SUPER_ADMIN', 'ADMIN', 'ADMIN_SEDE'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'No tienes permisos para modificar métodos de pago'
+      });
+    }
+
     const { id } = req.params;
     const { activo } = req.body;
 
     if (typeof activo !== 'boolean') {
-      return res.status(400).json({ error: 'activo debe ser boolean' });
+      return res.status(400).json({
+        success: false,
+        error: 'El parámetro activo debe ser un valor booleano (true o false)'
+      });
+    }
+
+    const idNum = parseInt(id, 10);
+    if (isNaN(idNum)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID de método de pago inválido'
+      });
     }
 
     const result = await pool.query(
@@ -102,21 +134,27 @@ router.put('/:id', verifyToken, async (req, res) => {
        SET activo = $1, fecha_actualizacion = CURRENT_TIMESTAMP
        WHERE id_metodo = $2
        RETURNING *`,
-      [activo, id]
+      [activo, idNum]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Método de pago no encontrado' });
+      return res.status(404).json({
+        success: false,
+        error: 'Método de pago no encontrado'
+      });
     }
 
     res.json({
       success: true,
-      mensaje: `Método de pago ${activo ? 'activado' : 'desactivado'}`,
+      mensaje: `Método de pago ${activo ? 'activado' : 'desactivado'} exitosamente`,
       metodo: result.rows[0]
     });
   } catch (error) {
     console.error('Error actualizando método de pago:', error);
-    res.status(500).json({ error: 'Error actualizando método de pago' });
+    res.status(500).json({
+      success: false,
+      error: 'Error al actualizar el método de pago. Por favor, intenta más tarde.'
+    });
   }
 });
 

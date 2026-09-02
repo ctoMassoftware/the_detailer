@@ -15,15 +15,15 @@ import Swal from 'sweetalert2';
     <main class="main-content">
       <div class="content-wrapper">
         <header class="page-header">
-          <h1 class="page-title">⚙️ Configurar Métodos de Pago</h1>
+          <h1 class="page-title">Configurar Métodos de Pago</h1>
         </header>
 
         <div class="info-card">
           <p>Selecciona qué métodos de pago deseas aceptar en tu negocio.</p>
         </div>
 
-        <div class="methods-container" *ngIf="metodos.length > 0; else cargando">
-          <div class="method-item" *ngFor="let metodo of metodos">
+        <div class="methods-container" *ngIf="metodos.length > 0; else estado">
+          <div class="method-item" *ngFor="let metodo of metodos" [class.loading]="metodosCargando[metodo.id_metodo]">
             <div class="method-info">
               <h3>{{ metodo.nombre }}</h3>
               <p *ngIf="metodo.descripcion">{{ metodo.descripcion }}</p>
@@ -35,28 +35,42 @@ import Swal from 'sweetalert2';
                   type="checkbox"
                   [checked]="metodo.activo"
                   (change)="toggleMetodo(metodo)"
-                  [disabled]="cargando"
+                  [disabled]="metodosCargando[metodo.id_metodo] || cargando"
                 >
                 <span class="slider" [ngClass]="{'active': metodo.activo}"></span>
               </label>
               <span class="status" [ngClass]="{'active': metodo.activo}">
-                {{ metodo.activo ? '✅ Activo' : '❌ Inactivo' }}
+                {{ metodo.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+              <span *ngIf="metodosCargando[metodo.id_metodo]" class="loading-spinner">
+                Actualizando...
               </span>
             </div>
           </div>
         </div>
 
-        <ng-template #cargando>
-          <div class="loading">
+        <ng-template #estado>
+          <div class="loading" *ngIf="cargando; else sinDatos">
             <p>Cargando métodos de pago...</p>
           </div>
+          <div class="error" *ngIf="!cargando && error">
+            <p>{{ error }}</p>
+            <button (click)="cargarMetodos()" class="retry-btn">Intentar nuevamente</button>
+          </div>
+          <ng-template #sinDatos>
+            <div class="empty" *ngIf="!cargando">
+              <p>No hay métodos de pago disponibles</p>
+            </div>
+          </ng-template>
         </ng-template>
       </div>
     </main>
   `,
   styles: [`
     .main-content {
-      padding: 2rem;
+      padding: 2rem 1rem;
+      background: #f5f7fa;
+      min-height: 100vh;
     }
 
     .content-wrapper {
@@ -69,17 +83,22 @@ import Swal from 'sweetalert2';
     }
 
     .page-title {
-      font-size: 2rem;
-      color: #2c3e50;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #1a1a1a;
       margin: 0;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #007bff;
     }
 
     .info-card {
-      background: #e3f2fd;
-      border-left: 4px solid #2196f3;
+      background: #e7f3ff;
+      border-left: 4px solid #007bff;
       padding: 1rem;
-      border-radius: 4px;
+      border-radius: 6px;
       margin-bottom: 2rem;
+      color: #0052cc;
+      font-size: 0.95rem;
     }
 
     .methods-container {
@@ -90,42 +109,49 @@ import Swal from 'sweetalert2';
 
     .method-item {
       background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
       padding: 1.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      transition: box-shadow 0.3s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
     }
 
-    .method-item:hover {
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    .method-item:hover:not(.loading) {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: #007bff;
+    }
+
+    .method-item.loading {
+      opacity: 0.6;
+      pointer-events: none;
     }
 
     .method-info h3 {
       margin: 0 0 0.5rem 0;
-      color: #2c3e50;
-      font-size: 1.2rem;
+      color: #1a1a1a;
+      font-size: 1.1rem;
+      font-weight: 600;
     }
 
     .method-info p {
       margin: 0;
-      color: #7f8c8d;
-      font-size: 0.9rem;
+      color: #666;
+      font-size: 0.85rem;
     }
 
     .method-toggle {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 1.5rem;
     }
 
     .switch {
       position: relative;
       display: inline-block;
-      width: 50px;
+      width: 48px;
       height: 24px;
     }
 
@@ -143,7 +169,7 @@ import Swal from 'sweetalert2';
       right: 0;
       bottom: 0;
       background-color: #ccc;
-      transition: 0.4s;
+      transition: 0.3s;
       border-radius: 24px;
     }
 
@@ -155,51 +181,108 @@ import Swal from 'sweetalert2';
       left: 3px;
       bottom: 3px;
       background-color: white;
-      transition: 0.4s;
+      transition: 0.3s;
       border-radius: 50%;
     }
 
     input:checked + .slider {
-      background-color: #27ae60;
+      background-color: #28a745;
     }
 
     input:checked + .slider:before {
-      transform: translateX(26px);
+      transform: translateX(24px);
+    }
+
+    input:disabled + .slider {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .slider.active {
-      background-color: #27ae60;
+      background-color: #28a745;
     }
 
     .status {
       font-weight: 600;
-      min-width: 120px;
+      min-width: 80px;
       text-align: right;
+      font-size: 0.9rem;
     }
 
     .status.active {
-      color: #27ae60;
+      color: #28a745;
     }
 
     .status:not(.active) {
-      color: #e74c3c;
+      color: #dc3545;
     }
 
-    .loading {
+    .loading-spinner {
+      font-size: 0.8rem;
+      color: #007bff;
+      min-width: 120px;
+      text-align: right;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .loading, .error, .empty {
       text-align: center;
-      padding: 2rem;
-      color: #7f8c8d;
+      padding: 3rem 1rem;
+      background: white;
+      border-radius: 6px;
+      color: #666;
+    }
+
+    .loading p, .error p, .empty p {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .error {
+      border: 1px solid #dc3545;
+      background: #fff5f7;
+      color: #721c24;
+    }
+
+    .retry-btn {
+      margin-top: 1rem;
+      padding: 0.5rem 1.5rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.3s;
+    }
+
+    .retry-btn:hover {
+      background: #0056b3;
     }
 
     @media (max-width: 600px) {
       .method-item {
         flex-direction: column;
         gap: 1rem;
+        align-items: flex-start;
       }
 
       .method-toggle {
         width: 100%;
         justify-content: space-between;
+      }
+
+      .page-title {
+        font-size: 1.5rem;
+      }
+
+      .status {
+        text-align: left;
       }
     }
   `]
@@ -209,6 +292,8 @@ export class AdminMetodosPagoComponent implements OnInit {
 
   metodos: any[] = [];
   cargando = false;
+  error: string | null = null;
+  metodosCargando: { [key: number]: boolean } = {};
 
   ngOnInit(): void {
     this.cargarMetodos();
@@ -216,15 +301,19 @@ export class AdminMetodosPagoComponent implements OnInit {
 
   cargarMetodos(): void {
     this.cargando = true;
+    this.error = null;
     this.metodosPagoService.getMetodos().subscribe({
       next: (response: any) => {
         this.metodos = response.metodos || [];
         this.cargando = false;
+        if (this.metodos.length === 0) {
+          this.error = 'No hay métodos de pago disponibles';
+        }
       },
-      error: (err) => {
-        console.error('Error cargando métodos:', err);
-        Swal.fire('Error', 'No se pudieron cargar los métodos de pago', 'error');
+      error: (err: any) => {
         this.cargando = false;
+        this.error = 'No se pudieron cargar los métodos de pago. Por favor, intenta nuevamente.';
+        console.error('Error cargando métodos:', err);
       }
     });
   }
@@ -241,29 +330,32 @@ export class AdminMetodosPagoComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        console.log(`📍 Toggle solicitado para: ${metodo.nombre} (ID: ${metodo.id_metodo})`);
+        this.metodosCargando[metodo.id_metodo] = true;
+
         if (!metodo.activo) {
           this.metodosPagoService.activarMetodo(metodo.id_metodo).subscribe({
             next: () => {
-              console.log(`✅ Activación exitosa`);
               metodo.activo = true;
+              this.metodosCargando[metodo.id_metodo] = false;
               Swal.fire('Éxito', `${metodo.nombre} ha sido activado`, 'success');
             },
             error: (err: any) => {
-              console.error('❌ Error activando:', err);
-              Swal.fire('Error', `No se pudo activar el método de pago: ${err.message}`, 'error');
+              this.metodosCargando[metodo.id_metodo] = false;
+              const errorMsg = err?.error?.error || 'Error desconocido';
+              Swal.fire('Error', `No se pudo activar: ${errorMsg}`, 'error');
             }
           });
         } else {
           this.metodosPagoService.desactivarMetodo(metodo.id_metodo).subscribe({
             next: () => {
-              console.log(`✅ Desactivación exitosa`);
               metodo.activo = false;
+              this.metodosCargando[metodo.id_metodo] = false;
               Swal.fire('Éxito', `${metodo.nombre} ha sido desactivado`, 'success');
             },
             error: (err: any) => {
-              console.error('❌ Error desactivando:', err);
-              Swal.fire('Error', `No se pudo desactivar el método de pago: ${err.message}`, 'error');
+              this.metodosCargando[metodo.id_metodo] = false;
+              const errorMsg = err?.error?.error || 'Error desconocido';
+              Swal.fire('Error', `No se pudo desactivar: ${errorMsg}`, 'error');
             }
           });
         }

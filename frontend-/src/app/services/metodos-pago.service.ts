@@ -36,28 +36,16 @@ export class MetodosPagoService {
   }
 
   activarMetodo(id: number): Observable<any> {
-    console.log(`🔄 Activando método ${id}...`);
-    return this.http.put(
-      `${this.apiUrl}/${id}`,
-      { activo: true },
-      { withCredentials: true }
-    ).pipe(
+    return this.http.put(`${this.apiUrl}/${id}`, { activo: true }).pipe(
       tap((response) => {
-        console.log(`✅ Método ${id} activado:`, response);
         this.cargarMetodosActivos();
       })
     );
   }
 
   desactivarMetodo(id: number): Observable<any> {
-    console.log(`🔄 Desactivando método ${id}...`);
-    return this.http.put(
-      `${this.apiUrl}/${id}`,
-      { activo: false },
-      { withCredentials: true }
-    ).pipe(
+    return this.http.put(`${this.apiUrl}/${id}`, { activo: false }).pipe(
       tap((response) => {
-        console.log(`✅ Método ${id} desactivado:`, response);
         this.cargarMetodosActivos();
       })
     );
