@@ -49,27 +49,29 @@ router.post('/debug/asignar-boletas-huerfanas', async (req, res) => {
     for (const venta of ventasHuerfanas.rows) {
       // ESTRATEGIA 1: Buscar por nombre exacto + teléfono + placa N/A
       let boletaRes = await client.query(
-        `SELECT id_boleta, numero_boleta, fecha_sorteo
-         FROM rifa
-         WHERE id_evento_rifa = $1
-         AND nombre ILIKE $2
-         AND telefono = $3
-         AND placa_vehiculo = 'N/A'
-         AND id_boleta NOT IN (SELECT id_boleta FROM venta_mostrador WHERE id_boleta IS NOT NULL)
-         ORDER BY id_boleta DESC LIMIT 1`,
+        `SELECT r.id_boleta, r.numero_boleta, e.fecha_sorteo
+         FROM rifa r
+         JOIN evento_rifa e ON r.id_evento_rifa = e.id_evento
+         WHERE r.id_evento_rifa = $1
+         AND r.nombre ILIKE $2
+         AND r.telefono = $3
+         AND r.placa_vehiculo = 'N/A'
+         AND r.id_boleta NOT IN (SELECT id_boleta FROM venta_mostrador WHERE id_boleta IS NOT NULL)
+         ORDER BY r.id_boleta DESC LIMIT 1`,
         [idEvento, venta.cliente_nombre, venta.telefono_cliente]
       );
 
       // ESTRATEGIA 2: Si no encuentra, buscar por teléfono + placa N/A (más flexible con nombres)
       if (boletaRes.rows.length === 0) {
         boletaRes = await client.query(
-          `SELECT id_boleta, numero_boleta, fecha_sorteo
-           FROM rifa
-           WHERE id_evento_rifa = $1
-           AND telefono = $2
-           AND placa_vehiculo = 'N/A'
-           AND id_boleta NOT IN (SELECT id_boleta FROM venta_mostrador WHERE id_boleta IS NOT NULL)
-           ORDER BY id_boleta DESC LIMIT 1`,
+          `SELECT r.id_boleta, r.numero_boleta, e.fecha_sorteo
+           FROM rifa r
+           JOIN evento_rifa e ON r.id_evento_rifa = e.id_evento
+           WHERE r.id_evento_rifa = $1
+           AND r.telefono = $2
+           AND r.placa_vehiculo = 'N/A'
+           AND r.id_boleta NOT IN (SELECT id_boleta FROM venta_mostrador WHERE id_boleta IS NOT NULL)
+           ORDER BY r.id_boleta DESC LIMIT 1`,
           [idEvento, venta.telefono_cliente]
         );
       }
@@ -77,12 +79,13 @@ router.post('/debug/asignar-boletas-huerfanas', async (req, res) => {
       // ESTRATEGIA 3: Si aún no encuentra, buscar cualquier boleta disponible para ese cliente
       if (boletaRes.rows.length === 0) {
         boletaRes = await client.query(
-          `SELECT id_boleta, numero_boleta, fecha_sorteo
-           FROM rifa
-           WHERE id_evento_rifa = $1
-           AND placa_vehiculo = 'N/A'
-           AND id_boleta NOT IN (SELECT id_boleta FROM venta_mostrador WHERE id_boleta IS NOT NULL)
-           ORDER BY id_boleta ASC LIMIT 1`,
+          `SELECT r.id_boleta, r.numero_boleta, e.fecha_sorteo
+           FROM rifa r
+           JOIN evento_rifa e ON r.id_evento_rifa = e.id_evento
+           WHERE r.id_evento_rifa = $1
+           AND r.placa_vehiculo = 'N/A'
+           AND r.id_boleta NOT IN (SELECT id_boleta FROM venta_mostrador WHERE id_boleta IS NOT NULL)
+           ORDER BY r.id_boleta ASC LIMIT 1`,
           [idEvento]
         );
       }
