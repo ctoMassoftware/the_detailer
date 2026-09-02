@@ -214,9 +214,11 @@ export const registrarBoleta = async (req, res) => {
     const result = await client.query(insertQuery, [idEvento, numeroFormatted, nombre, telefono, placa_vehiculo]);
     const idBoleta = result.rows[0].id_boleta;
     console.log(`✅ Boleta insertada en tabla rifa: id_boleta=${idBoleta}, numero=${numeroFormatted}`);
+    console.log(`[TRANSACCIÓN BOLETA] Evaluando placa_vehiculo: valor="${placa_vehiculo}" (tipo: ${typeof placa_vehiculo}, es "N/A"? ${placa_vehiculo === 'N/A'})`);
 
     // Si es una venta de mostrador (placa_vehiculo === 'N/A'), actualizar venta_mostrador con datos de rifa
     if (placa_vehiculo === 'N/A') {
+      console.log(`[TRANSACCIÓN BOLETA] ✅ Condición TRUE - Proceediendo con UPDATE a venta_mostrador para id_venta=${id_venta}`);
       const eventoInfo = await client.query(
         'SELECT fecha_sorteo FROM evento_rifa WHERE id_evento = $1',
         [idEvento]
