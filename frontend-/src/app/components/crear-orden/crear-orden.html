@@ -309,7 +309,7 @@
       </section>
 
       <div class="actions">
-        <button class="btn-create" (click)="guardarOrden()" [disabled]="cargandoOrden">
+        <button class="btn-create" (click)="guardarOrden()" [disabled]="cargandoOrden || !telefonoValido || !datosOrden.telefono_cliente">
           <span *ngIf="!cargandoOrden" class="material-symbols-outlined">add_circle</span>
           <span *ngIf="cargandoOrden" class="material-symbols-outlined spinner-icon">progress_circle</span>
           {{ cargandoOrden ? 'Guardando...' : 'Crear Orden' }}
