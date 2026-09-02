@@ -54,6 +54,34 @@ router.get('/health', (req, res) => {
 });
 
 /**
+ * DEBUG: Ver todas las boletas para un cliente
+ * GET /api/recibos/boletas-cliente/:nombre/:telefono
+ */
+router.get('/boletas-cliente/:nombre/:telefono', async (req, res) => {
+  try {
+    const { nombre, telefono } = req.params;
+
+    const result = await pool.query(
+      `SELECT r.id_boleta, r.numero_boleta, r.nombre, r.telefono, r.placa_vehiculo, r.id_evento_rifa, r.created_at
+       FROM rifa r
+       WHERE r.nombre = $1 AND r.telefono = $2
+       ORDER BY r.id_boleta DESC`,
+      [nombre, telefono]
+    );
+
+    res.json({
+      success: true,
+      cliente: { nombre, telefono },
+      boletas: result.rows,
+      total: result.rows.length
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Error al consultar boletas' });
+  }
+});
+
+/**
  * MIGRACIÓN: Actualizar boletas existentes en venta_mostrador
  * POST /api/recibos/migrar-boletas
  * Busca boletas existentes y actualiza venta_mostrador con esos datos
