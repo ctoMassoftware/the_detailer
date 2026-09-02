@@ -591,7 +591,19 @@ router.get('/datos/:token', async (req, res) => {
       // VENTA DE MOSTRADOR
       result = await pool.query(
         `SELECT
-          v.*,
+          v.id_venta,
+          v.cliente_nombre,
+          v.telefono_cliente,
+          v.metodo_pago,
+          v.total,
+          v.sede,
+          v.id_user_vendedor,
+          v.fecha,
+          v.hora,
+          v.id_rifa,
+          v.numero_rifa,
+          v.id_boleta,
+          v.fecha_sorteo,
           COALESCE(SUM(d.cantidad_vendida * d.precio_unitario), 0) as total_venta,
           COALESCE(
             json_agg(
