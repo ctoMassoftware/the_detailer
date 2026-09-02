@@ -150,6 +150,19 @@ export const getTodasRifas = async (req, res) => {
 export const registrarBoleta = async (req, res) => {
   const { numero_boleta, nombre, telefono, placa_vehiculo, total_pagar, preferencia_recibo, id_venta } = req.body;
 
+  // ✅ VALIDACIONES CRÍTICAS
+  if (!nombre || !nombre.trim()) {
+    return res.status(400).json({ error: '❌ Nombre del cliente es requerido para registrar boleta' });
+  }
+
+  if (!telefono || !telefono.toString().trim()) {
+    return res.status(400).json({ error: '❌ Teléfono del cliente es requerido para registrar boleta' });
+  }
+
+  if (!numero_boleta) {
+    return res.status(400).json({ error: '❌ Número de boleta es requerido' });
+  }
+
   const numeroFormatted = numero_boleta.toString().padStart(3, '0');
 
   const client = await pool.connect();

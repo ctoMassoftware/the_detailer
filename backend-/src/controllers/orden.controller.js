@@ -87,6 +87,23 @@ export const createOrden = async (req, res) => {
     servicios: servicios?.length, estado: req.body.estado
   })}`);
 
+  // ✅ VALIDACIONES CRÍTICAS
+  if (!nombre_cliente || !nombre_cliente.trim()) {
+    return res.status(400).json({ error: '❌ Nombre del cliente es requerido' });
+  }
+
+  if (!telefono_cliente || !telefono_cliente.toString().trim()) {
+    return res.status(400).json({ error: '❌ Teléfono del cliente es requerido para registrar la orden' });
+  }
+
+  if (!placa_vehiculo || !placa_vehiculo.trim()) {
+    return res.status(400).json({ error: '❌ Placa del vehículo es requerida' });
+  }
+
+  if (!servicios || servicios.length === 0) {
+    return res.status(400).json({ error: '❌ Debe seleccionar al menos un servicio' });
+  }
+
   const sedeFinal = rol === "SUPER_ADMIN" && sede ? sede : sedeUsuario || "GLOBAL";
   const client = await pool.connect();
 

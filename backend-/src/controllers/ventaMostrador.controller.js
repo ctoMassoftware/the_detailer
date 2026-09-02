@@ -6,6 +6,23 @@ export const registrarVentaMostrador = async (req, res) => {
     const { id: id_user_vendedor, sede } = req.user;
     const { cliente_nombre, telefono_cliente, metodo_pago, total, productos, id_rifa } = req.body;
 
+    // ✅ VALIDACIONES CRÍTICAS
+    if (!cliente_nombre || !cliente_nombre.trim()) {
+      return res.status(400).json({ error: '❌ Nombre del cliente es requerido' });
+    }
+
+    if (!telefono_cliente || !telefono_cliente.toString().trim()) {
+      return res.status(400).json({ error: '❌ Teléfono del cliente es requerido para registrar la venta' });
+    }
+
+    if (!productos || productos.length === 0) {
+      return res.status(400).json({ error: '❌ Debe seleccionar al menos un producto' });
+    }
+
+    if (!total || total <= 0) {
+      return res.status(400).json({ error: '❌ El total debe ser mayor a 0' });
+    }
+
     const client = await pool.connect();
 
     try {

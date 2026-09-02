@@ -19,6 +19,110 @@ import { pool } from '../config/db.js';
 
 const router = Router();
 
+// 🧪 Pruebas internas de validaciones
+router.post('/debug/test-validaciones', async (req, res) => {
+  const resultados = {
+    prueba_1_orden_sin_telefono: { resultado: 'PENDIENTE', mensaje: '' },
+    prueba_2_venta_sin_telefono: { resultado: 'PENDIENTE', mensaje: '' },
+    prueba_3_boleta_sin_telefono: { resultado: 'PENDIENTE', mensaje: '' },
+    resumen: ''
+  };
+
+  // Prueba 1: Intentar crear orden sin teléfono (debe fallar)
+  try {
+    const res1 = await fetch('http://localhost:3000/api/ordenes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer test' },
+      body: JSON.stringify({
+        nombre_cliente: 'Test Client',
+        telefono_cliente: '', // VACÍO - debe fallar
+        placa_vehiculo: 'ABC123',
+        marca_vehiculo: 'Toyota',
+        modelo_vehiculo: 'Corolla',
+        tipo_vehiculo: 'auto',
+        servicios: [{ id_servicio: 1, cantidad: 1, precio: 50000 }]
+      })
+    });
+    const data1 = await res1.json();
+    if (res1.status === 400 && data1.error.includes('Teléfono')) {
+      resultados.prueba_1_orden_sin_telefono = {
+        resultado: '✅ PASÓ',
+        mensaje: 'Sistema rechaza orden sin teléfono correctamente'
+      };
+    } else {
+      resultados.prueba_1_orden_sin_telefono = {
+        resultado: '❌ FALLÓ',
+        mensaje: `Esperaba error por teléfono vacío, recibió: ${data1.error}`
+      };
+    }
+  } catch (e) {
+    resultados.prueba_1_orden_sin_telefono = { resultado: '⚠️ ERROR', mensaje: e.message };
+  }
+
+  // Prueba 2: Intentar crear venta sin teléfono (debe fallar)
+  try {
+    const res2 = await fetch('http://localhost:3000/api/venta-mostrador', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer test' },
+      body: JSON.stringify({
+        cliente_nombre: 'Test Client',
+        telefono_cliente: '', // VACÍO - debe fallar
+        metodo_pago: 'Efectivo',
+        total: 50000,
+        productos: [{ id_producto_venta: 1, cantidad: 1, precio_venta: 50000 }]
+      })
+    });
+    const data2 = await res2.json();
+    if (res2.status === 400 && data2.error.includes('Teléfono')) {
+      resultados.prueba_2_venta_sin_telefono = {
+        resultado: '✅ PASÓ',
+        mensaje: 'Sistema rechaza venta sin teléfono correctamente'
+      };
+    } else {
+      resultados.prueba_2_venta_sin_telefono = {
+        resultado: '❌ FALLÓ',
+        mensaje: `Esperaba error por teléfono vacío, recibió: ${data2.error}`
+      };
+    }
+  } catch (e) {
+    resultados.prueba_2_venta_sin_telefono = { resultado: '⚠️ ERROR', mensaje: e.message };
+  }
+
+  // Prueba 3: Intentar registrar boleta sin teléfono (debe fallar)
+  try {
+    const res3 = await fetch('http://localhost:3000/api/rifas/registrar-boleta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer test' },
+      body: JSON.stringify({
+        numero_boleta: 100,
+        nombre: 'Test Client',
+        telefono: '', // VACÍO - debe fallar
+        placa_vehiculo: 'N/A'
+      })
+    });
+    const data3 = await res3.json();
+    if (res3.status === 400 && data3.error.includes('Teléfono')) {
+      resultados.prueba_3_boleta_sin_telefono = {
+        resultado: '✅ PASÓ',
+        mensaje: 'Sistema rechaza boleta sin teléfono correctamente'
+      };
+    } else {
+      resultados.prueba_3_boleta_sin_telefono = {
+        resultado: '❌ FALLÓ',
+        mensaje: `Esperaba error por teléfono vacío, recibió: ${data3.error}`
+      };
+    }
+  } catch (e) {
+    resultados.prueba_3_boleta_sin_telefono = { resultado: '⚠️ ERROR', mensaje: e.message };
+  }
+
+  // Resumen
+  const pasadas = Object.values(resultados).filter(r => r.resultado?.includes('✅')).length;
+  resultados.resumen = `${pasadas}/3 pruebas pasadas`;
+
+  res.json(resultados);
+});
+
 // 🔍 Endpoint de diagnóstico sin autenticación
 router.get('/debug/estado', async (req, res) => {
   try {
