@@ -293,6 +293,36 @@
     <!-- Separador -->
     <div class="separator"></div>
 
+    <!-- Información de Rifa -->
+    <div class="rifa-section">
+      <h3>🎰 Participación en Rifa</h3>
+      <div class="rifa-info">
+        <div *ngIf="orden.rifa && orden.rifa.participa" class="rifa-item rifa-participacion">
+          <strong>🎟️ Número de Boleta:</strong>
+          <span class="rifa-numero">#{{ orden.rifa.numero_rifa }}</span>
+        </div>
+        <div *ngIf="!orden.rifa || !orden.rifa.participa" class="rifa-item">
+          <strong>🎟️ Participación:</strong>
+          <span>No participó</span>
+        </div>
+        <div *ngIf="orden.rifa && orden.rifa.participa" class="rifa-item">
+          <strong>🏆 Premio:</strong>
+          <span class="rifa-premio">{{ orden.rifa.premio || 'N/A' }}</span>
+        </div>
+        <div *ngIf="orden.rifa && orden.rifa.participa" class="rifa-item">
+          <strong>📅 Cuándo Juega:</strong>
+          <span>{{ orden.rifa.fecha_sorteo || 'Próximamente' }}</span>
+        </div>
+        <div *ngIf="orden.rifa && orden.rifa.participa" class="rifa-item">
+          <strong>👨‍💼 Encargado de Rifa:</strong>
+          <span>{{ orden.rifa.encargado || 'N/A' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator"></div>
+
     <!-- Estado -->
     <div class="estado-section">
       <p><strong>Estado:</strong></p>

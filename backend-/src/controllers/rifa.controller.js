@@ -187,11 +187,40 @@ export const registrarBoleta = async (req, res) => {
 
     const insertQuery = `
       INSERT INTO rifa (id_evento_rifa, numero_boleta, nombre, telefono, placa_vehiculo)
-      VALUES ($1, $2, $3, $4, $5) 
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
 
     const result = await client.query(insertQuery, [idEvento, numeroFormatted, nombre, telefono, placa_vehiculo]);
+    const idBoleta = result.rows[0].id_boleta;
+
+    // Si es una venta de mostrador (placa_vehiculo === 'N/A'), actualizar venta_mostrador con datos de rifa
+    if (placa_vehiculo === 'N/A') {
+      const eventoInfo = await client.query(
+        'SELECT fecha_sorteo FROM evento_rifa WHERE id_evento = $1',
+        [idEvento]
+      );
+
+      if (eventoInfo.rows.length > 0) {
+        // Buscar venta de mostrador reciente con este teléfono y nombre
+        const ventasResult = await client.query(
+          `SELECT id_venta FROM venta_mostrador
+           WHERE cliente_nombre = $1 AND telefono_cliente = $2
+           ORDER BY id_venta DESC LIMIT 1`,
+          [nombre, telefono]
+        );
+
+        if (ventasResult.rows.length > 0) {
+          const idVenta = ventasResult.rows[0].id_venta;
+          await client.query(
+            `UPDATE venta_mostrador
+             SET id_rifa = $1, id_boleta = $2, numero_rifa = $3, fecha_sorteo = $4
+             WHERE id_venta = $5`,
+            [idEvento, idBoleta, numeroFormatted, eventoInfo.rows[0].fecha_sorteo, idVenta]
+          );
+        }
+      }
+    }
 
     await client.query('COMMIT');
     

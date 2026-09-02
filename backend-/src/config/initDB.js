@@ -294,6 +294,12 @@ export const initDB = async () => {
             "ALTER TABLE recibo_token ALTER COLUMN placa_vehiculo DROP NOT NULL",
             "ALTER TABLE recibo_token ADD COLUMN IF NOT EXISTS id_venta INTEGER REFERENCES venta_mostrador(id_venta) ON DELETE CASCADE",
             "ALTER TABLE recibo_token ADD COLUMN IF NOT EXISTS descargas_count INTEGER DEFAULT 0",
+
+            // ✅ NUEVA: Agregar campos de rifa a venta_mostrador
+            "ALTER TABLE venta_mostrador ADD COLUMN IF NOT EXISTS id_rifa INTEGER REFERENCES evento_rifa(id_evento) ON DELETE SET NULL",
+            "ALTER TABLE venta_mostrador ADD COLUMN IF NOT EXISTS id_boleta INTEGER REFERENCES rifa(id_boleta) ON DELETE SET NULL",
+            "ALTER TABLE venta_mostrador ADD COLUMN IF NOT EXISTS numero_rifa VARCHAR(50)",
+            "ALTER TABLE venta_mostrador ADD COLUMN IF NOT EXISTS fecha_sorteo DATE",
         ];
         
         for (const sql of migraciones) {

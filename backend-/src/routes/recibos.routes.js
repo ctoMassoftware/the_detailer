@@ -557,6 +557,29 @@ router.get('/datos/:token', async (req, res) => {
 
       const ventaData = result.rows[0];
 
+      // Cargar información de rifa si existe
+      let rifaInfo = null;
+      if (ventaData.id_rifa) {
+        const rifaResult = await pool.query(
+          `SELECT er.id_evento, er.fecha_sorteo, er.descripcion_premios, er.encargado
+           FROM evento_rifa er
+           WHERE er.id_evento = $1`,
+          [ventaData.id_rifa]
+        );
+        if (rifaResult.rows.length > 0) {
+          rifaInfo = {
+            id_rifa: ventaData.id_rifa,
+            numero_rifa: ventaData.numero_rifa,
+            fecha_sorteo: formatearFechaUI(rifaResult.rows[0].fecha_sorteo),
+            premio: rifaResult.rows[0].descripcion_premios,
+            encargado: rifaResult.rows[0].encargado,
+            participa: true
+          };
+        }
+      } else {
+        rifaInfo = { participa: false };
+      }
+
       // 📥 Registrar descarga
       const ipCliente = req.ip || req.connection.remoteAddress;
       await marcarTokenComoDescargado(token, ipCliente);
@@ -575,7 +598,8 @@ router.get('/datos/:token', async (req, res) => {
           metodo_pago: ventaData.metodo_pago,
           sede: ventaData.sede,
           vendedor: ventaData.vendedor_nombre,
-          productos: ventaData.lista_productos
+          productos: ventaData.lista_productos,
+          rifa: rifaInfo
         }
       });
     }
