@@ -217,6 +217,8 @@ export const registrarBoleta = async (req, res) => {
 
     // ✅ CRÍTICO: Si llega id_venta, es venta de mostrador y debe actualizarse la venta
     // NO depender de placa_vehiculo porque en mostrador es opcional
+    console.log(`[TRANSACCIÓN BOLETA] Recibido: id_venta="${id_venta}" (tipo: ${typeof id_venta}, es truthy? ${!!id_venta})`);
+
     if (id_venta) {
       console.log(`[TRANSACCIÓN BOLETA] ✅ id_venta=${id_venta} presente - Proceediendo con UPDATE a venta_mostrador`);
       const eventoInfo = await client.query(
