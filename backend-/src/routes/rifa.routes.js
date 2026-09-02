@@ -37,6 +37,39 @@ router.get('/debug/estado', async (req, res) => {
   }
 });
 
+// 🔧 Endpoint para REPARAR: Mantener UNA sola rifa activa
+router.post('/debug/reparar', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Desactivar todas las rifas
+    await client.query('UPDATE evento_rifa SET estado = false WHERE estado = true');
+
+    // Activar solo la más reciente
+    const result = await client.query(
+      `UPDATE evento_rifa
+       SET estado = true
+       WHERE id_evento = (SELECT id_evento FROM evento_rifa ORDER BY id_evento DESC LIMIT 1)
+       RETURNING id_evento, fecha_sorteo, descripcion_premios`
+    );
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      mensaje: 'Rifa única restaurada correctamente',
+      rifaActiva: result.rows[0]
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error reparando rifas:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 router.post('/crear', verifyToken, crearRifa);
 router.get('/activa', verifyToken, getRifaActiva);
 router.get('/historial', verifyToken, getTodasRifas);
