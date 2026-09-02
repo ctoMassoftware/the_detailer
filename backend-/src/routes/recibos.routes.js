@@ -54,6 +54,81 @@ router.get('/health', (req, res) => {
 });
 
 /**
+ * MIGRACIÓN: Actualizar boletas existentes en venta_mostrador
+ * POST /api/recibos/migrar-boletas
+ * Busca boletas existentes y actualiza venta_mostrador con esos datos
+ */
+router.post('/migrar-boletas', async (req, res) => {
+  try {
+    console.log('🔄 Iniciando migración de boletas...');
+
+    // Obtener todas las boletas de venta de mostrador (placa_vehiculo = 'N/A')
+    const boletasResult = await pool.query(
+      `SELECT r.id_boleta, r.id_evento_rifa, r.numero_boleta, r.nombre, r.telefono
+       FROM rifa r
+       WHERE r.placa_vehiculo = 'N/A'
+       ORDER BY r.id_boleta DESC`
+    );
+
+    const boletas = boletasResult.rows;
+    let actualizadas = 0;
+    let noEncontradas = 0;
+
+    console.log(`📋 Encontradas ${boletas.length} boletas de venta de mostrador`);
+
+    // Para cada boleta, buscar la venta y actualizar
+    for (const boleta of boletas) {
+      // Buscar venta por nombre y teléfono
+      const ventaResult = await pool.query(
+        `SELECT id_venta FROM venta_mostrador
+         WHERE cliente_nombre = $1 AND telefono_cliente = $2
+         ORDER BY id_venta DESC LIMIT 1`,
+        [boleta.nombre, boleta.telefono]
+      );
+
+      if (ventaResult.rows.length > 0) {
+        const idVenta = ventaResult.rows[0].id_venta;
+
+        // Obtener fecha del evento de rifa
+        const eventoResult = await pool.query(
+          `SELECT fecha_sorteo FROM evento_rifa WHERE id_evento = $1`,
+          [boleta.id_evento_rifa]
+        );
+
+        const fechaSorteo = eventoResult.rows[0]?.fecha_sorteo;
+
+        // Actualizar venta_mostrador
+        await pool.query(
+          `UPDATE venta_mostrador
+           SET id_rifa = $1, id_boleta = $2, numero_rifa = $3, fecha_sorteo = $4
+           WHERE id_venta = $5 AND numero_rifa IS NULL`,
+          [boleta.id_evento_rifa, boleta.id_boleta, boleta.numero_boleta, fechaSorteo, idVenta]
+        );
+
+        actualizadas++;
+        console.log(`✅ Venta ${idVenta} actualizada con boleta #${boleta.numero_boleta}`);
+      } else {
+        noEncontradas++;
+        console.warn(`⚠️ Venta no encontrada para: ${boleta.nombre} (${boleta.telefono})`);
+      }
+    }
+
+    res.json({
+      success: true,
+      mensaje: `Migración completada`,
+      total: boletas.length,
+      actualizadas,
+      noEncontradas,
+      detalles: `Se actualizaron ${actualizadas} ventas de mostrador con datos de boletas`
+    });
+
+  } catch (error) {
+    console.error('Error en migración:', error);
+    res.status(500).json({ error: 'Error al migrar boletas' });
+  }
+});
+
+/**
  * DEBUG: Obtener venta de mostrador por ID
  * GET /api/recibos/venta/:idVenta
  */
