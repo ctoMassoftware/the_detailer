@@ -10,6 +10,7 @@ import { ServicioService } from '../../services/servicio.service';
 import { OrdenService } from '../../services/orden.service';
 import { OperarioService } from '../../services/operario.service';
 import { MetodosPagoService } from '../../services/metodos-pago.service';
+import { RifaService } from '../../services/rifa.service';
 
 @Component({
   selector: 'app-crear-orden',
@@ -20,6 +21,10 @@ import { MetodosPagoService } from '../../services/metodos-pago.service';
 })
 export class CrearOrdenComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private rifaService = inject(RifaService);
+
+  rifaActiva: any = null;
+
     // --- Autocompletar clientes/placas para el input de nombre_cliente ---
     sugerenciasClientes: any[] = [];
     buscandoCliente = false;
@@ -162,6 +167,20 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
     this.cargarServicios();
     this.cargarOperarios();
     this.cargarMetodosPago();
+    this.cargarRifaActiva();
+  }
+
+  cargarRifaActiva() {
+    this.rifaService.getRifaActiva().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (rifa: any) => {
+        this.rifaActiva = rifa;
+        console.log('✅ Rifa activa cargada:', rifa);
+      },
+      error: (err: any) => {
+        console.warn('⚠️ No se pudo cargar rifa activa:', err);
+        this.rifaActiva = null;
+      }
+    });
   }
 
   capitalizarPalabras(texto: string): string {
@@ -464,6 +483,7 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
       metodo_pago: this.datosOrden.metodo_pago,
       caja: this.datosOrden.caja,
       id_user_encargado: this.datosOrden.tecnico_asignado,
+      id_rifa: this.rifaActiva?.id_evento || null,
       fecha: this.datosOrden.fecha,
       hora: this.datosOrden.hora,
       notas: this.datosOrden.notas,
