@@ -70,6 +70,97 @@ router.post('/debug/reparar', async (req, res) => {
   }
 });
 
+// 🔧 Endpoint masivo: Vincular TODAS las boletas a sus ventas/órdenes
+router.post('/debug/vincular-todas-boletas', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Obtener rifa activa
+    const rifaActiva = await client.query('SELECT id_evento FROM evento_rifa WHERE estado = true LIMIT 1');
+    if (rifaActiva.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'No hay rifa activa' });
+    }
+    const idEvento = rifaActiva.rows[0].id_evento;
+
+    let ventasActualizadas = 0;
+    let ordenesActualizadas = 0;
+    let boletasNoVinculadas = 0;
+
+    // Obtener TODAS las boletas de la rifa activa
+    const boletasRes = await client.query(
+      `SELECT id_boleta, numero_boleta, nombre, telefono, placa_vehiculo
+       FROM rifa WHERE id_evento_rifa = $1 ORDER BY id_boleta ASC`,
+      [idEvento]
+    );
+
+    // Para cada boleta, intentar vincularla
+    for (const boleta of boletasRes.rows) {
+      if (boleta.placa_vehiculo === 'N/A') {
+        // Es VENTA DE MOSTRADOR - buscar por nombre + teléfono
+        const ventaRes = await client.query(
+          `SELECT id_venta FROM venta_mostrador
+           WHERE cliente_nombre ILIKE $1 AND telefono_cliente = $2
+           ORDER BY fecha DESC LIMIT 1`,
+          [boleta.nombre, boleta.telefono]
+        );
+
+        if (ventaRes.rows.length > 0) {
+          await client.query(
+            `UPDATE venta_mostrador
+             SET id_rifa = $1, id_boleta = $2, numero_rifa = $3
+             WHERE id_venta = $4`,
+            [idEvento, boleta.id_boleta, boleta.numero_boleta, ventaRes.rows[0].id_venta]
+          );
+          ventasActualizadas++;
+        } else {
+          boletasNoVinculadas++;
+        }
+      } else {
+        // Es ORDEN DE SERVICIO - buscar por placa + nombre + teléfono
+        const ordenRes = await client.query(
+          `SELECT id_orden FROM public.orden
+           WHERE placa_vehiculo = $1 AND nombre_cliente ILIKE $2 AND telefono_cliente = $3
+           ORDER BY fecha DESC LIMIT 1`,
+          [boleta.placa_vehiculo, boleta.nombre, boleta.telefono]
+        );
+
+        if (ordenRes.rows.length > 0) {
+          await client.query(
+            `UPDATE public.orden
+             SET id_rifa = $1
+             WHERE id_orden = $2`,
+            [idEvento, ordenRes.rows[0].id_orden]
+          );
+          ordenesActualizadas++;
+        } else {
+          boletasNoVinculadas++;
+        }
+      }
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      mensaje: 'Boletas vinculadas a ventas y órdenes',
+      resumen: {
+        ventasActualizadas,
+        ordenesActualizadas,
+        boletasNoVinculadas,
+        totalBoletas: boletasRes.rows.length
+      }
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error vinculando boletas:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 // 🔧 Endpoint para asignar boleta a una venta específica
 router.post('/debug/asignar-boleta-venta/:id_venta/:numero_boleta', async (req, res) => {
   const client = await pool.connect();
