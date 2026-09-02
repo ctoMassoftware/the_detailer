@@ -61,24 +61,11 @@ router.get('/venta/:idVenta', async (req, res) => {
   try {
     const { idVenta } = req.params;
 
+    // Debug: mostrar todas las columnas disponibles
     const result = await pool.query(
-      `SELECT
-        v.id_venta,
-        v.cliente_nombre,
-        v.telefono_cliente,
-        v.metodo_pago,
-        v.total,
-        v.sede,
-        v.fecha,
-        v.hora,
-        v.numero_rifa,
-        v.id_rifa,
-        v.id_boleta,
-        v.fecha_sorteo,
-        u.nombre as vendedor
-       FROM venta_mostrador v
-       LEFT JOIN usuarios u ON v.id_user_vendedor = u.id_user
-       WHERE v.id_venta = $1`,
+      `SELECT *
+       FROM venta_mostrador
+       WHERE id_venta = $1`,
       [idVenta]
     );
 
