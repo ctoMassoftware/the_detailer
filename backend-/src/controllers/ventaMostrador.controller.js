@@ -101,6 +101,11 @@ export const registrarVentaMostrador = async (req, res) => {
 
         await client.query('COMMIT');
 
+        // ✅ VALIDACIÓN CRÍTICA: Asegurar que id_venta se asignó correctamente
+        if (!idVenta) {
+            throw new Error('❌ Error crítico: No se asignó ID a la venta registrada');
+        }
+
         // 4. Disparar SMS con Recibo (No bloquea la respuesta si la API demora)
         if (telefono_cliente) {
             // Formatear detalles de productos de forma compacta (≤160 chars)
@@ -128,7 +133,12 @@ export const registrarVentaMostrador = async (req, res) => {
             ).catch(console.error);
         }
 
-        res.status(201).json({ message: 'Venta registrada con éxito', id_venta: idVenta });
+        console.log(`✅ Venta de mostrador registrada: id_venta=${idVenta}, id_rifa=${id_rifa || 'null'}`);
+        res.status(201).json({
+            message: 'Venta registrada con éxito',
+            id_venta: idVenta,
+            id_rifa: id_rifa || null
+        });
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error en venta de mostrador:', error);

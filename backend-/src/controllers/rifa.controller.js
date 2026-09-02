@@ -174,6 +174,7 @@ export const registrarBoleta = async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    console.log(`[TRANSACCIÓN BOLETA] Iniciada: numero=${numero_boleta}, id_venta=${id_venta || 'NO ENVIADO'}, nombre=${nombre}`);
 
     const eventoActivo = await client.query('SELECT id_evento FROM evento_rifa WHERE estado = true LIMIT 1');
     
@@ -212,6 +213,7 @@ export const registrarBoleta = async (req, res) => {
 
     const result = await client.query(insertQuery, [idEvento, numeroFormatted, nombre, telefono, placa_vehiculo]);
     const idBoleta = result.rows[0].id_boleta;
+    console.log(`✅ Boleta insertada en tabla rifa: id_boleta=${idBoleta}, numero=${numeroFormatted}`);
 
     // Si es una venta de mostrador (placa_vehiculo === 'N/A'), actualizar venta_mostrador con datos de rifa
     if (placa_vehiculo === 'N/A') {
@@ -221,51 +223,60 @@ export const registrarBoleta = async (req, res) => {
       );
 
       if (eventoInfo.rows.length > 0) {
-        let idVentaToUpdate = null;
-
-        // Opción 1: Si viene id_venta en el body, usar ese
-        if (id_venta) {
-          idVentaToUpdate = id_venta;
-        } else {
-          // Opción 2: Buscar por nombre y teléfono (fallback)
-          const ventasResult = await client.query(
-            `SELECT id_venta FROM venta_mostrador
-             WHERE cliente_nombre = $1 AND telefono_cliente = $2
-             ORDER BY id_venta DESC LIMIT 1`,
-            [nombre, telefono]
-          );
-
-          if (ventasResult.rows.length > 0) {
-            idVentaToUpdate = ventasResult.rows[0].id_venta;
-          }
+        // ✅ VALIDACIÓN CRÍTICA: id_venta es OBLIGATORIO para vincular boleta a venta
+        if (!id_venta) {
+          await client.query('ROLLBACK');
+          console.error(`❌ id_venta es requerido para vincular boleta a venta. Cliente: ${nombre}`);
+          return res.status(400).json({
+            error: '❌ ID de venta es requerido para registrar la boleta. Por favor intenta de nuevo.',
+            code: 'MISSING_VENTA_ID',
+            debug: { numero_boleta: numeroFormatted, nombre, telefono }
+          });
         }
 
-        // Actualizar venta_mostrador si se encontró/proporcionó el id
-        if (idVentaToUpdate) {
-          await client.query(
-            `UPDATE venta_mostrador
-             SET id_rifa = $1, id_boleta = $2, numero_rifa = $3, fecha_sorteo = $4
-             WHERE id_venta = $5`,
-            [idEvento, idBoleta, numeroFormatted, eventoInfo.rows[0].fecha_sorteo, idVentaToUpdate]
-          );
-          console.log(`✅ Rifa actualizada en venta_mostrador ${idVentaToUpdate}`);
-        } else {
-          console.warn(`⚠️ No se encontró venta para actualizar rifa (nombre: ${nombre}, teléfono: ${telefono})`);
+        const idVentaToUpdate = id_venta;
+
+        // Actualizar venta_mostrador con datos de boleta
+        const updateResult = await client.query(
+          `UPDATE venta_mostrador
+           SET id_rifa = $1, id_boleta = $2, numero_rifa = $3, fecha_sorteo = $4
+           WHERE id_venta = $5`,
+          [idEvento, idBoleta, numeroFormatted, eventoInfo.rows[0].fecha_sorteo, idVentaToUpdate]
+        );
+
+        // ✅ VALIDACIÓN CRÍTICA: Verificar que el UPDATE actualizó exactamente 1 fila
+        if (updateResult.rowCount !== 1) {
+          await client.query('ROLLBACK');
+          console.error(`❌ UPDATE falló - Venta ${idVentaToUpdate} no existe. Boleta ${numeroFormatted} será huérfana si COMMIT ocurre`);
+          return res.status(404).json({
+            error: `No se encontró la venta ${idVentaToUpdate} para vincular la boleta. Verifica que la venta exista.`,
+            code: 'VENTA_NOT_FOUND',
+            debug: {
+              id_venta: idVentaToUpdate,
+              id_boleta: idBoleta,
+              numero_rifa: numeroFormatted,
+              rowCount: updateResult.rowCount
+            }
+          });
         }
+        console.log(`✅ Venta ${idVentaToUpdate} actualizada: boleta=${numeroFormatted}, id_boleta=${idBoleta} (${updateResult.rowCount} fila afectada)`);
       }
     }
 
     await client.query('COMMIT');
-    
-    // 👇 SOLUCIÓN: Solo se envía el WhatsApp si la preferencia NO es físico 👇
-    if (telefono && preferencia_recibo !== 'FISICO') {
+    console.log(`[TRANSACCIÓN BOLETA] Completada exitosamente: id_boleta=${idBoleta}, numero=${numeroFormatted}, vinculada a venta ${id_venta || 'N/A'}`);
+
+    // 👇 CORRECCIÓN: preferencia_recibo es un ARRAY, validar si incluye 'SMS' 👇
+    // Solo enviar notificación si el cliente solicitó SMS (no solo FISICO)
+    if (telefono && preferencia_recibo && Array.isArray(preferencia_recibo) && preferencia_recibo.includes('SMS')) {
+      console.log(`📱 Enviando notificación SMS para boleta ${numeroFormatted} a ${telefono}`);
       enviarNotificacionOrdenTerminada(
-          nombre, 
-          telefono, 
-          placa_vehiculo, 
-          numeroFormatted, 
+          nombre,
+          telefono,
+          placa_vehiculo,
+          numeroFormatted,
           total_pagar || '0'
-      ).catch(err => console.error('Error enviando WhatsApp:', err));
+      ).catch(err => console.error('❌ Error enviando notificación:', err));
     }
 
     res.json({ message: 'Boleta registrada con éxito', boleta: result.rows[0] });

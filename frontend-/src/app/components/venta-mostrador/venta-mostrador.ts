@@ -380,7 +380,22 @@ export class VentaMostrador implements OnInit {
 
     this.ventaMostradorService.registrarVenta(payloadVenta).subscribe({
       next: (res: any) => {
+        // ✅ VALIDACIÓN: Verificar que id_venta se retornó correctamente
+        if (!res.id_venta) {
+          console.error('❌ Error crítico: Backend no retornó id_venta', res);
+          this.mostrarMensaje('Error: No se asignó ID a la venta. Contacta al administrador.', 'error');
+          return;
+        }
+        console.log(`✅ Venta registrada: id_venta=${res.id_venta}, id_rifa=${res.id_rifa || 'null'}`);
+
         if (this.mostrarRifa) {
+          // ✅ VALIDACIÓN CRÍTICA: Verificar que se seleccionó un número de boleta
+          if (!this.numeroBoletaRifa || this.numeroBoletaRifa.trim().length === 0) {
+            console.error('❌ Error: No hay número de boleta seleccionado');
+            this.mostrarMensaje('Error: Debe seleccionar un número de boleta válido.', 'error');
+            return;
+          }
+
           const boletaData = {
             numero_boleta: this.numeroBoletaRifa,
             nombre: nombreFormateado,
@@ -391,25 +406,42 @@ export class VentaMostrador implements OnInit {
             id_venta: res.id_venta
           };
 
+          console.log(`📤 Registrando boleta:`, {
+            numero_boleta: this.numeroBoletaRifa,
+            id_venta: res.id_venta,
+            nombre: nombreFormateado,
+            telefono: payloadVenta.telefono_cliente,
+            id_rifa: res.id_rifa,
+            preferencia_recibo: this.preferenciaRecibo
+          });
+
           this.rifaService.registrarBoleta(boletaData).subscribe({
             next: () => {
+              console.log(`✅ Boleta registrada exitosamente para id_venta=${res.id_venta}, numero=${this.numeroBoletaRifa}`);
               this.procesarImpresion(res.id_venta, nombreFormateado);
               this.finalizarProcesoExito(`¡Venta y Rifa #${this.numeroBoletaRifa} registradas con éxito!`);
             },
             error: (err: any) => {
-              const msj = err.error?.error || 'Error al registrar la boleta';
+              console.error(`❌ Error registrando boleta para id_venta=${res.id_venta}:`, err);
+              console.error('Detalles del error:', {
+                codigo: err.error?.code,
+                mensaje: err.error?.error,
+                debug: err.error?.debug
+              });
+              const msj = err.error?.error || err.message || 'Error desconocido al registrar la boleta';
               this.mostrarMensaje(`La venta se guardó, pero hubo un error en la Rifa: ${msj}`, 'error');
               this.limpiarCarritoSoloDatos();
               this.cerrarFactura();
             }
           });
         } else {
+          console.log(`✅ Venta sin rifa registrada: id_venta=${res.id_venta}`);
           this.procesarImpresion(res.id_venta, nombreFormateado);
           this.finalizarProcesoExito('¡Venta registrada con éxito!');
         }
       },
       error: (err: any) => {
-        console.error('Error al registrar la venta', err);
+        console.error('❌ Error al registrar la venta:', err);
         this.mostrarMensaje('Ocurrió un error al registrar la venta en la base de datos.', 'error');
       }
     });

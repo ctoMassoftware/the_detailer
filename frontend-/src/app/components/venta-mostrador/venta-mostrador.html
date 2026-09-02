@@ -329,7 +329,7 @@
       </div>
 
       <div class="factura-actions">
-        <button class="btn-send" (click)="confirmarFacturaYVenta()" [disabled]="!telefonoValido || !facturaActual.celular || facturaActual.celular === 'No registrado'">Aceptar Venta</button>
+        <button class="btn-send" (click)="confirmarFacturaYVenta()" [disabled]="!facturaActual.valorTotal || facturaActual.valorTotal <= 0 || carrito.length === 0">Aceptar Venta</button>
         <button class="btn-cancel-factura" (click)="cerrarFactura()">Cancelar</button>
       </div>
 
