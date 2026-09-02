@@ -37,23 +37,55 @@ router.post('/debug/asignar-boletas-huerfanas', async (req, res) => {
     const ventasHuerfanas = await client.query(
       `SELECT id_venta, cliente_nombre, telefono_cliente
        FROM venta_mostrador
-       WHERE id_rifa = $1 AND numero_rifa IS NULL`,
+       WHERE id_rifa = $1 AND (numero_rifa IS NULL OR numero_rifa = '')`,
       [idEvento]
     );
 
     let asignadas = 0;
+    let noEncontradas = 0;
     const resultados = [];
 
-    // Para cada venta huérfana, asignar la primera boleta disponible de su cliente
+    // Para cada venta huérfana, buscar boleta más reciente de su cliente
     for (const venta of ventasHuerfanas.rows) {
-      // Buscar boleta más reciente para este cliente (N/A = venta de mostrador)
-      const boletaRes = await client.query(
+      // ESTRATEGIA 1: Buscar por nombre exacto + teléfono + placa N/A
+      let boletaRes = await client.query(
         `SELECT id_boleta, numero_boleta, fecha_sorteo
          FROM rifa
-         WHERE id_evento_rifa = $1 AND nombre ILIKE $2 AND placa_vehiculo = 'N/A'
+         WHERE id_evento_rifa = $1
+         AND nombre ILIKE $2
+         AND telefono = $3
+         AND placa_vehiculo = 'N/A'
+         AND id_boleta NOT IN (SELECT id_boleta FROM venta_mostrador WHERE id_boleta IS NOT NULL)
          ORDER BY id_boleta DESC LIMIT 1`,
-        [idEvento, venta.cliente_nombre]
+        [idEvento, venta.cliente_nombre, venta.telefono_cliente]
       );
+
+      // ESTRATEGIA 2: Si no encuentra, buscar por teléfono + placa N/A (más flexible con nombres)
+      if (boletaRes.rows.length === 0) {
+        boletaRes = await client.query(
+          `SELECT id_boleta, numero_boleta, fecha_sorteo
+           FROM rifa
+           WHERE id_evento_rifa = $1
+           AND telefono = $2
+           AND placa_vehiculo = 'N/A'
+           AND id_boleta NOT IN (SELECT id_boleta FROM venta_mostrador WHERE id_boleta IS NOT NULL)
+           ORDER BY id_boleta DESC LIMIT 1`,
+          [idEvento, venta.telefono_cliente]
+        );
+      }
+
+      // ESTRATEGIA 3: Si aún no encuentra, buscar cualquier boleta disponible para ese cliente
+      if (boletaRes.rows.length === 0) {
+        boletaRes = await client.query(
+          `SELECT id_boleta, numero_boleta, fecha_sorteo
+           FROM rifa
+           WHERE id_evento_rifa = $1
+           AND placa_vehiculo = 'N/A'
+           AND id_boleta NOT IN (SELECT id_boleta FROM venta_mostrador WHERE id_boleta IS NOT NULL)
+           ORDER BY id_boleta ASC LIMIT 1`,
+          [idEvento]
+        );
+      }
 
       if (boletaRes.rows.length > 0) {
         const boleta = boletaRes.rows[0];
@@ -64,9 +96,20 @@ router.post('/debug/asignar-boletas-huerfanas', async (req, res) => {
           [boleta.id_boleta, boleta.numero_boleta, boleta.fecha_sorteo, venta.id_venta]
         );
         asignadas++;
-        resultados.push(`Venta ${venta.id_venta}: Asignada boleta #${boleta.numero_boleta}`);
+        resultados.push({
+          venta: venta.id_venta,
+          cliente: venta.cliente_nombre,
+          boleta: boleta.numero_boleta,
+          estado: '✅ Asignada'
+        });
       } else {
-        resultados.push(`Venta ${venta.id_venta}: ⚠️ No hay boleta disponible para ${venta.cliente_nombre}`);
+        noEncontradas++;
+        resultados.push({
+          venta: venta.id_venta,
+          cliente: venta.cliente_nombre,
+          boleta: null,
+          estado: '❌ No hay boletas disponibles'
+        });
       }
     }
 
@@ -74,10 +117,13 @@ router.post('/debug/asignar-boletas-huerfanas', async (req, res) => {
 
     res.json({
       success: true,
-      mensaje: `${asignadas} ventas reparadas`,
-      ventasHuerfanas: ventasHuerfanas.rows.length,
-      asignadas,
-      resultados
+      mensaje: `${asignadas} ventas reparadas, ${noEncontradas} sin boletas disponibles`,
+      resumen: {
+        ventasHuerfanas: ventasHuerfanas.rows.length,
+        asignadas,
+        noEncontradas
+      },
+      detalles: resultados
     });
   } catch (error) {
     await client.query('ROLLBACK');
