@@ -361,7 +361,8 @@ export class VentaMostrador implements OnInit {
       metodo_pago: this.facturaActual.metodoPago,
       total: this.facturaActual.valorTotal,
       productos: this.carrito,
-      preferencia_recibo: this.preferenciaRecibo
+      preferencia_recibo: this.preferenciaRecibo,
+      id_rifa: this.datosRifaActiva?.id_evento || null
     };
 
     this.ventaMostradorService.registrarVenta(payloadVenta).subscribe({

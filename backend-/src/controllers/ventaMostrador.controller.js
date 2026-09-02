@@ -3,8 +3,8 @@ import { enviarReciboMostrador } from '../services/notificationRouter.service.js
 import { generarSoloToken, insertarTokenEnTransaccion } from '../services/reciboToken.service.js';
 
 export const registrarVentaMostrador = async (req, res) => {
-    const { id: id_user_vendedor, sede } = req.user; 
-    const { cliente_nombre, telefono_cliente, metodo_pago, total, productos } = req.body;
+    const { id: id_user_vendedor, sede } = req.user;
+    const { cliente_nombre, telefono_cliente, metodo_pago, total, productos, id_rifa } = req.body;
 
     const client = await pool.connect();
 
@@ -12,13 +12,17 @@ export const registrarVentaMostrador = async (req, res) => {
         await client.query('BEGIN');
 
         // 1. Insertar Cabecera
-        const insertVenta = `
-            INSERT INTO venta_mostrador (cliente_nombre, telefono_cliente, metodo_pago, total, sede, id_user_vendedor)
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_venta, fecha, hora
-        `;
-        const ventaRes = await client.query(insertVenta, [
-            cliente_nombre || 'Cliente General', telefono_cliente, metodo_pago, total, sede, id_user_vendedor
-        ]);
+        const insertVenta = id_rifa
+            ? `INSERT INTO venta_mostrador (cliente_nombre, telefono_cliente, metodo_pago, total, sede, id_user_vendedor, id_rifa)
+               VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id_venta, fecha, hora`
+            : `INSERT INTO venta_mostrador (cliente_nombre, telefono_cliente, metodo_pago, total, sede, id_user_vendedor)
+               VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_venta, fecha, hora`;
+
+        const ventaValues = id_rifa
+            ? [cliente_nombre || 'Cliente General', telefono_cliente, metodo_pago, total, sede, id_user_vendedor, id_rifa]
+            : [cliente_nombre || 'Cliente General', telefono_cliente, metodo_pago, total, sede, id_user_vendedor];
+
+        const ventaRes = await client.query(insertVenta, ventaValues);
         const idVenta = ventaRes.rows[0].id_venta;
 
         // 2. Insertar Detalles y Descontar Inventario
