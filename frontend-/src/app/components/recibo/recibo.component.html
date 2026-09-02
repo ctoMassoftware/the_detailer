@@ -255,6 +255,11 @@
         <strong>👨‍💼 Vendedor</strong>
         <p>{{ orden.vendedor }}</p>
       </div>
+
+      <div class="info-box" *ngIf="orden.rifa && orden.rifa.participa">
+        <strong>🎟️ Número de Boleta</strong>
+        <p class="placa">{{ orden.rifa.numero_rifa }}</p>
+      </div>
     </div>
 
     <!-- Separador -->
