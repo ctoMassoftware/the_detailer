@@ -47,9 +47,71 @@ router.get('/health', (req, res) => {
     endpoints: [
       'GET /datos/:token?placa=XXX - Obtener recibo específico',
       'GET /por-placa/:placa - Obtener todas las órdenes de una placa',
-      'GET /descargar/:token?placa=XXX - Descargar HTML del recibo'
+      'GET /descargar/:token?placa=XXX - Descargar HTML del recibo',
+      'GET /venta/:idVenta - Obtener datos de venta de mostrador (DEBUG)'
     ]
   });
+});
+
+/**
+ * DEBUG: Obtener venta de mostrador por ID
+ * GET /api/recibos/venta/:idVenta
+ */
+router.get('/venta/:idVenta', async (req, res) => {
+  try {
+    const { idVenta } = req.params;
+
+    const result = await pool.query(
+      `SELECT
+        v.id_venta,
+        v.cliente_nombre,
+        v.telefono_cliente,
+        v.metodo_pago,
+        v.total,
+        v.sede,
+        v.fecha,
+        v.hora,
+        v.numero_rifa,
+        v.id_rifa,
+        v.id_boleta,
+        v.fecha_sorteo,
+        u.nombre as vendedor
+       FROM venta_mostrador v
+       LEFT JOIN usuarios u ON v.id_user_vendedor = u.id_user
+       WHERE v.id_venta = $1`,
+      [idVenta]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Venta no encontrada' });
+    }
+
+    const venta = result.rows[0];
+    res.json({
+      success: true,
+      venta: {
+        id_venta: venta.id_venta,
+        cliente_nombre: venta.cliente_nombre,
+        telefono_cliente: venta.telefono_cliente,
+        metodo_pago: venta.metodo_pago,
+        total: venta.total,
+        sede: venta.sede,
+        fecha: venta.fecha,
+        hora: venta.hora,
+        vendedor: venta.vendedor,
+        rifa: {
+          participa: !!venta.numero_rifa,
+          numero_rifa: venta.numero_rifa,
+          id_rifa: venta.id_rifa,
+          id_boleta: venta.id_boleta,
+          fecha_sorteo: venta.fecha_sorteo
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error obteniendo venta:', error);
+    res.status(500).json({ error: 'Error al consultar venta' });
+  }
 });
 
 // 🔍 Middleware de debugging - registra todas las solicitudes
