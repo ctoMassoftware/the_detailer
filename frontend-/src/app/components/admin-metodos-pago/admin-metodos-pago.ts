@@ -43,7 +43,8 @@ export class AdminMetodosPagoComponent implements OnInit {
     });
   }
 
-  toggleMetodo(metodo: any): void {
+  toggleMetodo(metodo: any, event: any): void {
+    event.preventDefault();
     const accion = !metodo.activo ? 'activar' : 'desactivar';
 
     Swal.fire({

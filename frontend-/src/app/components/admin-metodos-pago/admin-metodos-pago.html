@@ -24,7 +24,7 @@
             <input
               type="checkbox"
               [checked]="metodo.activo"
-              (change)="toggleMetodo(metodo)"
+              (click)="toggleMetodo(metodo, $event)"
               [disabled]="metodosCargando[metodo.id_metodo] || cargando"
             >
             <span class="slider" [ngClass]="{'active': metodo.activo}"></span>
