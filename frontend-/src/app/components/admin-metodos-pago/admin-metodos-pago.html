@@ -1,0 +1,57 @@
+<div class="background-pattern"></div>
+
+<div class="layout-wrapper">
+  <app-nav></app-nav>
+
+  <main class="main-content">
+    <header class="page-header">
+      <h1 class="page-title">Configurar Métodos de Pago</h1>
+    </header>
+
+    <div class="info-card">
+      <p>Selecciona qué métodos de pago deseas aceptar en tu negocio.</p>
+    </div>
+
+    <div class="methods-container" *ngIf="metodos.length > 0; else estado">
+      <div class="method-item" *ngFor="let metodo of metodos" [class.loading]="metodosCargando[metodo.id_metodo]">
+        <div class="method-info">
+          <h3>{{ metodo.nombre }}</h3>
+          <p *ngIf="metodo.descripcion">{{ metodo.descripcion }}</p>
+        </div>
+
+        <div class="method-toggle">
+          <label class="switch">
+            <input
+              type="checkbox"
+              [checked]="metodo.activo"
+              (change)="toggleMetodo(metodo)"
+              [disabled]="metodosCargando[metodo.id_metodo] || cargando"
+            >
+            <span class="slider" [ngClass]="{'active': metodo.activo}"></span>
+          </label>
+          <span class="status" [ngClass]="{'active': metodo.activo}">
+            {{ metodo.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+          <span *ngIf="metodosCargando[metodo.id_metodo]" class="loading-spinner">
+            Actualizando...
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #estado>
+      <div class="loading" *ngIf="cargando; else sinDatos">
+        <p>Cargando métodos de pago...</p>
+      </div>
+      <div class="error" *ngIf="!cargando && error">
+        <p>{{ error }}</p>
+        <button (click)="cargarMetodos()" class="retry-btn">Intentar nuevamente</button>
+      </div>
+      <ng-template #sinDatos>
+        <div class="empty" *ngIf="!cargando">
+          <p>No hay métodos de pago disponibles</p>
+        </div>
+      </ng-template>
+    </ng-template>
+  </main>
+</div>
