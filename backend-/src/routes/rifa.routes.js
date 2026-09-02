@@ -70,6 +70,59 @@ router.post('/debug/reparar', async (req, res) => {
   }
 });
 
+// 🔧 Endpoint para asignar boleta a una venta específica
+router.post('/debug/asignar-boleta-venta/:id_venta/:numero_boleta', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id_venta, numero_boleta } = req.params;
+    const numeroFormatted = numero_boleta.toString().padStart(3, '0');
+
+    await client.query('BEGIN');
+
+    // Obtener la boleta
+    const boletaRes = await client.query(
+      `SELECT id_boleta, id_evento_rifa, fecha_sorteo FROM rifa
+       WHERE numero_boleta = $1 AND id_evento_rifa IN (SELECT id_evento FROM evento_rifa WHERE estado = true)`,
+      [numeroFormatted]
+    );
+
+    if (boletaRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: `Boleta ${numeroFormatted} no encontrada en rifa activa` });
+    }
+
+    const boleta = boletaRes.rows[0];
+
+    // Asignar a venta
+    const updateRes = await client.query(
+      `UPDATE venta_mostrador
+       SET id_rifa = $1, id_boleta = $2, numero_rifa = $3, fecha_sorteo = $4
+       WHERE id_venta = $5
+       RETURNING id_venta, numero_rifa`,
+      [boleta.id_evento_rifa, boleta.id_boleta, numeroFormatted, boleta.fecha_sorteo, id_venta]
+    );
+
+    if (updateRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: `Venta ${id_venta} no encontrada` });
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      mensaje: `Boleta ${numeroFormatted} asignada a venta ${id_venta}`,
+      venta: updateRes.rows[0]
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error asignando boleta:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 // 🔧 Endpoint para migrar órdenes de rifas inactivas a la rifa activa
 router.post('/debug/migrar-ordenes', async (req, res) => {
   const client = await pool.connect();
