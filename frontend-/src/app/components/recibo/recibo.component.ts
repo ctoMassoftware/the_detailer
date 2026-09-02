@@ -266,8 +266,11 @@ export class ReciboComponent implements OnInit {
       try {
         const date = new Date(hora);
         if (!isNaN(date.getTime())) {
-          const horas = String(date.getHours()).padStart(2, '0');
-          const minutos = String(date.getMinutes()).padStart(2, '0');
+          // Ajustar a zona horaria de Colombia (UTC-5)
+          // Restar 5 horas al UTC para obtener la hora de Colombia
+          const colombiaDate = new Date(date.getTime() - (5 * 60 * 60 * 1000));
+          const horas = String(colombiaDate.getUTCHours()).padStart(2, '0');
+          const minutos = String(colombiaDate.getUTCMinutes()).padStart(2, '0');
           return `${horas}:${minutos}`;
         }
       } catch (e) {}

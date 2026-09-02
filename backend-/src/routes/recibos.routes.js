@@ -4,20 +4,31 @@ import { pool } from '../config/db.js';
 
 const router = Router();
 
+// Ajustar a zona horaria de Colombia (UTC-5)
+function ajustarAColombiaDate(fecha) {
+  if (!fecha) return null;
+  const d = new Date(fecha);
+  // Restar 5 horas para Colombia (UTC-5)
+  d.setHours(d.getUTCHours() - 5);
+  return d;
+}
+
 // Formatear fecha sin conversión de zona horaria
 function formatearFecha(fecha) {
   if (!fecha) return null;
-  const d = new Date(fecha);
+  const d = ajustarAColombiaDate(fecha);
   const anio = d.getUTCFullYear();
   const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
   const dia = String(d.getUTCDate()).padStart(2, '0');
-  return `${anio}-${mes}-${dia}`;
+  const horas = String(d.getUTCHours()).padStart(2, '0');
+  const minutos = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}T${horas}:${minutos}:00Z`;
 }
 
 // Formatear fecha a DD/MM/YYYY (para mostrar en la UI)
 function formatearFechaUI(fecha) {
   if (!fecha) return null;
-  const d = new Date(fecha);
+  const d = ajustarAColombiaDate(fecha);
   const anio = d.getUTCFullYear();
   const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
   const dia = String(d.getUTCDate()).padStart(2, '0');
