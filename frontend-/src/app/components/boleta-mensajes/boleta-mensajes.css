@@ -276,40 +276,63 @@
   align-items: center;
   gap: 1rem;
   width: 100%;
-  max-width: 500px; /* Ajustable */
+  max-width: 600px;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .search-container {
   position: relative;
   flex-grow: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
 }
 
 .search-icon {
   position: absolute;
-  left: 1rem;
+  left: 0.875rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   pointer-events: none;
+  transition: color 0.3s ease;
 }
 
 .search-input {
   width: 100%;
   background-color: var(--card-bg);
-  border: 1px solid var(--card-border);
-  color: white;
+  border: 1.5px solid var(--card-border);
+  color: var(--text-main);
   padding: 0.75rem 1rem 0.75rem 2.75rem;
   border-radius: 0.75rem;
   font-size: 0.875rem;
+  font-family: inherit;
   outline: none;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-input::placeholder {
+  color: var(--text-light);
+  opacity: 0.8;
+}
+
+.search-input:hover:not(:focus) {
+  border-color: rgba(234, 42, 51, 0.4);
+  background-color: rgba(28, 18, 18, 0.8);
 }
 
 .search-input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(234, 42, 51, 0.2);
+  background-color: rgba(28, 18, 18, 1);
+  box-shadow:
+    0 0 0 3px rgba(234, 42, 51, 0.15),
+    inset 0 0 0 1px rgba(234, 42, 51, 0.2);
+}
+
+.search-input:focus ~ .search-icon {
+  color: var(--primary);
 }
 
 .btn-create {
@@ -760,3 +783,51 @@
 }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Estilos mejorados para búsqueda en modal */
+.search-row {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 0.75rem !important;
+  padding: 1rem !important;
+  margin-bottom: 1.5rem !important;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.search-row:hover {
+  border-color: rgba(234, 42, 51, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.search-row .search-container {
+  position: relative;
+}
+
+.search-row .search-input {
+  background-color: rgba(15, 10, 10, 0.6);
+  border: 1px solid rgba(234, 42, 51, 0.15);
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.search-row .search-input::placeholder {
+  color: rgba(156, 163, 175, 0.7);
+}
+
+.search-row .search-input:hover {
+  border-color: rgba(234, 42, 51, 0.3);
+  background-color: rgba(15, 10, 10, 0.8);
+}
+
+.search-row .search-input:focus {
+  border-color: var(--primary);
+  background-color: rgba(15, 10, 10, 1);
+  box-shadow: 0 0 0 3px rgba(234, 42, 51, 0.1);
+}
+
+.search-row .search-icon {
+  left: 0.75rem;
+  font-size: 1.1rem;
+}
