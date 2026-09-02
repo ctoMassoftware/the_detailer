@@ -19,6 +19,75 @@ import { pool } from '../config/db.js';
 
 const router = Router();
 
+// 🔧 Asignar boletas a ventas que tienen rifa pero sin numero_rifa
+router.post('/debug/asignar-boletas-huerfanas', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Obtener rifa activa
+    const rifaActiva = await client.query('SELECT id_evento FROM evento_rifa WHERE estado = true LIMIT 1');
+    if (rifaActiva.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'No hay rifa activa' });
+    }
+    const idEvento = rifaActiva.rows[0].id_evento;
+
+    // Buscar ventas que tienen id_rifa pero NO tienen numero_rifa
+    const ventasHuerfanas = await client.query(
+      `SELECT id_venta, cliente_nombre, telefono_cliente
+       FROM venta_mostrador
+       WHERE id_rifa = $1 AND numero_rifa IS NULL`,
+      [idEvento]
+    );
+
+    let asignadas = 0;
+    const resultados = [];
+
+    // Para cada venta huérfana, asignar la primera boleta disponible de su cliente
+    for (const venta of ventasHuerfanas.rows) {
+      // Buscar boleta más reciente para este cliente (N/A = venta de mostrador)
+      const boletaRes = await client.query(
+        `SELECT id_boleta, numero_boleta, fecha_sorteo
+         FROM rifa
+         WHERE id_evento_rifa = $1 AND nombre ILIKE $2 AND placa_vehiculo = 'N/A'
+         ORDER BY id_boleta DESC LIMIT 1`,
+        [idEvento, venta.cliente_nombre]
+      );
+
+      if (boletaRes.rows.length > 0) {
+        const boleta = boletaRes.rows[0];
+        await client.query(
+          `UPDATE venta_mostrador
+           SET id_boleta = $1, numero_rifa = $2, fecha_sorteo = $3
+           WHERE id_venta = $4`,
+          [boleta.id_boleta, boleta.numero_boleta, boleta.fecha_sorteo, venta.id_venta]
+        );
+        asignadas++;
+        resultados.push(`Venta ${venta.id_venta}: Asignada boleta #${boleta.numero_boleta}`);
+      } else {
+        resultados.push(`Venta ${venta.id_venta}: ⚠️ No hay boleta disponible para ${venta.cliente_nombre}`);
+      }
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      mensaje: `${asignadas} ventas reparadas`,
+      ventasHuerfanas: ventasHuerfanas.rows.length,
+      asignadas,
+      resultados
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error asignando boletas huérfanas:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 // 🧪 Pruebas internas de validaciones (pruebas en base de datos)
 router.post('/debug/test-validaciones', async (req, res) => {
   const resultados = {
