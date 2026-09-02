@@ -214,28 +214,17 @@ export const registrarBoleta = async (req, res) => {
     const result = await client.query(insertQuery, [idEvento, numeroFormatted, nombre, telefono, placa_vehiculo]);
     const idBoleta = result.rows[0].id_boleta;
     console.log(`✅ Boleta insertada en tabla rifa: id_boleta=${idBoleta}, numero=${numeroFormatted}`);
-    console.log(`[TRANSACCIÓN BOLETA] Evaluando placa_vehiculo: valor="${placa_vehiculo}" (tipo: ${typeof placa_vehiculo}, es "N/A"? ${placa_vehiculo === 'N/A'})`);
 
-    // Si es una venta de mostrador (placa_vehiculo === 'N/A'), actualizar venta_mostrador con datos de rifa
-    if (placa_vehiculo === 'N/A') {
-      console.log(`[TRANSACCIÓN BOLETA] ✅ Condición TRUE - Proceediendo con UPDATE a venta_mostrador para id_venta=${id_venta}`);
+    // ✅ CRÍTICO: Si llega id_venta, es venta de mostrador y debe actualizarse la venta
+    // NO depender de placa_vehiculo porque en mostrador es opcional
+    if (id_venta) {
+      console.log(`[TRANSACCIÓN BOLETA] ✅ id_venta=${id_venta} presente - Proceediendo con UPDATE a venta_mostrador`);
       const eventoInfo = await client.query(
         'SELECT fecha_sorteo FROM evento_rifa WHERE id_evento = $1',
         [idEvento]
       );
 
       if (eventoInfo.rows.length > 0) {
-        // ✅ VALIDACIÓN CRÍTICA: id_venta es OBLIGATORIO para vincular boleta a venta
-        if (!id_venta) {
-          await client.query('ROLLBACK');
-          console.error(`❌ id_venta es requerido para vincular boleta a venta. Cliente: ${nombre}`);
-          return res.status(400).json({
-            error: '❌ ID de venta es requerido para registrar la boleta. Por favor intenta de nuevo.',
-            code: 'MISSING_VENTA_ID',
-            debug: { numero_boleta: numeroFormatted, nombre, telefono }
-          });
-        }
-
         const idVentaToUpdate = id_venta;
 
         // Actualizar venta_mostrador con datos de boleta
