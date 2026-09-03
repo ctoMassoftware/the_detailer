@@ -815,12 +815,20 @@ router.get('/descargar/:token', async (req, res) => {
               )
             ) FILTER (WHERE d.id_servicio IS NOT NULL),
             '[]'::json
-          ) as lista_servicios
+          ) as lista_servicios,
+          er.descripcion_premios as rifa_premio,
+          er.fecha_sorteo as fecha_sorteo,
+          er.encargado as encargado_rifa,
+          r_boleta.numero_boleta as numero_rifa,
+          CONCAT(u.nombre, ' ', u.apellido) as responsable_nombre
          FROM orden o
          LEFT JOIN detalle_orden_venta d ON o.id_orden = d.id_orden
          LEFT JOIN servicio s ON d.id_servicio = s.id_servicio
+         LEFT JOIN evento_rifa er ON o.id_rifa = er.id_evento
+         LEFT JOIN usuarios u ON o.id_user_encargado = u.id_user
+         LEFT JOIN rifa r_boleta ON o.id_boleta = r_boleta.id_boleta
          WHERE o.id_orden = $1
-         GROUP BY o.id_orden`,
+         GROUP BY o.id_orden, o.cedula_cliente, o.nombre_cliente, o.correo_cliente, o.telefono_cliente, o.direccion_cliente, o.placa_vehiculo, o.marca_vehiculo, o.modelo_vehiculo, o.tipo_vehiculo, o.metodo_pago, o.caja, o.estado, o.id_user_encargado, o.id_rifa, o.notas, o.fecha, o.hora, o.sede, o.cantidad_cascos, o.id_boleta, er.descripcion_premios, er.fecha_sorteo, er.encargado, u.nombre, u.apellido, r_boleta.numero_boleta`,
         [orden.id_orden]
       );
 
@@ -842,6 +850,10 @@ router.get('/descargar/:token', async (req, res) => {
           v.id_user_vendedor,
           v.fecha,
           v.hora,
+          v.id_rifa,
+          v.numero_rifa,
+          v.id_boleta,
+          v.fecha_sorteo,
           CONCAT(u.nombre, ' ', u.apellido) as vendedor_nombre,
           COALESCE(
             json_agg(
@@ -858,7 +870,7 @@ router.get('/descargar/:token', async (req, res) => {
          LEFT JOIN detalle_venta_mostrador d ON v.id_venta = d.id_venta
          LEFT JOIN usuarios u ON v.id_user_vendedor = u.id_user
          WHERE v.id_venta = $1
-         GROUP BY v.id_venta, u.nombre, u.apellido`,
+         GROUP BY v.id_venta, v.cliente_nombre, v.telefono_cliente, v.metodo_pago, v.total, v.sede, v.id_user_vendedor, v.fecha, v.hora, v.id_rifa, v.numero_rifa, v.id_boleta, v.fecha_sorteo, u.nombre, u.apellido`,
         [orden.id_venta]
       );
 
@@ -963,6 +975,16 @@ const generarHTMLReciboVenta = (venta) => {
         <strong>Sede</strong>
         <span>${venta.sede || 'N/A'}</span>
       </div>
+      ${venta.numero_rifa ? `
+      <div class="info-box">
+        <strong>Número de Boleta</strong>
+        <span>${venta.numero_rifa}</span>
+      </div>
+      <div class="info-box">
+        <strong>Fecha Sorteo</strong>
+        <span>${venta.fecha_sorteo ? new Date(venta.fecha_sorteo).toLocaleDateString('es-CO') : 'N/A'}</span>
+      </div>
+      ` : ''}
     </div>
 
     <div class="productos">
@@ -1108,6 +1130,16 @@ const generarHTMLRecibo = (orden) => {
         <strong>Vehículo</strong>
         <span>${orden.placa_vehiculo} - ${orden.marca_vehiculo} ${orden.modelo_vehiculo}</span>
       </div>
+      ${orden.numero_rifa ? `
+      <div class="info-box">
+        <strong>Número de Boleta</strong>
+        <span>${orden.numero_rifa}</span>
+      </div>
+      <div class="info-box">
+        <strong>Premio Rifa</strong>
+        <span>${orden.rifa_premio || 'N/A'}</span>
+      </div>
+      ` : ''}
     </div>
 
     <div class="servicios">
