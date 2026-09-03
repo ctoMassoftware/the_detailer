@@ -48,6 +48,36 @@ export const registrarVentaMostrador = async (req, res) => {
         const ventaRes = await client.query(insertVenta, ventaValues);
         const idVenta = ventaRes.rows[0].id_venta;
 
+        // 1.5. Asignar boleta si la venta participa en rifa
+        if (id_rifa) {
+          const boletaResult = await client.query(`
+            SELECT r.id_boleta, r.numero_boleta
+            FROM rifa r
+            WHERE r.id_evento_rifa = $1
+              AND r.id_boleta NOT IN (
+                SELECT DISTINCT id_boleta
+                FROM venta_mostrador
+                WHERE id_boleta IS NOT NULL
+                  AND id_rifa = $1
+              )
+            ORDER BY r.numero_boleta ASC
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+          `, [id_rifa]);
+
+          if (boletaResult.rows.length > 0) {
+            const boleta = boletaResult.rows[0];
+            await client.query(`
+              UPDATE venta_mostrador
+              SET id_boleta = $1, numero_rifa = $2
+              WHERE id_venta = $3
+            `, [boleta.id_boleta, boleta.numero_boleta, idVenta]);
+            console.log(`✓ Boleta #${boleta.numero_boleta} asignada a venta ${idVenta}`);
+          } else {
+            console.warn(`⚠️ No hay boletas disponibles para evento rifa ${id_rifa}`);
+          }
+        }
+
         // 2. Insertar Detalles y Descontar Inventario
         for (let prod of productos) {
             // Obtener datos actuales del producto
