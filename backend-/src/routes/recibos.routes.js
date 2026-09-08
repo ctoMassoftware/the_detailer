@@ -64,31 +64,58 @@ function generarErrorHTML(titulo, mensaje, detalles = '') {
       font-family: 'Poppins', sans-serif;
       background: var(--bg-dark);
       color: var(--text-main);
-      padding: 20px;
+      padding: 10px;
+    }
+    @media (min-width: 600px) {
+      body { padding: 20px; }
     }
     .container {
       max-width: 600px;
       margin: 0 auto;
       background: var(--content-dark);
-      padding: 40px;
+      padding: 20px;
       border-radius: 0.75rem;
       box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    @media (min-width: 600px) {
+      .container { padding: 40px; }
     }
     .header {
       text-align: center;
       border-bottom: 3px solid var(--primary-color);
-      padding-bottom: 20px;
-      margin-bottom: 30px;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
     }
-    .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; white-space: nowrap; }
-    .header p { color: var(--text-muted); font-size: 14px; }
-    .error-icon { font-size: 60px; display: block; margin-bottom: 20px; text-align: center; }
+    @media (min-width: 600px) {
+      .header { padding-bottom: 20px; margin-bottom: 30px; }
+    }
+    .header h1 {
+      color: var(--primary-color);
+      font-size: 24px;
+      margin-bottom: 5px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+    @media (min-width: 600px) {
+      .header h1 { font-size: 28px; }
+    }
+    .header p { color: var(--text-muted); font-size: 13px; }
+    @media (min-width: 600px) {
+      .header p { font-size: 14px; }
+    }
+    .error-icon { font-size: 50px; display: block; margin-bottom: 15px; text-align: center; }
+    @media (min-width: 600px) {
+      .error-icon { font-size: 60px; margin-bottom: 20px; }
+    }
     .error-title {
       color: var(--text-main);
-      font-size: 22px;
-      margin-bottom: 15px;
+      font-size: 18px;
+      margin-bottom: 12px;
       text-align: center;
       font-weight: 600;
+    }
+    @media (min-width: 600px) {
+      .error-title { font-size: 22px; margin-bottom: 15px; }
     }
     .error-mensaje {
       color: var(--text-muted);
@@ -1114,7 +1141,7 @@ const generarHTMLReciboVenta = (venta) => {
       background: var(--bg-dark);
       color: var(--text-main);
       line-height: 1.5;
-      padding: 20px;
+      padding: 10px;
     }
     .toolbar { text-align: center; margin-bottom: 20px; }
     .btn-descargar {
@@ -1134,9 +1161,13 @@ const generarHTMLReciboVenta = (venta) => {
       max-width: 600px;
       margin: 0 auto;
       background: var(--content-dark);
-      padding: 40px;
+      padding: 20px;
       border-radius: 0.75rem;
       box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    @media (min-width: 600px) {
+      body { padding: 20px; }
+      .container { padding: 40px; }
     }
     @media print { .toolbar { display: none; } }
     .header {
@@ -1145,45 +1176,76 @@ const generarHTMLReciboVenta = (venta) => {
       padding-bottom: 20px;
       margin-bottom: 30px;
     }
-    .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; white-space: nowrap; }
-    .header p { color: var(--text-muted); font-size: 14px; }
+    .header h1 {
+      color: var(--primary-color);
+      font-size: 24px;
+      margin-bottom: 5px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+    .header p { color: var(--text-muted); font-size: 13px; }
     .info-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 30px;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    @media (min-width: 500px) {
+      .header h1 { font-size: 28px; }
+      .header p { font-size: 14px; }
+      .info-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
     }
     .info-box {
-      padding: 15px;
+      padding: 12px;
       background: rgba(255, 255, 255, 0.05);
       border-radius: var(--radius);
       border-left: 3px solid var(--primary-color);
     }
+    @media (min-width: 500px) {
+      .info-box { padding: 15px; }
+    }
     .info-box strong {
       display: block;
       color: var(--text-main);
-      margin-bottom: 5px;
+      margin-bottom: 4px;
       font-weight: 600;
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .info-box span {
       color: var(--text-main);
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
+      word-break: break-word;
     }
-    .productos { margin: 30px 0; }
+    @media (min-width: 500px) {
+      .info-box strong { font-size: 12px; margin-bottom: 5px; }
+      .info-box span { font-size: 14px; }
+    }
+    .productos {
+      margin: 20px 0;
+    }
     .productos h3 {
       color: var(--text-main);
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       border-bottom: 2px solid var(--border-color-dark);
-      padding-bottom: 10px;
+      padding-bottom: 8px;
       font-weight: 600;
+      font-size: 15px;
+    }
+    @media (min-width: 500px) {
+      .productos { margin: 30px 0; }
+      .productos h3 { margin-bottom: 15px; padding-bottom: 10px; font-size: 16px; }
     }
     .tabla-wrapper {
       overflow-x: auto;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
+      -webkit-overflow-scrolling: touch;
     }
     table {
       width: 100%;
@@ -1193,20 +1255,28 @@ const generarHTMLReciboVenta = (venta) => {
     th {
       background: var(--primary-color);
       color: white;
-      padding: 12px 8px;
+      padding: 10px 6px;
       text-align: left;
       font-weight: 600;
-      white-space: nowrap;
-      font-size: 13px;
+      font-size: 11px;
+    }
+    @media (min-width: 500px) {
+      th { padding: 12px 8px; font-size: 13px; }
     }
     td {
-      padding: 12px 8px;
+      padding: 10px 6px;
       border-bottom: 1px solid var(--border-color-dark);
       color: var(--text-main);
-      font-size: 13px;
+      font-size: 12px;
+    }
+    @media (min-width: 500px) {
+      td { padding: 12px 8px; font-size: 13px; }
     }
     td:first-child {
-      min-width: 150px;
+      min-width: 120px;
+    }
+    @media (min-width: 500px) {
+      td:first-child { min-width: 150px; }
     }
     td:nth-child(2), td:nth-child(3), td:nth-child(4) {
       text-align: right;
@@ -1216,25 +1286,35 @@ const generarHTMLReciboVenta = (venta) => {
       background: rgba(255, 255, 255, 0.05);
       font-weight: 600;
       color: var(--primary-color);
-      font-size: 16px;
+      font-size: 14px;
+    }
+    @media (min-width: 500px) {
+      .total-row { font-size: 16px; }
     }
     .footer {
       text-align: center;
-      margin-top: 30px;
-      padding-top: 20px;
+      margin-top: 20px;
+      padding-top: 15px;
       border-top: 1px solid var(--border-color-dark);
       color: var(--text-muted);
-      font-size: 12px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    @media (min-width: 500px) {
+      .footer { margin-top: 30px; padding-top: 20px; font-size: 12px; }
     }
     .badge {
       display: inline-block;
-      padding: 5px 12px;
+      padding: 6px 12px;
       background: var(--primary-color);
       color: white;
       border-radius: var(--radius);
       font-weight: 600;
-      margin-top: 10px;
-      font-size: 14px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    @media (min-width: 500px) {
+      .badge { padding: 5px 12px; margin-top: 10px; font-size: 14px; }
     }
   </style>
 </head>
