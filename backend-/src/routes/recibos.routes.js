@@ -80,7 +80,7 @@ function generarErrorHTML(titulo, mensaje, detalles = '') {
       padding-bottom: 20px;
       margin-bottom: 30px;
     }
-    .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; }
+    .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; white-space: nowrap; }
     .header p { color: var(--text-muted); font-size: 14px; }
     .error-icon { font-size: 60px; display: block; margin-bottom: 20px; text-align: center; }
     .error-title {
@@ -1145,7 +1145,7 @@ const generarHTMLReciboVenta = (venta) => {
       padding-bottom: 20px;
       margin-bottom: 30px;
     }
-    .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; }
+    .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; white-space: nowrap; }
     .header p { color: var(--text-muted); font-size: 14px; }
     .info-grid {
       display: grid;
