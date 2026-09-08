@@ -52,7 +52,7 @@ export const obtenerProxBoletaDisponible = async (client, id_evento_rifa, placa_
 export const obtenerProxNumeroBoleta = async (client, id_evento_rifa) => {
   try {
     const result = await client.query(`
-      SELECT MAX(CAST(numero_boleta AS INTEGER)) as max_numero
+      SELECT COALESCE(MAX(CAST(numero_boleta AS INTEGER)), 0) as max_numero
       FROM rifa
       WHERE id_evento_rifa = $1
         AND numero_boleta ~ '^[0-9]+$'
