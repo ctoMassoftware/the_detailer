@@ -44,25 +44,111 @@ function generarErrorHTML(titulo, mensaje, detalles = '') {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recibo - The Detailer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-color: #fd0100;
+      --primary-hover: #e00000;
+      --bg-page: #f8f6f6;
+      --bg-card: #ffffff;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --border-color: #e5e7eb;
+      --radius: 0.5rem;
+      --error-color: #dc2626;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .header { text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }
-    .header h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
-    .header p { color: #7f8c8d; font-size: 14px; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      padding: 40px;
+      border-radius: 0.75rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid var(--primary-color);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; }
+    .header p { color: var(--text-secondary); font-size: 14px; }
     .error-icon { font-size: 60px; display: block; margin-bottom: 20px; text-align: center; }
-    .error-title { color: #2c3e50; font-size: 22px; margin-bottom: 15px; text-align: center; font-weight: bold; }
-    .error-mensaje { color: #34495e; font-size: 15px; line-height: 1.6; margin-bottom: 25px; text-align: center; }
-    .error-detalles { background: #ecf0f1; border-left: 4px solid #e74c3c; padding: 15px; border-radius: 4px; font-size: 14px; color: #2c3e50; line-height: 1.6; margin-bottom: 30px; }
-    .error-detalles strong { color: #2c3e50; }
-    .acciones { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-    .btn { padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; text-decoration: none; display: inline-block; transition: all 0.2s; }
-    .btn-primary { background: #2c3e50; color: white; }
-    .btn-primary:hover { background: #34495e; }
-    .btn-secondary { background: #ecf0f1; color: #2c3e50; }
-    .btn-secondary:hover { background: #d5dbE0; }
-    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1; color: #7f8c8d; font-size: 12px; }
+    .error-title {
+      color: var(--text-primary);
+      font-size: 22px;
+      margin-bottom: 15px;
+      text-align: center;
+      font-weight: 600;
+    }
+    .error-mensaje {
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+    .error-detalles {
+      background: #fef2f2;
+      border-left: 4px solid var(--error-color);
+      padding: 15px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .error-detalles strong { color: var(--error-color); font-weight: 600; }
+    .acciones {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.2s;
+      font-family: 'Poppins', sans-serif;
+    }
+    .btn-primary {
+      background: var(--primary-color);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: var(--border-color);
+      color: var(--text-primary);
+    }
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
     @media print { body { display: none; } }
   </style>
 </head>
@@ -1006,39 +1092,135 @@ const generarHTMLReciboVenta = (venta) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recibo de Compra - The Detailer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
+    :root {
+      --primary-color: #fd0100;
+      --primary-hover: #e00000;
+      --bg-dark: #121212;
+      --content-dark: #1F1F1F;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --bg-page: #f8f6f6;
+      --bg-card: #ffffff;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --border-color: #e5e7eb;
+      --radius: 0.5rem;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      line-height: 1.5;
+      padding: 20px;
+    }
     .toolbar { text-align: center; margin-bottom: 20px; }
     .btn-descargar {
-      background: #2c3e50;
+      background: var(--primary-color);
       color: white;
       padding: 12px 30px;
       border: none;
-      border-radius: 4px;
+      border-radius: var(--radius);
       cursor: pointer;
       font-size: 16px;
-      font-weight: bold;
+      font-weight: 600;
+      font-family: 'Poppins', sans-serif;
+      transition: all 0.2s;
     }
-    .btn-descargar:hover { background: #34495e; }
-    .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .btn-descargar:hover { background: var(--primary-hover); transform: translateY(-2px); }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      padding: 40px;
+      border-radius: 0.75rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
     @media print { .toolbar { display: none; } }
-    .header { text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }
-    .header h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
-    .header p { color: #7f8c8d; font-size: 14px; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-    .info-box { padding: 15px; background: #ecf0f1; border-radius: 4px; }
-    .info-box strong { display: block; color: #2c3e50; margin-bottom: 5px; }
-    .info-box span { color: #34495e; font-size: 14px; }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid var(--primary-color);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; }
+    .header p { color: var(--text-secondary); font-size: 14px; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .info-box {
+      padding: 15px;
+      background: #f3f4f6;
+      border-radius: var(--radius);
+      border-left: 3px solid var(--primary-color);
+    }
+    .info-box strong {
+      display: block;
+      color: var(--text-primary);
+      margin-bottom: 5px;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .info-box span {
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 500;
+    }
     .productos { margin: 30px 0; }
-    .productos h3 { color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+    .productos h3 {
+      color: var(--text-primary);
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      font-weight: 600;
+    }
     table { width: 100%; border-collapse: collapse; }
-    th { background: #34495e; color: white; padding: 10px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
-    .total-row { background: #ecf0f1; font-weight: bold; color: #2c3e50; font-size: 16px; }
-    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1; color: #7f8c8d; font-size: 12px; }
-    .badge { display: inline-block; padding: 5px 12px; background: #27ae60; color: white; border-radius: 4px; font-weight: bold; margin-top: 10px; font-size: 14px; }
+    th {
+      background: var(--primary-color);
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-weight: 600;
+    }
+    td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+    .total-row {
+      background: #f3f4f6;
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 16px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 5px 12px;
+      background: var(--primary-color);
+      color: white;
+      border-radius: var(--radius);
+      font-weight: 600;
+      margin-top: 10px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
