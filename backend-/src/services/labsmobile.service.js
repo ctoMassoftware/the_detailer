@@ -314,37 +314,63 @@ export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRec
 
   // ✅ Si tenemos token, incluir link en el SMS
   if (metadata.tokenRecibo) {
-    const baseUrl = process.env.BASE_URL || 'https://the-detailer.co';
-    const linkRecibo = `${baseUrl}/recibos?token=${metadata.tokenRecibo}`;
-    const mensajeConLink = `${mensaje}\nVer: ${linkRecibo}`;
-
-    // Si el mensaje con link supera 160, usar versión compacta
-    if (mensajeConLink.length <= 160) {
-      mensaje = mensajeConLink;
+    // Validar formato del token (debe ser hexadecimal de 64 caracteres)
+    if (!/^[a-f0-9]{64}$/.test(metadata.tokenRecibo)) {
+      console.warn(`⚠️ Token inválido para SMS: formato incorrecto (${metadata.tokenRecibo.substring(0, 20)}...)`);
+      // Continuar sin link si token es inválido
     } else {
-      // Versión ultra-compacta sin detalles de productos
-      const totalAbrev = Math.round(total / 1000) + 'K';
-      mensaje = `Recibo ${numeroRecibo}: $${totalAbrev}\n${linkRecibo}`;
+      const baseUrl = (process.env.BASE_URL || 'https://the-detailer.co').trim();
 
-      // Si aún es muy largo, versión mínima
-      if (mensaje.length > 160) {
-        mensaje = `Recibo ${numeroRecibo}\n$${totalFormato}\n${linkRecibo}`;
+      // Validar formato de URL
+      try {
+        new URL(baseUrl);
+      } catch (e) {
+        console.error(`❌ BASE_URL inválida: ${baseUrl}`);
+        // Continuar sin link si URL es inválida
       }
 
-      // Último recurso: solo recibo y link
-      if (mensaje.length > 160) {
-        mensaje = `Recibo ${numeroRecibo}: ${linkRecibo}`;
+      const linkRecibo = `${baseUrl}/recibos?token=${metadata.tokenRecibo}`;
+      console.log(`📄 Link generado: ${linkRecibo.substring(0, 50)}... (${linkRecibo.length} chars)`);
+
+      const mensajeConLink = `${mensaje}\nVer: ${linkRecibo}`;
+
+      // Si el mensaje con link supera 160, usar versión compacta
+      if (mensajeConLink.length <= 160) {
+        mensaje = mensajeConLink;
+        console.log(`✅ Link incluido en SMS (${mensajeConLink.length}/160 chars)`);
+      } else {
+        console.warn(`⚠️ Mensaje con link excede 160 chars (${mensajeConLink.length}), usando versión compacta`);
+
+        // Versión ultra-compacta sin detalles de productos
+        const totalAbrev = Math.round(total / 1000) + 'K';
+        mensaje = `Recibo ${numeroRecibo}: $${totalAbrev}\n${linkRecibo}`;
+
+        // Si aún es muy largo, versión mínima
+        if (mensaje.length > 160) {
+          console.warn(`⚠️ Versión compacta aún excede (${mensaje.length}), usando versión mínima`);
+          mensaje = `Recibo ${numeroRecibo}\n$${totalFormato}\n${linkRecibo}`;
+        }
+
+        // Último recurso: solo recibo y link
+        if (mensaje.length > 160) {
+          console.error(`❌ CRÍTICO: Incluso versión mínima excede 160 chars (${mensaje.length})`);
+          mensaje = `Recibo ${numeroRecibo}: ${linkRecibo}`;
+        }
+
+        console.log(`✅ Versión compacta: ${mensaje.length}/160 chars`);
       }
     }
   } else {
     // Sin token: versión sin link
     if (mensaje.length > 160) {
+      console.warn(`⚠️ Mensaje sin link excede 160 chars (${mensaje.length}), compactando...`);
       const totalAbrev = Math.round(total / 1000) + 'K';
       mensaje = `Recibo ${numeroRecibo}: $${totalAbrev}`;
+      console.log(`✅ Mensaje compactado: ${mensaje.length}/160 chars`);
     }
   }
 
-  console.log(`📊 SMS Recibo - ${mensaje.length} chars (máx: 160) - ${metadata.tokenRecibo ? 'CON LINK' : 'SIN LINK'} - Validado ✅`);
+  console.log(`📊 SMS Recibo - ${mensaje.length} chars (máx: 160) - ${metadata.tokenRecibo ? 'CON LINK' : 'SIN LINK'}`);
 
   const validacion = validarSMS(mensaje);
   if (!validacion.valid) {
@@ -352,6 +378,7 @@ export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRec
     return { success: false, error: validacion.error };
   }
 
+  console.log(`✅ SMS validado correctamente - Listo para enviar`);
   return sendViaSMS(telefono, mensaje, {
     type: 'recibo_mostrador',
     ...metadata
