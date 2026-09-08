@@ -1181,30 +1181,37 @@ const generarHTMLReciboVenta = (venta) => {
       padding-bottom: 10px;
       font-weight: 600;
     }
+    .tabla-wrapper {
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      table-layout: fixed;
+      min-width: 100%;
     }
     th {
       background: var(--primary-color);
       color: white;
-      padding: 10px;
+      padding: 12px 8px;
       text-align: left;
       font-weight: 600;
+      white-space: nowrap;
+      font-size: 13px;
     }
     td {
-      padding: 10px;
+      padding: 12px 8px;
       border-bottom: 1px solid var(--border-color-dark);
       color: var(--text-main);
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      word-break: break-word;
+      font-size: 13px;
     }
-    th:first-child, td:first-child { width: 40%; }
-    th:nth-child(2), td:nth-child(2) { width: 20%; }
-    th:nth-child(3), td:nth-child(3) { width: 20%; }
-    th:nth-child(4), td:nth-child(4) { width: 20%; }
+    td:first-child {
+      min-width: 150px;
+    }
+    td:nth-child(2), td:nth-child(3), td:nth-child(4) {
+      text-align: right;
+      white-space: nowrap;
+    }
     .total-row {
       background: rgba(255, 255, 255, 0.05);
       font-weight: 600;
@@ -1273,6 +1280,7 @@ const generarHTMLReciboVenta = (venta) => {
 
     <div class="productos">
       <h3>Productos Comprados</h3>
+      <div class="tabla-wrapper">
       <table>
         <thead>
           <tr>
@@ -1297,6 +1305,7 @@ const generarHTMLReciboVenta = (venta) => {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <div style="text-align: center;">
