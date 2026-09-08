@@ -35,7 +35,7 @@ function formatearFechaUI(fecha) {
   return `${dia}/${mes}/${anio}`;
 }
 
-// Generar página HTML amigable para errores
+// Generar página HTML amigable para errores (mismo estilo que recibos)
 function generarErrorHTML(titulo, mensaje, detalles = '') {
   return `
 <!DOCTYPE html>
@@ -46,122 +46,48 @@ function generarErrorHTML(titulo, mensaje, detalles = '') {
   <title>Recibo - The Detailer</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .container {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      max-width: 500px;
-      width: 100%;
-      padding: 40px 30px;
-      text-align: center;
-    }
-    .icon {
-      font-size: 60px;
-      margin-bottom: 20px;
-      display: block;
-    }
-    h1 {
-      color: #2c3e50;
-      font-size: 24px;
-      margin-bottom: 15px;
-      font-weight: 600;
-    }
-    .mensaje {
-      color: #555;
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 20px;
-    }
-    .detalles {
-      background: #f8f9fa;
-      border-left: 4px solid #667eea;
-      padding: 15px;
-      border-radius: 4px;
-      text-align: left;
-      font-size: 14px;
-      color: #666;
-      line-height: 1.6;
-      margin-bottom: 30px;
-    }
-    .acciones {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .btn {
-      padding: 12px 24px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .btn-primary {
-      background: #667eea;
-      color: white;
-    }
-    .btn-primary:hover {
-      background: #5568d3;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-    .btn-secondary {
-      background: #ecf0f1;
-      color: #2c3e50;
-    }
-    .btn-secondary:hover {
-      background: #d5dbE0;
-    }
-    .logo {
-      color: #667eea;
-      font-weight: bold;
-      font-size: 18px;
-      margin-bottom: 30px;
-    }
-    .footer {
-      font-size: 12px;
-      color: #999;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #eee;
-    }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }
+    .header h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
+    .header p { color: #7f8c8d; font-size: 14px; }
+    .error-icon { font-size: 60px; display: block; margin-bottom: 20px; text-align: center; }
+    .error-title { color: #2c3e50; font-size: 22px; margin-bottom: 15px; text-align: center; font-weight: bold; }
+    .error-mensaje { color: #34495e; font-size: 15px; line-height: 1.6; margin-bottom: 25px; text-align: center; }
+    .error-detalles { background: #ecf0f1; border-left: 4px solid #e74c3c; padding: 15px; border-radius: 4px; font-size: 14px; color: #2c3e50; line-height: 1.6; margin-bottom: 30px; }
+    .error-detalles strong { color: #2c3e50; }
+    .acciones { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .btn { padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; text-decoration: none; display: inline-block; transition: all 0.2s; }
+    .btn-primary { background: #2c3e50; color: white; }
+    .btn-primary:hover { background: #34495e; }
+    .btn-secondary { background: #ecf0f1; color: #2c3e50; }
+    .btn-secondary:hover { background: #d5dbE0; }
+    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1; color: #7f8c8d; font-size: 12px; }
+    @media print { body { display: none; } }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo">🛍️ The Detailer</div>
-    <span class="icon" id="icon">❌</span>
-    <h1>${titulo}</h1>
-    <p class="mensaje">${mensaje}</p>
-    ${detalles ? `<div class="detalles">${detalles}</div>` : ''}
-    <div class="acciones">
-      <button class="btn btn-primary" onclick="location.href='/'">Inicio</button>
-      <button class="btn btn-secondary" onclick="window.history.back()">Atrás</button>
+    <div class="header">
+      <h1>🛍️ The Detailer</h1>
+      <p>Estado del Recibo</p>
     </div>
+
+    <span class="error-icon">${titulo.split(' ')[0]}</span>
+    <div class="error-title">${titulo.replace(/^[⚠️❌⏰]\s*/, '')}</div>
+    <p class="error-mensaje">${mensaje}</p>
+
+    ${detalles ? `<div class="error-detalles">${detalles}</div>` : ''}
+
+    <div class="acciones">
+      <button class="btn btn-primary" onclick="location.href='/'">Ir al Inicio</button>
+      <button class="btn btn-secondary" onclick="window.history.back()">Volver Atrás</button>
+    </div>
+
     <div class="footer">
       Si necesitas ayuda, contacta al equipo de The Detailer
     </div>
   </div>
-  <script>
-    const iconos = {
-      '⏰': 'Token Expirado',
-      '❌': 'Error',
-      '⚠️': 'Token No Encontrado'
-    };
-  </script>
 </body>
 </html>
   `;
