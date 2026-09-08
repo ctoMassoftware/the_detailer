@@ -65,6 +65,7 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
       if (!s) return;
       this.datosOrden.nombre_cliente = s.nombre_cliente || '';
       this.datosOrden.telefono_cliente = s.telefono_cliente || '';
+      this.telefonoValido = this.validarTelefono(this.datosOrden.telefono_cliente);
       this.datosOrden.placa = s.placa_vehiculo || '';
       // Autocompletar tipo de vehículo, marca y modelo (mapeo correcto)
       this.datosOrden.tipoVehiculo = s.tipo_vehiculo || '';
@@ -101,6 +102,7 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
     this.datosOrden.placa = s.placa_vehiculo || '';
     this.datosOrden.nombre_cliente = s.nombre_cliente || '';
     this.datosOrden.telefono_cliente = s.telefono_cliente || '';
+    this.telefonoValido = this.validarTelefono(this.datosOrden.telefono_cliente);
     // Autocompletar tipo de vehículo, marca y modelo (mapeo correcto)
     this.datosOrden.tipoVehiculo = s.tipo_vehiculo || '';
     this.datosOrden.marca = s.marca_vehiculo || '';
