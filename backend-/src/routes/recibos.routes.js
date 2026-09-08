@@ -49,30 +49,30 @@ function generarErrorHTML(titulo, mensaje, detalles = '') {
     :root {
       --primary-color: #fd0100;
       --primary-hover: #e00000;
-      --bg-page: #f8f6f6;
-      --bg-card: #ffffff;
-      --text-primary: #111827;
-      --text-secondary: #6b7280;
-      --border-color: #e5e7eb;
+      --bg-dark: #121212;
+      --content-dark: #1F1F1F;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-color-dark: #333333;
       --radius: 0.5rem;
-      --error-color: #dc2626;
+      --error-color: #f87171;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }
     body {
       font-family: 'Poppins', sans-serif;
-      background: var(--bg-page);
-      color: var(--text-primary);
+      background: var(--bg-dark);
+      color: var(--text-main);
       padding: 20px;
     }
     .container {
       max-width: 600px;
       margin: 0 auto;
-      background: var(--bg-card);
+      background: var(--content-dark);
       padding: 40px;
       border-radius: 0.75rem;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
     .header {
       text-align: center;
@@ -81,29 +81,29 @@ function generarErrorHTML(titulo, mensaje, detalles = '') {
       margin-bottom: 30px;
     }
     .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; }
-    .header p { color: var(--text-secondary); font-size: 14px; }
+    .header p { color: var(--text-muted); font-size: 14px; }
     .error-icon { font-size: 60px; display: block; margin-bottom: 20px; text-align: center; }
     .error-title {
-      color: var(--text-primary);
+      color: var(--text-main);
       font-size: 22px;
       margin-bottom: 15px;
       text-align: center;
       font-weight: 600;
     }
     .error-mensaje {
-      color: var(--text-secondary);
+      color: var(--text-muted);
       font-size: 15px;
       line-height: 1.6;
       margin-bottom: 25px;
       text-align: center;
     }
     .error-detalles {
-      background: #fef2f2;
+      background: rgba(248, 113, 113, 0.1);
       border-left: 4px solid var(--error-color);
       padding: 15px;
       border-radius: var(--radius);
       font-size: 14px;
-      color: var(--text-primary);
+      color: var(--text-main);
       line-height: 1.6;
       margin-bottom: 30px;
     }
@@ -135,18 +135,18 @@ function generarErrorHTML(titulo, mensaje, detalles = '') {
       transform: translateY(-2px);
     }
     .btn-secondary {
-      background: var(--border-color);
-      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
     }
     .btn-secondary:hover {
-      background: #d1d5db;
+      background: rgba(255, 255, 255, 0.15);
     }
     .footer {
       text-align: center;
       margin-top: 30px;
       padding-top: 20px;
-      border-top: 1px solid var(--border-color);
-      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color-dark);
+      color: var(--text-muted);
       font-size: 12px;
     }
     @media print { body { display: none; } }
@@ -1102,11 +1102,8 @@ const generarHTMLReciboVenta = (venta) => {
       --content-dark: #1F1F1F;
       --text-main: #e5e7eb;
       --text-muted: #9ca3af;
-      --bg-page: #f8f6f6;
-      --bg-card: #ffffff;
-      --text-primary: #111827;
-      --text-secondary: #6b7280;
-      --border-color: #e5e7eb;
+      --border-color-dark: #333333;
+      --row-hover: rgba(255, 255, 255, 0.05);
       --radius: 0.5rem;
     }
 
@@ -1114,8 +1111,8 @@ const generarHTMLReciboVenta = (venta) => {
     html, body { height: 100%; }
     body {
       font-family: 'Poppins', sans-serif;
-      background: var(--bg-page);
-      color: var(--text-primary);
+      background: var(--bg-dark);
+      color: var(--text-main);
       line-height: 1.5;
       padding: 20px;
     }
@@ -1136,10 +1133,10 @@ const generarHTMLReciboVenta = (venta) => {
     .container {
       max-width: 600px;
       margin: 0 auto;
-      background: var(--bg-card);
+      background: var(--content-dark);
       padding: 40px;
       border-radius: 0.75rem;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
     @media print { .toolbar { display: none; } }
     .header {
@@ -1149,7 +1146,7 @@ const generarHTMLReciboVenta = (venta) => {
       margin-bottom: 30px;
     }
     .header h1 { color: var(--primary-color); font-size: 28px; margin-bottom: 5px; font-weight: 700; }
-    .header p { color: var(--text-secondary); font-size: 14px; }
+    .header p { color: var(--text-muted); font-size: 14px; }
     .info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1158,13 +1155,13 @@ const generarHTMLReciboVenta = (venta) => {
     }
     .info-box {
       padding: 15px;
-      background: #f3f4f6;
+      background: rgba(255, 255, 255, 0.05);
       border-radius: var(--radius);
       border-left: 3px solid var(--primary-color);
     }
     .info-box strong {
       display: block;
-      color: var(--text-primary);
+      color: var(--text-main);
       margin-bottom: 5px;
       font-weight: 600;
       font-size: 12px;
@@ -1172,15 +1169,15 @@ const generarHTMLReciboVenta = (venta) => {
       letter-spacing: 0.5px;
     }
     .info-box span {
-      color: var(--text-primary);
+      color: var(--text-main);
       font-size: 14px;
       font-weight: 500;
     }
     .productos { margin: 30px 0; }
     .productos h3 {
-      color: var(--text-primary);
+      color: var(--text-main);
       margin-bottom: 15px;
-      border-bottom: 2px solid var(--border-color);
+      border-bottom: 2px solid var(--border-color-dark);
       padding-bottom: 10px;
       font-weight: 600;
     }
@@ -1194,11 +1191,11 @@ const generarHTMLReciboVenta = (venta) => {
     }
     td {
       padding: 10px;
-      border-bottom: 1px solid var(--border-color);
-      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-color-dark);
+      color: var(--text-main);
     }
     .total-row {
-      background: #f3f4f6;
+      background: rgba(255, 255, 255, 0.05);
       font-weight: 600;
       color: var(--primary-color);
       font-size: 16px;
@@ -1207,8 +1204,8 @@ const generarHTMLReciboVenta = (venta) => {
       text-align: center;
       margin-top: 30px;
       padding-top: 20px;
-      border-top: 1px solid var(--border-color);
-      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color-dark);
+      color: var(--text-muted);
       font-size: 12px;
     }
     .badge {
