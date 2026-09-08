@@ -85,7 +85,7 @@ function generarErrorHTML(titulo, mensaje, detalles = '') {
     </div>
 
     <div class="footer">
-      Si necesitas ayuda, contacta al equipo de The Detailer
+      Si necesitas ayuda, contacta a: <strong>info@the-detailer.co</strong>
     </div>
   </div>
 </body>
