@@ -35,6 +35,138 @@ function formatearFechaUI(fecha) {
   return `${dia}/${mes}/${anio}`;
 }
 
+// Generar página HTML amigable para errores
+function generarErrorHTML(titulo, mensaje, detalles = '') {
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recibo - The Detailer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 100%;
+      padding: 40px 30px;
+      text-align: center;
+    }
+    .icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      display: block;
+    }
+    h1 {
+      color: #2c3e50;
+      font-size: 24px;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+    .mensaje {
+      color: #555;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .detalles {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      border-radius: 4px;
+      text-align: left;
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .acciones {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #2c3e50;
+    }
+    .btn-secondary:hover {
+      background: #d5dbE0;
+    }
+    .logo {
+      color: #667eea;
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
+    .footer {
+      font-size: 12px;
+      color: #999;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🛍️ The Detailer</div>
+    <span class="icon" id="icon">❌</span>
+    <h1>${titulo}</h1>
+    <p class="mensaje">${mensaje}</p>
+    ${detalles ? `<div class="detalles">${detalles}</div>` : ''}
+    <div class="acciones">
+      <button class="btn btn-primary" onclick="location.href='/'">Inicio</button>
+      <button class="btn btn-secondary" onclick="window.history.back()">Atrás</button>
+    </div>
+    <div class="footer">
+      Si necesitas ayuda, contacta al equipo de The Detailer
+    </div>
+  </div>
+  <script>
+    const iconos = {
+      '⏰': 'Token Expirado',
+      '❌': 'Error',
+      '⚠️': 'Token No Encontrado'
+    };
+  </script>
+</body>
+</html>
+  `;
+}
+
 /**
  * Health check y diagnostics
  * GET /api/recibos/health
@@ -787,14 +919,52 @@ router.get('/descargar/:token', async (req, res) => {
     console.log(`   Token: ${token ? token.substring(0, 20) + '...' : 'NO'}`);
     console.log(`   Placa: ${placa || 'NO'}`);
 
+    // Validar que token no esté vacío
+    if (!token || token.trim() === '') {
+      console.warn('⚠️ Token vacío');
+      return res.status(400).send(generarErrorHTML(
+        '❌ Token No Proporcionado',
+        'No se encontró el código de acceso en la URL.',
+        'Verifica que hayas abierto el link completo desde el SMS.'
+      ));
+    }
+
     // Validar token
     const orden = await validarTokenRecibo(token, placa);
     console.log(`   Validación: ${orden ? '✅ EXITOSA' : '❌ FALLÓ'}`);
 
     if (!orden) {
-      return res.status(401).json({
-        error: 'Token inválido, expirado o ya descargado'
-      });
+      // Verificar si el token existe pero está expirado
+      const tokenHash = require('crypto')
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+      const tokenExistente = await pool.query(
+        `SELECT rt.expira_at, rt.descargado_at
+         FROM recibo_token rt
+         WHERE rt.token_hash = $1`,
+        [tokenHash]
+      );
+
+      let mensajeError = '';
+      let detalles = '';
+
+      if (tokenExistente.rows.length === 0) {
+        mensajeError = '⚠️ Token No Encontrado';
+        detalles = 'El código de acceso no existe o es incorrecto. Verifica el link del SMS.';
+      } else if (new Date(tokenExistente.rows[0].expira_at) < new Date()) {
+        const fechaExpiracion = new Date(tokenExistente.rows[0].expira_at);
+        mensajeError = '⏰ Token Expirado';
+        detalles = `El acceso expiró el ${fechaExpiracion.toLocaleDateString('es-CO')} a las ${fechaExpiracion.toLocaleTimeString('es-CO')}.<br>
+        <br>Los links de recibos duran <strong>24 horas</strong>.<br>
+        <br>Solicita un nuevo recibo al operario.`;
+      } else {
+        mensajeError = '❌ Acceso Denegado';
+        detalles = 'No tienes permiso para acceder a este recibo. Verifica que el link sea correcto.';
+      }
+
+      return res.status(401).send(generarErrorHTML(mensajeError, detalles));
     }
 
     let html;
