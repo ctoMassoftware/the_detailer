@@ -12,7 +12,7 @@ export const obtenerProxBoletaDisponible = async (client, id_evento_rifa, placa_
 };
 
 /**
- * Obtener el próximo número de boleta disponible (máximo + 1)
+ * Obtener el próximo número de boleta disponible (máximo ASIGNADO + 1)
  * @param {Object} client - Cliente de BD
  * @param {number} id_evento_rifa - ID del evento
  * @returns {string} Número de boleta como string (ej: "070")
@@ -20,12 +20,20 @@ export const obtenerProxBoletaDisponible = async (client, id_evento_rifa, placa_
 export const obtenerProxNumeroBoleta = async (client, id_evento_rifa) => {
   try {
     const result = await client.query(`
-      SELECT COALESCE(MAX(CAST(numero_boleta AS INTEGER)), 0) as max_numero
-      FROM rifa
-      WHERE id_evento_rifa = $1
-        AND numero_boleta !~ '[^0-9]'
-        AND numero_boleta ~ '^[0-9]+$'
-    `, [id_evento_rifa]);
+      SELECT COALESCE(MAX(CAST(v.numero_rifa AS INTEGER)), 0) as max_numero
+      FROM venta_mostrador v
+      WHERE v.id_rifa = $1
+        AND v.numero_rifa !~ '[^0-9]'
+        AND v.numero_rifa ~ '^[0-9]+$'
+      UNION
+      SELECT COALESCE(MAX(CAST(o.numero_rifa AS INTEGER)), 0) as max_numero
+      FROM orden o
+      WHERE o.id_rifa = $1
+        AND o.numero_rifa !~ '[^0-9]'
+        AND o.numero_rifa ~ '^[0-9]+$'
+      ORDER BY max_numero DESC
+      LIMIT 1
+    `, [id_evento_rifa, id_evento_rifa]);
 
     const maxNumero = result.rows[0]?.max_numero || 0;
     const proximoNumero = maxNumero + 1;
