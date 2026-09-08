@@ -25,6 +25,7 @@ export const obtenerProxBoletaDisponible = async (client, id_evento_rifa, placa_
           FROM venta_mostrador
           WHERE id_boleta IS NOT NULL AND id_rifa = $2
         )
+        AND r.numero_boleta !~ '[^0-9]'
         AND r.numero_boleta ~ '^[0-9]+$'
         ${placa_vehiculo ? 'AND UPPER(r.placa_vehiculo) = UPPER($3)' : ''}
       ORDER BY CAST(r.numero_boleta AS INTEGER) DESC
@@ -55,6 +56,7 @@ export const obtenerProxNumeroBoleta = async (client, id_evento_rifa) => {
       SELECT COALESCE(MAX(CAST(numero_boleta AS INTEGER)), 0) as max_numero
       FROM rifa
       WHERE id_evento_rifa = $1
+        AND numero_boleta !~ '[^0-9]'
         AND numero_boleta ~ '^[0-9]+$'
     `, [id_evento_rifa]);
 
