@@ -44,7 +44,7 @@
           <div class="form-group">
             <label>Celular *</label>
             <input type="text" [(ngModel)]="datosOrden.telefono_cliente" placeholder="Ej: 3987654321" class="input-dark"
-              (keypress)="validarSoloNumeros($event)" inputmode="numeric" required>
+              (keypress)="validarSoloNumeros($event)" (input)="onTelefonoChange($event)" inputmode="numeric" required>
           </div>
         </div>
       </section>
