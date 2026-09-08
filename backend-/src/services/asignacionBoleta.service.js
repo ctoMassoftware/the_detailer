@@ -4,44 +4,11 @@
  */
 
 /**
- * Obtener la próxima boleta disponible para un evento
- * @param {Object} client - Cliente de BD (transacción)
- * @param {number} id_evento_rifa - ID del evento de rifa
- * @param {string} placa_vehiculo - Placa del vehículo (opcional, para órdenes)
- * @returns {Object} { id_boleta, numero_boleta } o null si no hay disponible
+ * Obtener la próxima boleta disponible para un evento (DEPRECATED)
+ * Nota: Reemplazado por crear siempre boletas nuevas para evitar race conditions
  */
 export const obtenerProxBoletaDisponible = async (client, id_evento_rifa, placa_vehiculo = null, id_rifa_filter = null) => {
-  try {
-    const query = `
-      SELECT r.id_boleta, r.numero_boleta
-      FROM rifa r
-      WHERE r.id_evento_rifa = $1
-        AND r.id_boleta NOT IN (
-          SELECT DISTINCT id_boleta
-          FROM orden
-          WHERE id_boleta IS NOT NULL AND id_rifa = $2
-          UNION
-          SELECT DISTINCT id_boleta
-          FROM venta_mostrador
-          WHERE id_boleta IS NOT NULL AND id_rifa = $2
-        )
-        AND r.numero_boleta !~ '[^0-9]'
-        AND r.numero_boleta ~ '^[0-9]+$'
-        ${placa_vehiculo ? 'AND UPPER(r.placa_vehiculo) = UPPER($3)' : ''}
-      ORDER BY CAST(r.numero_boleta AS INTEGER) DESC
-      LIMIT 1
-      FOR UPDATE SKIP LOCKED
-    `;
-
-    const params = [id_evento_rifa, id_rifa_filter || id_evento_rifa];
-    if (placa_vehiculo) params.push(placa_vehiculo);
-
-    const result = await client.query(query, params);
-    return result.rows.length > 0 ? result.rows[0] : null;
-  } catch (error) {
-    console.error('❌ Error obteniendo próxima boleta disponible:', error.message);
-    throw error;
-  }
+  return null; // Siempre retorna null para forzar creación de boleta nueva
 };
 
 /**
