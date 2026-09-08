@@ -50,6 +50,12 @@ export const registrarVentaMostrador = async (req, res) => {
 
         // 1.5. Asignar boleta si la venta participa en rifa
         if (id_rifa) {
+          // Obtener fecha_sorteo del evento de rifa
+          const eventoResult = await client.query(`
+            SELECT fecha_sorteo FROM evento_rifa WHERE id_evento = $1
+          `, [id_rifa]);
+          const fechaSorteo = eventoResult.rows[0]?.fecha_sorteo || null;
+
           const boletaResult = await client.query(`
             SELECT r.id_boleta, r.numero_boleta
             FROM rifa r
@@ -60,19 +66,26 @@ export const registrarVentaMostrador = async (req, res) => {
                 WHERE id_boleta IS NOT NULL
                   AND id_rifa = $1
               )
-            ORDER BY r.numero_boleta ASC
+            ORDER BY CAST(r.numero_boleta AS INTEGER) DESC
             LIMIT 1
             FOR UPDATE SKIP LOCKED
           `, [id_rifa]);
 
           if (boletaResult.rows.length > 0) {
             const boleta = boletaResult.rows[0];
-            await client.query(`
+            const updateResult = await client.query(`
               UPDATE venta_mostrador
-              SET id_boleta = $1, numero_rifa = $2
-              WHERE id_venta = $3
-            `, [boleta.id_boleta, boleta.numero_boleta, idVenta]);
-            console.log(`✓ Boleta #${boleta.numero_boleta} asignada a venta ${idVenta}`);
+              SET id_boleta = $1, numero_rifa = $2, fecha_sorteo = $3
+              WHERE id_venta = $4
+              RETURNING id_boleta, numero_rifa, fecha_sorteo
+            `, [boleta.id_boleta, boleta.numero_boleta, fechaSorteo, idVenta]);
+
+            if (updateResult.rows.length > 0) {
+              const actualizado = updateResult.rows[0];
+              console.log(`✓ Boleta #${actualizado.numero_rifa} asignada a venta ${idVenta}, fecha sorteo: ${actualizado.fecha_sorteo}`);
+            } else {
+              console.warn(`⚠️ No se pudo actualizar boleta para venta ${idVenta}`);
+            }
           } else {
             console.warn(`⚠️ No hay boletas disponibles para evento rifa ${id_rifa}`);
           }
