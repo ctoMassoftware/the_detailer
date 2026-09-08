@@ -66,6 +66,7 @@ export const registrarVentaMostrador = async (req, res) => {
                 WHERE id_boleta IS NOT NULL
                   AND id_rifa = $1
               )
+              AND r.numero_boleta ~ '^[0-9]+$'
             ORDER BY CAST(r.numero_boleta AS INTEGER) DESC
             LIMIT 1
             FOR UPDATE SKIP LOCKED
