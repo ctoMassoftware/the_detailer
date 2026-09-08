@@ -309,7 +309,7 @@ export const enviarNotificacionModificacion = async (telefono, nombreCliente, de
 export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRecibo, total, metadata = {}, credentials = null) => {
   // COMPACTO: 160 chars max (1 SMS)
   const totalFormato = Number(total || 0).toLocaleString('es-CO');
-  const numeroRecibo = metadata.idVenta ? `#${metadata.idVenta}` : '';
+  const numeroRecibo = metadata.idVenta !== undefined && metadata.idVenta !== null ? `#${metadata.idVenta}` : '';
   let mensaje = `Recibo ${numeroRecibo}: ${detallesRecibo}\nTotal: $${totalFormato}`;
 
   // ✅ Si tenemos token, incluir link en el SMS
