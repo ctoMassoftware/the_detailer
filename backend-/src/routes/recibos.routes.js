@@ -996,9 +996,7 @@ router.get('/descargar/:token', async (req, res) => {
  * Generar HTML del recibo de VENTA DE MOSTRADOR
  */
 const generarHTMLReciboVenta = (venta) => {
-  const fechaStr = formatearFecha(venta.fecha);
-  const [anio, mes, dia] = fechaStr.split('-');
-  const fecha = `${dia}/${mes}/${anio}`;
+  const fecha = formatearFechaUI(venta.fecha);
   const total = venta.total_venta || 0;
 
   return `
@@ -1148,9 +1146,7 @@ const generarHTMLReciboVenta = (venta) => {
  * Generar HTML del recibo (puede convertirse a PDF con librería externa)
  */
 const generarHTMLRecibo = (orden) => {
-  const fechaStr = formatearFecha(orden.fecha);
-  const [anio, mes, dia] = fechaStr.split('-');
-  const fecha = `${dia}/${mes}/${anio}`;
+  const fecha = formatearFechaUI(orden.fecha);
   const total = orden.total_orden || 0;
 
   return `
