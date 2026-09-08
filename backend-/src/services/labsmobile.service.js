@@ -319,17 +319,18 @@ export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRec
       console.warn(`⚠️ Token inválido para SMS: formato incorrecto (${metadata.tokenRecibo.substring(0, 20)}...)`);
       // Continuar sin link si token es inválido
     } else {
-      const baseUrl = (process.env.BASE_URL || 'https://the-detailer.co').trim();
+      // ✅ CRÍTICO: Usar URL del BACKEND (API), no del frontend
+      const backendUrl = (process.env.BACKEND_URL || 'https://thedetailer.up.railway.app').trim();
 
-      // Validar formato de URL
+      // Validar formato de URL del backend
       try {
-        new URL(baseUrl);
+        new URL(backendUrl);
       } catch (e) {
-        console.error(`❌ BASE_URL inválida: ${baseUrl}`);
+        console.error(`❌ BACKEND_URL inválida: ${backendUrl}`);
         // Continuar sin link si URL es inválida
       }
 
-      const linkRecibo = `${baseUrl}/recibos?token=${metadata.tokenRecibo}`;
+      const linkRecibo = `${backendUrl}/api/recibos/descargar/${metadata.tokenRecibo}`;
       console.log(`📄 Link generado: ${linkRecibo.substring(0, 50)}... (${linkRecibo.length} chars)`);
 
       const mensajeConLink = `${mensaje}\nVer: ${linkRecibo}`;

@@ -2,6 +2,14 @@
   command = "npm run build"
   publish = "dist/app-theDetailer/browser"
 
+# Redirigir todas las rutas a index.html EXCEPTO /api/*
+[[redirects]]
+  from = "/api/*"
+  to = ":splat"
+  status = 200
+  force = false
+
+# Redirigir todas las demás rutas a index.html para SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
