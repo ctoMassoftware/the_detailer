@@ -1181,7 +1181,11 @@ const generarHTMLReciboVenta = (venta) => {
       padding-bottom: 10px;
       font-weight: 600;
     }
-    table { width: 100%; border-collapse: collapse; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
     th {
       background: var(--primary-color);
       color: white;
@@ -1193,7 +1197,14 @@ const generarHTMLReciboVenta = (venta) => {
       padding: 10px;
       border-bottom: 1px solid var(--border-color-dark);
       color: var(--text-main);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
+    th:first-child, td:first-child { width: 40%; }
+    th:nth-child(2), td:nth-child(2) { width: 20%; }
+    th:nth-child(3), td:nth-child(3) { width: 20%; }
+    th:nth-child(4), td:nth-child(4) { width: 20%; }
     .total-row {
       background: rgba(255, 255, 255, 0.05);
       font-weight: 600;
