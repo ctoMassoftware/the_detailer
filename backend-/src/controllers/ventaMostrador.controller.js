@@ -198,11 +198,11 @@ export const getHistorialMostrador = async (req, res) => {
 
     try {
         const query = `
-            SELECT v.*, u.nombre as vendedor_nombre 
+            SELECT v.*, u.nombre as vendedor_nombre
             FROM venta_mostrador v
             LEFT JOIN usuarios u ON v.id_user_vendedor = u.id_user
             WHERE v.fecha = $1 ${sqlSedeFiltro}
-            ORDER BY v.hora DESC
+            ORDER BY v.id_venta DESC
         `;
         const ventasRes = await pool.query(query, params);
         const ventas = ventasRes.rows;
