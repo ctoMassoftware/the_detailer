@@ -1,3 +1,14 @@
+import { pool } from "../config/db.js";
+import { DateTime } from "luxon";
+import {
+  enviarNotificacionInicioServicio,
+  enviarNotificacionSimple,
+  enviarNotificacionModificacion,
+  enviarNotificacionOrdenListaSinRifa
+} from "../services/notificationRouter.service.js";
+import { enviarNotificacionPorCambioEstado } from "../services/orderStatusNotification.service.js";
+import { obtenerProxBoletaDisponible, crearBoletaNueva, asignarBoleta } from "../services/asignacionBoleta.service.js";
+
 // Buscar clientes o placas por coincidencia parcial
 export const buscarClientesPlacas = async (req, res) => {
   const { query } = req.query;
@@ -21,15 +32,6 @@ export const buscarClientesPlacas = async (req, res) => {
     client.release();
   }
 };
-import { pool } from "../config/db.js";
-import { DateTime } from "luxon";
-import {
-  enviarNotificacionInicioServicio,
-  enviarNotificacionSimple,
-  enviarNotificacionModificacion,
-  enviarNotificacionOrdenListaSinRifa
-} from "../services/notificationRouter.service.js";
-import { enviarNotificacionPorCambioEstado } from "../services/orderStatusNotification.service.js";
 
 // ✅ Limpia la hora recibida del frontend a formato "HH:mm"
 // El frontend ya manda la hora en Bogotá (hora local del navegador), NO hay que convertir
@@ -210,8 +212,6 @@ export const createOrden = async (req, res) => {
 
     // ✅ ASIGNAR BOLETA SI PARTICIPA EN RIFA
     if (id_rifa) {
-      const { obtenerProxBoletaDisponible, crearBoletaNueva, asignarBoleta } = await import('../services/asignacionBoleta.service.js');
-
       let boleta = await obtenerProxBoletaDisponible(client, id_rifa, placa_vehiculo, id_rifa);
 
       if (!boleta) {
