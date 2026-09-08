@@ -1,7 +1,6 @@
 [build]
   command = "npm run build"
-  functions = "dist/server"
-  publish = "dist/browser"
+  publish = "dist/app-theDetailer/browser"
 
 [[redirects]]
   from = "/*"
