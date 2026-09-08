@@ -88,7 +88,7 @@ export const asignarBoleta = async (client, tipoRegistro, id_registro, id_boleta
         id_boleta = $1,
         numero_rifa = $2
         ${fecha_sorteo ? ', fecha_sorteo = $3' : ''}
-      WHERE ${colId} = $${fecha_sorteo ? '4' : '3'}
+      WHERE ${colId} = $${fecha_sorteo ? 4 : 3}
       RETURNING id_boleta, numero_rifa
     `, fecha_sorteo
       ? [id_boleta, numero_boleta, fecha_sorteo, id_registro]
