@@ -1,6 +1,7 @@
 import { pool } from '../config/db.js';
 import { enviarReciboMostrador } from '../services/notificationRouter.service.js';
 import { generarSoloToken, insertarTokenEnTransaccion } from '../services/reciboToken.service.js';
+import { obtenerProxBoletaDisponible, crearBoletaNueva, asignarBoleta } from '../services/asignacionBoleta.service.js';
 
 export const registrarVentaMostrador = async (req, res) => {
     const { id: id_user_vendedor, sede } = req.user;
@@ -50,46 +51,18 @@ export const registrarVentaMostrador = async (req, res) => {
 
         // 1.5. Asignar boleta si la venta participa en rifa
         if (id_rifa) {
-          // Obtener fecha_sorteo del evento de rifa
           const eventoResult = await client.query(`
             SELECT fecha_sorteo FROM evento_rifa WHERE id_evento = $1
           `, [id_rifa]);
           const fechaSorteo = eventoResult.rows[0]?.fecha_sorteo || null;
 
-          const boletaResult = await client.query(`
-            SELECT r.id_boleta, r.numero_boleta
-            FROM rifa r
-            WHERE r.id_evento_rifa = $1
-              AND r.id_boleta NOT IN (
-                SELECT DISTINCT id_boleta
-                FROM venta_mostrador
-                WHERE id_boleta IS NOT NULL
-                  AND id_rifa = $1
-              )
-              AND r.numero_boleta ~ '^[0-9]+$'
-            ORDER BY CAST(r.numero_boleta AS INTEGER) DESC
-            LIMIT 1
-            FOR UPDATE SKIP LOCKED
-          `, [id_rifa]);
+          let boleta = await obtenerProxBoletaDisponible(client, id_rifa, null, id_rifa);
 
-          if (boletaResult.rows.length > 0) {
-            const boleta = boletaResult.rows[0];
-            const updateResult = await client.query(`
-              UPDATE venta_mostrador
-              SET id_boleta = $1, numero_rifa = $2, fecha_sorteo = $3
-              WHERE id_venta = $4
-              RETURNING id_boleta, numero_rifa, fecha_sorteo
-            `, [boleta.id_boleta, boleta.numero_boleta, fechaSorteo, idVenta]);
-
-            if (updateResult.rows.length > 0) {
-              const actualizado = updateResult.rows[0];
-              console.log(`✓ Boleta #${actualizado.numero_rifa} asignada a venta ${idVenta}, fecha sorteo: ${actualizado.fecha_sorteo}`);
-            } else {
-              console.warn(`⚠️ No se pudo actualizar boleta para venta ${idVenta}`);
-            }
-          } else {
-            console.warn(`⚠️ No hay boletas disponibles para evento rifa ${id_rifa}`);
+          if (!boleta) {
+            boleta = await crearBoletaNueva(client, id_rifa, cliente_nombre, telefono_cliente, 'N/A');
           }
+
+          await asignarBoleta(client, 'venta_mostrador', idVenta, boleta.id_boleta, boleta.numero_boleta, fechaSorteo);
         }
 
         // 2. Insertar Detalles y Descontar Inventario

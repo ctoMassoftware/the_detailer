@@ -210,48 +210,15 @@ export const createOrden = async (req, res) => {
 
     // ✅ ASIGNAR BOLETA SI PARTICIPA EN RIFA
     if (id_rifa) {
-      // Buscar boleta disponible del evento para esta placa
-      const boletaResult = await client.query(
-        `SELECT r.id_boleta, r.numero_boleta
-         FROM rifa r
-         WHERE r.id_evento_rifa = $1
-           AND UPPER(r.placa_vehiculo) = UPPER($2)
-           AND r.id_boleta NOT IN (
-             SELECT DISTINCT id_boleta
-             FROM orden
-             WHERE id_boleta IS NOT NULL
-               AND id_rifa = $1
-           )
-         ORDER BY r.numero_boleta ASC
-         LIMIT 1
-         FOR UPDATE SKIP LOCKED`,
-        [id_rifa, placa_vehiculo]
-      );
+      const { obtenerProxBoletaDisponible, crearBoletaNueva, asignarBoleta } = await import('../services/asignacionBoleta.service.js');
 
-      if (boletaResult.rows.length > 0) {
-        // Boleta disponible encontrada, asignarla
-        const boleta = boletaResult.rows[0];
-        await client.query(
-          `UPDATE orden SET id_boleta = $1 WHERE id_orden = $2`,
-          [boleta.id_boleta, idOrden]
-        );
-        console.log(`✅ Boleta #${boleta.numero_boleta} asignada a orden ${idOrden}`);
-      } else {
-        // No hay boleta disponible, crear una nueva
-        const numeroBoleta = `BL-${idOrden}`;
-        const boletaNuevaResult = await client.query(
-          `INSERT INTO rifa (id_evento_rifa, numero_boleta, nombre, telefono, placa_vehiculo)
-           VALUES ($1, $2, $3, $4, $5)
-           RETURNING id_boleta`,
-          [id_rifa, numeroBoleta, nombre_cliente, telefono_cliente, placa_vehiculo]
-        );
-        const idBoletaNueva = boletaNuevaResult.rows[0].id_boleta;
-        await client.query(
-          `UPDATE orden SET id_boleta = $1 WHERE id_orden = $2`,
-          [idBoletaNueva, idOrden]
-        );
-        console.log(`✅ Boleta creada y asignada para orden ${idOrden}: ${numeroBoleta}`);
+      let boleta = await obtenerProxBoletaDisponible(client, id_rifa, placa_vehiculo, id_rifa);
+
+      if (!boleta) {
+        boleta = await crearBoletaNueva(client, id_rifa, nombre_cliente, telefono_cliente, placa_vehiculo);
       }
+
+      await asignarBoleta(client, 'orden', idOrden, boleta.id_boleta, boleta.numero_boleta);
     }
 
     await client.query("COMMIT");
