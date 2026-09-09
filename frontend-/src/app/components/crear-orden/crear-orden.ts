@@ -22,11 +22,21 @@ import { RifaService } from '../../services/rifa.service';
 export class CrearOrdenComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private rifaService = inject(RifaService);
+  private servicioService = inject(ServicioService);
+  private ordenService = inject(OrdenService);
+  private operarioService = inject(OperarioService);
+  private metodosPagoService = inject(MetodosPagoService);
+  private router = inject(Router);
 
   rifaActiva: any = null;
   telefonoValido = false;
 
-  // Validar formato de teléfono (10+ dígitos)
+  sugerenciasClientes: any[] = [];
+  buscandoCliente = false;
+
+  sugerenciasPlaca: any[] = [];
+  buscandoPlaca = false;
+
   validarTelefono(valor: string): boolean {
     const telefonoLimpio = valor.replace(/\D/g, '');
     return telefonoLimpio.length >= 10;
@@ -37,52 +47,44 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
     this.telefonoValido = this.validarTelefono(input.value);
   }
 
-    // --- Autocompletar clientes/placas para el input de nombre_cliente ---
-    sugerenciasClientes: any[] = [];
-    buscandoCliente = false;
-
-    buscarClientePlaca(event: Event) {
-      const input = event.target as HTMLInputElement | null;
-      const valor = input?.value || '';
-      if (valor.length >= 2) {
-        this.buscandoCliente = true;
-        this.ordenService.buscarClientesPlacas(valor).pipe(takeUntil(this.destroy$)).subscribe({
-          next: (res: any[]) => {
-            this.sugerenciasClientes = res;
-            this.buscandoCliente = false;
-          },
-          error: (err: any) => {
-            this.sugerenciasClientes = [];
-            this.buscandoCliente = false;
-          }
-        });
-      } else {
-        this.sugerenciasClientes = [];
-      }
-    }
-
-    seleccionarSugerenciaCliente(s: any) {
-      if (!s) return;
-      this.datosOrden.nombre_cliente = s.nombre_cliente || '';
-      this.datosOrden.telefono_cliente = s.telefono_cliente || '';
-      this.telefonoValido = this.validarTelefono(this.datosOrden.telefono_cliente);
-      this.datosOrden.placa = s.placa_vehiculo || '';
-      // Autocompletar tipo de vehículo, marca y modelo (mapeo correcto)
-      this.datosOrden.tipoVehiculo = s.tipo_vehiculo || '';
-      this.datosOrden.marca = s.marca_vehiculo || '';
-      this.datosOrden.modelo = s.modelo_vehiculo || '';
+  buscarClientePlaca(event: Event) {
+    const input = event.target as HTMLInputElement | null;
+    const valor = input?.value || '';
+    if (valor.length >= 2) {
+      this.buscandoCliente = true;
+      this.ordenService.buscarClientesPlacas(valor).pipe(takeUntil(this.destroy$)).subscribe({
+        next: (res: any[]) => {
+          this.sugerenciasClientes = res;
+          this.buscandoCliente = false;
+        },
+        error: (err: any) => {
+          this.sugerenciasClientes = [];
+          this.buscandoCliente = false;
+        }
+      });
+    } else {
       this.sugerenciasClientes = [];
     }
-  // --- Autocompletar placas ---
-  sugerenciasPlaca: any[] = [];
-  buscandoPlaca = false;
+  }
+
+  seleccionarSugerenciaCliente(s: any) {
+    if (!s) return;
+    this.datosOrden.nombre_cliente = s.nombre_cliente || '';
+    this.datosOrden.telefono_cliente = s.telefono_cliente || '';
+    this.telefonoValido = this.validarTelefono(this.datosOrden.telefono_cliente);
+    this.datosOrden.placa = s.placa_vehiculo || '';
+    this.datosOrden.tipoVehiculo = s.tipo_vehiculo || '';
+    this.datosOrden.marca = s.marca_vehiculo || '';
+    this.datosOrden.modelo = s.modelo_vehiculo || '';
+    this.sugerenciasClientes = [];
+  }
 
   buscarPlaca(event: Event) {
     const input = event.target as HTMLInputElement | null;
     const valor = input?.value || '';
     if (valor.length >= 2) {
       this.buscandoPlaca = true;
-      this.ordenService.buscarClientesPlacas(valor).subscribe({
+      this.ordenService.buscarClientesPlacas(valor).pipe(takeUntil(this.destroy$)).subscribe({
         next: (res: any[]) => {
           this.sugerenciasPlaca = res;
           this.buscandoPlaca = false;
@@ -103,21 +105,11 @@ export class CrearOrdenComponent implements OnInit, OnDestroy {
     this.datosOrden.nombre_cliente = s.nombre_cliente || '';
     this.datosOrden.telefono_cliente = s.telefono_cliente || '';
     this.telefonoValido = this.validarTelefono(this.datosOrden.telefono_cliente);
-    // Autocompletar tipo de vehículo, marca y modelo (mapeo correcto)
     this.datosOrden.tipoVehiculo = s.tipo_vehiculo || '';
     this.datosOrden.marca = s.marca_vehiculo || '';
     this.datosOrden.modelo = s.modelo_vehiculo || '';
     this.sugerenciasPlaca = [];
   }
-  // ...resto de la clase y métodos...
-
-// ...el resto de la clase CrearOrdenComponent sigue aquí...
-
-  private servicioService = inject(ServicioService);
-  private ordenService = inject(OrdenService);
-  private operarioService = inject(OperarioService);
-  private metodosPagoService = inject(MetodosPagoService);
-  private router = inject(Router);
 
   serviciosUnitarios: any[] = [];
   combos: any[] = [];
