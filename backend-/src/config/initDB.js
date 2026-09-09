@@ -28,9 +28,6 @@ const runMigrations = async () => {
 export const initDB = async () => {
     console.log("🔄 Verificando tablas en la base de datos...");
 
-    // Run migrations first
-    await runMigrations();
-
     const sql = `
         -- 1. TABLA USUARIOS
         CREATE TABLE IF NOT EXISTS usuarios (
@@ -269,6 +266,10 @@ export const initDB = async () => {
     try {
         await pool.query(sql);
         console.log("✅ Tablas creadas/sincronizadas correctamente.");
+
+        // ✅ Run migrations AFTER tables are created
+        console.log("🔄 Ejecutando migraciones...");
+        await runMigrations();
 
         // MIGRACIONES AUTOMÁTICAS
         const migraciones = [
