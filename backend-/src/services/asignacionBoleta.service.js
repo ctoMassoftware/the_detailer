@@ -33,7 +33,7 @@ export const obtenerProxNumeroBoleta = async (client, id_evento_rifa) => {
         AND o.numero_rifa ~ '^[0-9]+$'
       ORDER BY max_numero DESC
       LIMIT 1
-    `, [id_evento_rifa, id_evento_rifa]);
+    `, [id_evento_rifa]);
 
     const maxNumero = result.rows[0]?.max_numero || 0;
     const proximoNumero = maxNumero + 1;
