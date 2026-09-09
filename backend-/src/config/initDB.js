@@ -8,10 +8,18 @@ const __dirname = path.dirname(__filename);
 
 const runMigrations = async () => {
     try {
-        const migrationPath = path.join(__dirname, '../database/migrations/add_message_audit_table.sql');
-        const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
-        await pool.query(migrationSQL);
-        console.log('✓ Migrations completed successfully');
+        const migrationsDir = path.join(__dirname, '../database/migrations');
+        const migrationFiles = fs.readdirSync(migrationsDir)
+            .filter(file => file.endsWith('.sql'))
+            .sort();
+
+        for (const file of migrationFiles) {
+            const migrationPath = path.join(migrationsDir, file);
+            const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+            await pool.query(migrationSQL);
+            console.log(`✓ Migration executed: ${file}`);
+        }
+        console.log('✓ All migrations completed successfully');
     } catch (error) {
         console.error('Error running migrations:', error.message);
     }
