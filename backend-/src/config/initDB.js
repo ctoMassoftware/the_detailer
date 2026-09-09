@@ -271,6 +271,25 @@ export const initDB = async () => {
         console.log("🔄 Ejecutando migraciones...");
         await runMigrations();
 
+        // ✅ FALLBACK DEFENSIVO: Asegurar que las columnas de rifa existan
+        console.log("🔄 Verificando columnas de rifa (fallback defensivo)...");
+        const rifaColumns = [
+            "ALTER TABLE orden ADD COLUMN IF NOT EXISTS id_boleta INTEGER REFERENCES rifa(id_boleta) ON DELETE SET NULL",
+            "ALTER TABLE orden ADD COLUMN IF NOT EXISTS numero_rifa VARCHAR(10)",
+            "ALTER TABLE orden ADD COLUMN IF NOT EXISTS fecha_sorteo DATE",
+            "ALTER TABLE venta_mostrador ADD COLUMN IF NOT EXISTS id_boleta INTEGER REFERENCES rifa(id_boleta) ON DELETE SET NULL",
+            "ALTER TABLE venta_mostrador ADD COLUMN IF NOT EXISTS numero_rifa VARCHAR(10)",
+            "ALTER TABLE venta_mostrador ADD COLUMN IF NOT EXISTS fecha_sorteo DATE"
+        ];
+        for (const sql of rifaColumns) {
+            try {
+                await pool.query(sql);
+            } catch (e) {
+                console.log("  Nota:", e.message);
+            }
+        }
+        console.log("✅ Columnas de rifa verificadas");
+
         // MIGRACIONES AUTOMÁTICAS
         const migraciones = [
             "ALTER TABLE servicio ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE",
