@@ -39,6 +39,18 @@ export const obtenerProxNumeroBoleta = async (client, id_evento_rifa) => {
     const proximoNumero = maxNumero + 1;
     return proximoNumero.toString().padStart(3, '0');
   } catch (error) {
+    if (error.message?.includes('column o.numero_rifa does not exist') || error.code === '42703') {
+      console.warn('⚠️ Columna numero_rifa no existe. Creando...');
+      try {
+        await client.query(`ALTER TABLE orden ADD COLUMN IF NOT EXISTS numero_rifa VARCHAR(10)`);
+        await client.query(`ALTER TABLE venta_mostrador ADD COLUMN IF NOT EXISTS numero_rifa VARCHAR(10)`);
+        console.log('✅ Columnas creadas. Reintentando...');
+        return obtenerProxNumeroBoleta(client, id_evento_rifa);
+      } catch (createError) {
+        console.error('❌ Error creando columnas:', createError.message);
+        throw error;
+      }
+    }
     console.error('❌ Error obteniendo próximo número de boleta:', error.message);
     throw error;
   }
