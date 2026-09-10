@@ -97,9 +97,9 @@ export const enviarNotificacionPorCambioEstado = async (
   console.log(`📝 Estados normalizados: anterior="${estadoAnterior?.toLowerCase()}" nuevo="${estadoNuevo?.toLowerCase()}"`);
 
   try {
-    // Normalizar estados para comparación
-    const estadoNuevoNorm = estadoNuevo?.toLowerCase() || '';
-    const estadoAnteriorNorm = estadoAnterior?.toLowerCase() || '';
+    // Normalizar estados para comparación (minúsculas + sin espacios en blanco)
+    const estadoNuevoNorm = estadoNuevo?.toLowerCase().trim() || '';
+    const estadoAnteriorNorm = estadoAnterior?.toLowerCase().trim() || '';
 
     console.log(`🔍 Evaluando transiciones:`);
     console.log(`   Anterior: "${estadoAnterior}" (normalizado: "${estadoAnteriorNorm}")`);
@@ -122,7 +122,7 @@ export const enviarNotificacionPorCambioEstado = async (
 
     // ✅ CUALQUIER ESTADO → LISTA (Con o sin Rifa)
     // Permite transición: NULL→LISTA, PROCESO→LISTA, etc.
-    const esTransicionALista = estadoNuevoNorm === 'lista' && estadoAnteriorNorm !== 'lista';
+    const esTransicionALista = estadoNuevoNorm.includes('lista') && !estadoAnteriorNorm.includes('lista');
     console.log(`   ✓ ¿Transición a LISTA? ${esTransicionALista}`);
 
     if (esTransicionALista) {
