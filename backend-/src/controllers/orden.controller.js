@@ -447,18 +447,25 @@ export const updateOrden = async (req, res) => {
     await client.query("COMMIT");
 
     // 📱 DISPARAR NOTIFICACIÓN AUTOMÁTICA SI CAMBIÓ EL ESTADO
-    // Normalizar estadoAnterior: si es "null" (string) o null/undefined, tratar como vacío
-    const estadoAnteriorNormalizado = (estadoAnterior && estadoAnterior !== 'null') ? estadoAnterior : null;
+    // Normalizar estados: convertir a minúsculas y limpiar espacios para comparación
+    const estadoAnteriorNormalizado = (estadoAnterior && estadoAnterior !== 'null')
+      ? estadoAnterior.toLowerCase().trim()
+      : null;
+    const estadoNuevoNormalizado = (estado && estado !== 'null')
+      ? estado.toLowerCase().trim()
+      : null;
 
     console.log(`\n📊 ═══ NOTIFICACIÓN SMS ═══`);
     console.log(`📊 updateOrden - Orden #${id}:`);
     console.log(`   📝 Estado anterior (raw): "${estadoAnterior}" (type: ${typeof estadoAnterior})`);
     console.log(`   📝 Estado anterior (norm): "${estadoAnteriorNormalizado}"`);
     console.log(`   📝 Estado nuevo (enviado): "${estado}" (type: ${typeof estado})`);
-    console.log(`   📝 ¿Cambió el estado? ${estadoAnteriorNormalizado !== estado}`);
+    console.log(`   📝 Estado nuevo (norm): "${estadoNuevoNormalizado}"`);
+    console.log(`   📝 ¿Cambió el estado? ${estadoAnteriorNormalizado !== estadoNuevoNormalizado}`);
 
     // Enviar notificación si: estado cambió Y estado nuevo está definido
-    if (estado !== undefined && estadoAnteriorNormalizado !== estado) {
+    // IMPORTANTE: Comparar estados normalizados (sin case-sensitivity)
+    if (estado !== undefined && estadoAnteriorNormalizado !== estadoNuevoNormalizado) {
       console.log(`✅ ¡Enviar notificación! Cambio: "${estadoAnteriorNormalizado}" → "${estado}"`);
       console.log(`✅ [NOTIFICACIÓN AUTOMÁTICA] Estado cambió: ${estadoAnterior} → ${estado}`);
       console.log(`🧢 Datos para notificación: tipo=${tipoVehiculoActual}, cascos=${cantidadCascosActual}`);
@@ -489,7 +496,7 @@ export const updateOrden = async (req, res) => {
       console.log(`⚠️ NO se envió SMS:`);
       if (!estadoAnterior) console.log(`   - estadoAnterior es vacío`);
       if (estado === undefined) console.log(`   - estado es undefined`);
-      if (estadoAnterior === estado) console.log(`   - estados iguales: ${estadoAnterior}`);
+      if (estadoAnteriorNormalizado === estadoNuevoNormalizado) console.log(`   - estados iguales (después de normalizar): "${estadoAnteriorNormalizado}"`);
     }
 
     res.json({ message: "Orden actualizada correctamente" });
