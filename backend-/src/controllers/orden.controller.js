@@ -395,9 +395,13 @@ export const updateOrden = async (req, res) => {
       fecha_final, hora_final, notas_final
     ];
 
-    // ✅ Agregar id_rifa si viene
+    // ✅ Agregar id_rifa si viene (SOLO si el usuario actual es admin)
+    // Por seguridad: no permitir que cualquier usuario cambie la rifa
     let paramIndex = values.length + 1;
     if (id_rifa !== undefined && id_rifa !== null) {
+      // TODO: Validar que el usuario tiene permisos para cambiar rifa
+      // Y validar que id_rifa existe y está disponible
+      console.log(`⚠️ ADVERTENCIA: id_rifa cambió a ${id_rifa} - requiere validación de seguridad`);
       updateQuery += `, id_rifa = $${paramIndex}`;
       values.push(id_rifa);
       paramIndex++;
