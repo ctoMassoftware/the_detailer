@@ -130,7 +130,7 @@ export const createOrden = async (req, res) => {
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sede, deja_casco, cantidad_cascos, fecha, hora
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, fecha, hora
         )
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
         RETURNING id_orden
@@ -138,7 +138,7 @@ export const createOrden = async (req, res) => {
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sedeFinal, deja_casco, cantidad_cascos, fecha, horaFinal
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, fecha, horaFinal
       ];
     } else if (fecha) {
       // Con fecha pero sin hora → PostgreSQL usa DEFAULT para hora (Bogotá)
@@ -146,7 +146,7 @@ export const createOrden = async (req, res) => {
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sede, deja_casco, cantidad_cascos, fecha
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, fecha
         )
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
         RETURNING id_orden
@@ -154,14 +154,14 @@ export const createOrden = async (req, res) => {
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sedeFinal, deja_casco, cantidad_cascos, fecha
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, fecha
       ];
     } else if (horaFinal !== null) {
       ordenQuery = `
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sede, deja_casco, cantidad_cascos, hora
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, hora
         )
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
         RETURNING id_orden
@@ -169,7 +169,7 @@ export const createOrden = async (req, res) => {
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sedeFinal, deja_casco, cantidad_cascos, horaFinal
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, horaFinal
       ];
     } else {
       // Sin fecha ni hora → PostgreSQL usa DEFAULTs
@@ -177,7 +177,7 @@ export const createOrden = async (req, res) => {
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sede, deja_casco, cantidad_cascos
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos
         )
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
         RETURNING id_orden
@@ -185,7 +185,7 @@ export const createOrden = async (req, res) => {
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sedeFinal, deja_casco, cantidad_cascos
+        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos
       ];
     }
 
