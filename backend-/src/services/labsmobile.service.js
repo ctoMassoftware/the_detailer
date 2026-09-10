@@ -269,12 +269,12 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
   // El recibo ya se envió en SMS #2 (orden LISTA) con acceso a descargar
   // Este SMS #3 es solo confirmación de entrega
 
-  let mensaje = `¡Orden #${numeroOrden} completada! ✅\nGracias por confiar en The Detailer`;
+  let mensaje = `Orden #${numeroOrden} completada.\nGracias por confiar en The Detailer`;
 
   // Solo agregar cascos si es moto Y hay espacio (máx 160)
   const esMoto = tipoVehiculo && String(tipoVehiculo).toUpperCase().includes('MOTO');
   if (esMoto && cantidadCascos > 0 && mensaje.length <= 140) {
-    mensaje += `\n🧢 Recoger ${cantidadCascos} casco(s)`;
+    mensaje += `\nRecoger ${cantidadCascos} casco(s)`;
   }
 
   console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160) - SIN LINK (operadores bloquean URLs)`);
