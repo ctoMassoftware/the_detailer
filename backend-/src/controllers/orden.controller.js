@@ -408,8 +408,8 @@ export const updateOrden = async (req, res) => {
     // Por seguridad: solo admins pueden cambiar la rifa asignada
     let paramIndex = values.length + 1;
     if (id_rifa !== undefined && id_rifa !== null) {
-      // ✅ SEGURIDAD CRÍTICA: Validar que el usuario tiene rol de ADMIN o SUPER_ADMIN
-      const esAdmin = req.user?.rol === 'ADMIN' || req.user?.rol === 'SUPER_ADMIN';
+      // ✅ SEGURIDAD CRÍTICA: Validar que el usuario tiene rol de ADMIN, SUPER_ADMIN o ADMIN_SEDE
+      const esAdmin = req.user?.rol === 'ADMIN' || req.user?.rol === 'SUPER_ADMIN' || req.user?.rol === 'ADMIN_SEDE';
       if (!esAdmin) {
         console.error(`🔒 SECURITY: Usuario ${req.user?.rol || 'UNKNOWN'} intentó cambiar id_rifa. BLOQUEADO.`);
         return res.status(403).json({
