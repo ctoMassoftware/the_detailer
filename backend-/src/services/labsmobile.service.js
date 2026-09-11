@@ -337,18 +337,18 @@ export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRec
       console.warn(`⚠️ Token inválido para SMS: formato incorrecto (${metadata.tokenRecibo.substring(0, 20)}...)`);
       // Continuar sin link si token es inválido
     } else {
-      // ✅ CRÍTICO: Usar URL del BACKEND (API), no del frontend
-      const backendUrl = (process.env.BACKEND_URL || 'https://thedetailer.up.railway.app').trim();
+      // ✅ CRÍTICO: Usar URL del FRONTEND (Netlify), NO del backend de Railway
+      const frontendUrl = (process.env.FRONTEND_URL || 'https://thedetailer-produccion.netlify.app').trim();
 
-      // Validar formato de URL del backend
+      // Validar formato de URL del frontend
       try {
-        new URL(backendUrl);
+        new URL(frontendUrl);
       } catch (e) {
-        console.error(`❌ BACKEND_URL inválida: ${backendUrl}`);
+        console.error(`❌ FRONTEND_URL inválida: ${frontendUrl}`);
         // Continuar sin link si URL es inválida
       }
 
-      const linkRecibo = `${backendUrl}/api/recibos/descargar/${metadata.tokenRecibo}`;
+      const linkRecibo = `${frontendUrl}/api/recibos/descargar/${metadata.tokenRecibo}`;
       console.log(`📄 Link generado: ${linkRecibo.substring(0, 50)}... (${linkRecibo.length} chars)`);
 
       const mensajeConLink = `${mensaje}\nVer: ${linkRecibo}`;
