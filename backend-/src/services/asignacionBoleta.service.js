@@ -24,7 +24,7 @@ export const obtenerProxNumeroBoleta = async (client, id_evento_rifa) => {
     // Esto asegura que solo una transacción pueda leer/calcular el máximo número a la vez
     const result = await client.query(`
       WITH max_numero AS (
-        SELECT COALESCE(MAX(CAST(numero_rifa AS INTEGER)), 0) as max_num
+        SELECT COALESCE(MAX(CAST(numero_boleta AS INTEGER)), 0) as max_num
         FROM rifa
         WHERE id_evento_rifa = $1
         FOR UPDATE  -- 🔒 LOCK exclusivo para evitar race condition
@@ -40,13 +40,13 @@ export const obtenerProxNumeroBoleta = async (client, id_evento_rifa) => {
     return proximoNumero.toString().padStart(3, '0');
   } catch (error) {
     if (error.message?.includes('column') && error.code === '42703') {
-      console.warn('⚠️ Columna faltante. Creando...');
+      console.warn('⚠️ Columna faltante en rifa. Creando...');
       try {
-        await client.query(`ALTER TABLE rifa ADD COLUMN IF NOT EXISTS numero_rifa VARCHAR(10)`);
-        console.log('✅ Columnas creadas. Reintentando...');
+        await client.query(`ALTER TABLE rifa ADD COLUMN IF NOT EXISTS numero_boleta VARCHAR(10)`);
+        console.log('✅ Columna creada. Reintentando...');
         return obtenerProxNumeroBoleta(client, id_evento_rifa);
       } catch (createError) {
-        console.error('❌ Error creando columnas:', createError.message);
+        console.error('❌ Error creando columna:', createError.message);
         throw error;
       }
     }
