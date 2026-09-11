@@ -86,6 +86,16 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
       const validacion = validarSMS(messageBody);
       if (!validacion.valid) {
         console.error(`❌ ${validacion.error}`);
+        // ✅ Registrar en BD
+        await logMessage({
+          phoneNumber: numeroNormalizado || toNumber,
+          messageBody,
+          status: 'validation_failed',
+          errorDetails: { error: validacion.error, charCount: validacion.charCount },
+          notificationType: metadata.type,
+          userId: metadata.userId,
+          orderId: metadata.orderId
+        });
         resolve({ success: false, error: validacion.error });
         return;
       }

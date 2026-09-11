@@ -84,9 +84,15 @@ export const createOrden = async (req, res) => {
   console.log(`  - fecha: ${fecha}`);
   console.log(`  - hora: ${req.body.hora}`);
 
-  // ⚠️ IMPORTANTE: NO permitir id_rifa al CREAR orden
+  // ✅ SEGURIDAD CRÍTICA: BLOQUEAR id_rifa al crear orden
   // La rifa se asigna SOLO cuando el usuario elige participar en el modal de pago
-  const id_rifa_final = null; // SIEMPRE NULL al crear orden
+  // Ignorar id_rifa del request body - SIEMPRE usar NULL
+  const id_rifa_final = null; // ✅ SIEMPRE NULL - se asigna en modal de pago, no aquí
+
+  // ⚠️ DEBUG: Verificar si intentan enviar id_rifa en creación (intento de bypass)
+  if (id_rifa) {
+    console.warn(`⚠️ SECURITY WARNING: Intento de asignar id_rifa=${id_rifa} en CREATE orden. Bloqueado.`);
+  }
 
   // ✅ VALIDACIONES CRÍTICAS
   if (!nombre_cliente || !nombre_cliente.trim()) {
@@ -130,15 +136,16 @@ export const createOrden = async (req, res) => {
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, fecha, hora
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, fecha, hora, con_rifa_desde_inicio
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
         RETURNING id_orden
       `;
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, fecha, horaFinal
+        metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sedeFinal, deja_casco, cantidad_cascos, fecha, horaFinal,
+        id_rifa_final ? true : false  // ✅ id_rifa_final siempre es null en CREATE
       ];
     } else if (fecha) {
       // Con fecha pero sin hora → PostgreSQL usa DEFAULT para hora (Bogotá)
@@ -146,30 +153,32 @@ export const createOrden = async (req, res) => {
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, fecha
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, fecha, con_rifa_desde_inicio
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
         RETURNING id_orden
       `;
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, fecha
+        metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sedeFinal, deja_casco, cantidad_cascos, fecha,
+        id_rifa_final ? true : false  // ✅ id_rifa_final siempre es null en CREATE
       ];
     } else if (horaFinal !== null) {
       ordenQuery = `
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, hora
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, hora, con_rifa_desde_inicio
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
         RETURNING id_orden
       `;
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos, horaFinal
+        metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sedeFinal, deja_casco, cantidad_cascos, horaFinal,
+        id_rifa_final ? true : false  // ✅ id_rifa_final siempre es null en CREATE
       ];
     } else {
       // Sin fecha ni hora → PostgreSQL usa DEFAULTs
@@ -177,15 +186,16 @@ export const createOrden = async (req, res) => {
         INSERT INTO public.orden (
           cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
           placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos
+          metodo_pago, caja, id_user_encargado, id_rifa, notas, sede, deja_casco, cantidad_cascos, con_rifa_desde_inicio
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
         RETURNING id_orden
       `;
       ordenValues = [
         cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
         placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
-        metodo_pago, caja, id_user_encargado, id_rifa, notas, sedeFinal, deja_casco, cantidad_cascos
+        metodo_pago, caja, id_user_encargado, id_rifa_final, notas, sedeFinal, deja_casco, cantidad_cascos,
+        id_rifa_final ? true : false  // ✅ id_rifa_final siempre es null en CREATE
       ];
     }
 
@@ -332,7 +342,7 @@ export const updateOrden = async (req, res) => {
         `SELECT cedula_cliente, nombre_cliente, correo_cliente, telefono_cliente, direccion_cliente,
                 placa_vehiculo, marca_vehiculo, modelo_vehiculo, tipo_vehiculo,
                 metodo_pago, caja, id_user_encargado, estado, fecha, hora, notas, cantidad_cascos,
-                id_rifa, id_boleta
+                id_rifa, id_boleta, con_rifa_desde_inicio
          FROM public.orden WHERE id_orden = $1`,
         [id]
       );
@@ -394,13 +404,21 @@ export const updateOrden = async (req, res) => {
       fecha_final, hora_final, notas_final
     ];
 
-    // ✅ Agregar id_rifa si viene (SOLO si el usuario actual es admin)
-    // Por seguridad: no permitir que cualquier usuario cambie la rifa
+    // ✅ Agregar id_rifa si viene (SOLO si el usuario actual es ADMIN o SUPER_ADMIN)
+    // Por seguridad: solo admins pueden cambiar la rifa asignada
     let paramIndex = values.length + 1;
     if (id_rifa !== undefined && id_rifa !== null) {
-      // TODO: Validar que el usuario tiene permisos para cambiar rifa
-      // Y validar que id_rifa existe y está disponible
-      console.log(`⚠️ ADVERTENCIA: id_rifa cambió a ${id_rifa} - requiere validación de seguridad`);
+      // ✅ SEGURIDAD CRÍTICA: Validar que el usuario tiene rol de ADMIN o SUPER_ADMIN
+      const esAdmin = req.user?.rol === 'ADMIN' || req.user?.rol === 'SUPER_ADMIN';
+      if (!esAdmin) {
+        console.error(`🔒 SECURITY: Usuario ${req.user?.rol || 'UNKNOWN'} intentó cambiar id_rifa. BLOQUEADO.`);
+        return res.status(403).json({
+          error: 'No tienes permisos para cambiar la asignación de rifa. Solo administradores pueden hacer esto.'
+        });
+      }
+
+      // TODO: Validar que id_rifa existe y está disponible
+      console.log(`✅ ADMIN autenticado cambiando id_rifa a ${id_rifa}`);
       updateQuery += `, id_rifa = $${paramIndex}`;
       values.push(id_rifa);
       paramIndex++;
@@ -481,20 +499,30 @@ export const updateOrden = async (req, res) => {
         cantidad_cascos: cantidadCascosActual,
         valorTotal: valorTotalActual,
         id_orden: id,
-        id_boleta: ordenActual.id_boleta  // ✅ Agregado para SMS con boleta correcta
+        id_boleta: ordenActual.id_boleta,
+        con_rifa_desde_inicio: ordenActual.con_rifa_desde_inicio  // ✅ Flag para distinguir rifa real
       };
 
       // Obtener id_rifa: usar el del request si viene, si no usar el actual de BD
       const id_rifa_final = id_rifa !== undefined ? id_rifa : ordenActual.id_rifa;
 
-      enviarNotificacionPorCambioEstado(
-        estadoAnterior,
-        estado,
-        ordenDatos,
-        id_rifa_final // ✅ Pasar id_rifa para SMS con rifa
-      ).catch(err => {
-        console.error('⚠️ Error enviando notificación automática:', err);
-      });
+      // ✅ USAR AWAIT para asegurar que SMS se envía antes de retornar
+      try {
+        const resultadoSMS = await enviarNotificacionPorCambioEstado(
+          estadoAnterior,
+          estado,
+          ordenDatos,
+          id_rifa_final
+        );
+        console.log(`✅ Notificación procesada:`, resultadoSMS.success ? 'ENVIADA' : 'FALLÓ');
+        if (!resultadoSMS.success) {
+          console.error(`❌ Error en notificación: ${resultadoSMS.error}`);
+        }
+      } catch (err) {
+        console.error('❌ Error enviando notificación automática:', err.message);
+        console.error('Stack:', err.stack);
+        // No bloquear la actualización de orden si falla SMS
+      }
     } else {
       console.log(`⚠️ NO se envió SMS:`);
       if (!estadoAnterior) console.log(`   - estadoAnterior es vacío`);

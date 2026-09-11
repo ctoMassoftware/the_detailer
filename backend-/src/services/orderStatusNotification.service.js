@@ -84,7 +84,7 @@ export const enviarNotificacionPorCambioEstado = async (
   id_rifa = null,
   credentials = null
 ) => {
-  const { nombre_cliente, telefono_cliente, placa_vehiculo, tipo_vehiculo, cantidad_cascos, valorTotal, id_orden, id_boleta } = ordenDatos;
+  const { nombre_cliente, telefono_cliente, placa_vehiculo, tipo_vehiculo, cantidad_cascos, valorTotal, id_orden, id_boleta, con_rifa_desde_inicio } = ordenDatos;
 
   // Validar datos mínimos
   if (!nombre_cliente || !telefono_cliente || !placa_vehiculo || !valorTotal) {
@@ -133,11 +133,13 @@ export const enviarNotificacionPorCambioEstado = async (
       const tokenRecibo = await generarTokenRecibo(id_orden, placa_vehiculo);
       console.log(`📥 Token generado para Lista: ${tokenRecibo ? '✓ SÍ' : '✗ NO'}`);
 
-      // Si hay rifa, obtener número de boleta real y usar plantilla con rifa
-      if (id_rifa) {
+      // Si hay rifa Y la orden se creó con rifa, obtener número de boleta real y usar plantilla con rifa
+      // ✅ IMPORTANTE: Solo mostrar rifa si con_rifa_desde_inicio=true (orden se creó con rifa)
+      // Evita mostrar rifa en órdenes que se crearon sin rifa pero que después fueron reasignadas
+      if (id_rifa && con_rifa_desde_inicio) {
         const numeroBoleta = await obtenerNumeroBoleta(id_rifa, placa_vehiculo, id_boleta, id_orden);
         if (numeroBoleta) {
-          console.log(`   Con rifa - Boleta #${numeroBoleta}`);
+          console.log(`   ✅ Con rifa - Boleta #${numeroBoleta}`);
           return await enviarNotificacionOrdenListaConRifa(
             telefono_cliente,
             nombre_cliente,
@@ -153,7 +155,8 @@ export const enviarNotificacionPorCambioEstado = async (
         }
       }
 
-      // Sin rifa o sin boleta registrada, usar plantilla normal
+      // Sin rifa O rifa asignada después (no desde inicio), usar plantilla normal
+      // ✅ Esto arregla H-02: órdenes sin rifa no mostrarán boleta
       return await enviarNotificacionOrdenListaSinRifa(
         telefono_cliente,
         nombre_cliente,
