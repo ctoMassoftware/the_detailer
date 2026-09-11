@@ -320,7 +320,15 @@ export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRec
   // COMPACTO: 160 chars max (1 SMS)
   const totalFormato = Number(total || 0).toLocaleString('es-CO');
   const numeroRecibo = metadata.idVenta !== undefined && metadata.idVenta !== null ? `#${metadata.idVenta}` : '';
-  let mensaje = `Recibo ${numeroRecibo}: ${detallesRecibo}\nTotal: $${totalFormato}`;
+
+  // ✅ CRÍTICO: NO incluir detalles de rifa/boleta si la venta fue sin rifa
+  let detallesConRifa = detallesRecibo;
+  if (metadata.con_rifa_desde_inicio === false) {
+    // Venta sin rifa - quitar cualquier mención de boleta/rifa si está en detalles
+    detallesConRifa = detallesRecibo.replace(/\s*Rifa:?\s*\d+/gi, '').replace(/\s*Boleta:?\s*\d+/gi, '');
+  }
+
+  let mensaje = `Recibo ${numeroRecibo}: ${detallesConRifa}\nTotal: $${totalFormato}`;
 
   // ✅ Si tenemos token, incluir link en el SMS
   if (metadata.tokenRecibo) {

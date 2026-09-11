@@ -36,11 +36,12 @@ export const registrarVentaMostrador = async (req, res) => {
         await client.query('BEGIN');
 
         // 1. Insertar Cabecera
+        // ✅ CRÍTICO: Marcar con_rifa_desde_inicio=TRUE SOLO si venta se crea CON rifa
         const insertVenta = id_rifa
-            ? `INSERT INTO venta_mostrador (cliente_nombre, telefono_cliente, metodo_pago, total, sede, id_user_vendedor, id_rifa)
-               VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id_venta, fecha, hora`
-            : `INSERT INTO venta_mostrador (cliente_nombre, telefono_cliente, metodo_pago, total, sede, id_user_vendedor)
-               VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_venta, fecha, hora`;
+            ? `INSERT INTO venta_mostrador (cliente_nombre, telefono_cliente, metodo_pago, total, sede, id_user_vendedor, id_rifa, con_rifa_desde_inicio)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE) RETURNING id_venta, fecha, hora`
+            : `INSERT INTO venta_mostrador (cliente_nombre, telefono_cliente, metodo_pago, total, sede, id_user_vendedor, con_rifa_desde_inicio)
+               VALUES ($1, $2, $3, $4, $5, $6, FALSE) RETURNING id_venta, fecha, hora`;
 
         const ventaValues = id_rifa
             ? [cliente_nombre || 'Cliente General', telefono_cliente, metodo_pago, total, sede, id_user_vendedor, id_rifa]
@@ -145,7 +146,8 @@ export const registrarVentaMostrador = async (req, res) => {
                     metodo_pago,
                     tokenRecibo,       // ✓ Nuevo: token para incluir en SMS
                     idVenta,           // ✓ Nuevo: ID de la venta
-                    tipo: 'venta_mostrador'
+                    tipo: 'venta_mostrador',
+                    con_rifa_desde_inicio: !!id_rifa  // ✅ CRÍTICO: Flag para NO mostrar boleta si sin rifa
                 }
             ).catch(console.error);
         }

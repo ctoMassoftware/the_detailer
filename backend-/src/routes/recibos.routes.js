@@ -1063,6 +1063,7 @@ router.get('/descargar/:token', async (req, res) => {
           v.numero_rifa,
           v.id_boleta,
           v.fecha_sorteo,
+          v.con_rifa_desde_inicio,
           CONCAT(u.nombre, ' ', u.apellido) as vendedor_nombre,
           COALESCE(
             json_agg(
@@ -1087,7 +1088,13 @@ router.get('/descargar/:token', async (req, res) => {
         return res.status(404).json({ error: 'Venta no encontrada' });
       }
 
-      html = generarHTMLReciboVenta(result.rows[0]);
+      // ✅ CRÍTICO: Incluir con_rifa_desde_inicio en SELECT
+      const ventaConRifa = {
+        ...result.rows[0],
+        con_rifa_desde_inicio: result.rows[0].con_rifa_desde_inicio ?? false
+      };
+
+      html = generarHTMLReciboVenta(ventaConRifa);
     }
 
     // Registrar descarga
@@ -1346,7 +1353,7 @@ const generarHTMLReciboVenta = (venta) => {
         <strong>Sede</strong>
         <span>${venta.sede || 'N/A'}</span>
       </div>
-      ${venta.numero_rifa ? `
+      ${(venta.numero_rifa && venta.con_rifa_desde_inicio) ? `
       <div class="info-box">
         <strong>Número de Boleta</strong>
         <span>${venta.numero_rifa}</span>
