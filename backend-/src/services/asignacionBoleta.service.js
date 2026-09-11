@@ -13,30 +13,26 @@ export const obtenerProxBoletaDisponible = async (client, id_evento_rifa, placa_
 
 /**
  * Obtener el próximo número de boleta disponible (máximo ASIGNADO + 1)
- * Usa FOR UPDATE para evitar race conditions en asignación simultánea de boletas
  * @param {Object} client - Cliente de BD
  * @param {number} id_evento_rifa - ID del evento
  * @returns {string} Número de boleta como string (ej: "070")
  */
 export const obtenerProxNumeroBoleta = async (client, id_evento_rifa) => {
   try {
-    // 🔒 Usar CTE con FOR UPDATE para evitar race conditions
-    // Esto asegura que solo una transacción pueda leer/calcular el máximo número a la vez
+    // ✅ Simplificado: obtener máximo número de boleta para este evento
+    // PostgreSQL no permite FOR UPDATE con agregaciones, así que usamos una query simple
     const result = await client.query(`
-      WITH max_numero AS (
-        SELECT COALESCE(MAX(CAST(numero_boleta AS INTEGER)), 0) as max_num
-        FROM rifa
-        WHERE id_evento_rifa = $1
-        FOR UPDATE  -- 🔒 LOCK exclusivo para evitar race condition
-      )
-      SELECT (max_num + 1)::text as proximo FROM max_numero
+      SELECT COALESCE(MAX(CAST(numero_boleta AS INTEGER)), 0) as max_num
+      FROM rifa
+      WHERE id_evento_rifa = $1
     `, [id_evento_rifa]);
 
     if (result.rows.length === 0) {
       throw new Error('No se pudo calcular próximo número de boleta');
     }
 
-    const proximoNumero = parseInt(result.rows[0].proximo, 10);
+    const maxNumero = result.rows[0].max_num || 0;
+    const proximoNumero = maxNumero + 1;
     return proximoNumero.toString().padStart(3, '0');
   } catch (error) {
     if (error.message?.includes('column') && error.code === '42703') {
