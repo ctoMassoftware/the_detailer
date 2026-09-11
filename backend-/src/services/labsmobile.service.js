@@ -337,8 +337,8 @@ export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRec
       console.warn(`⚠️ Token inválido para SMS: formato incorrecto (${metadata.tokenRecibo.substring(0, 20)}...)`);
       // Continuar sin link si token es inválido
     } else {
-      // ✅ CRÍTICO: Usar URL del FRONTEND (Netlify), NO del backend de Railway
-      const frontendUrl = (process.env.FRONTEND_URL || 'https://thedetailer-produccion.netlify.app').trim();
+      // ✅ CRÍTICO: Usar URL del FRONTEND (the-detailer.co), NO del backend de Railway
+      const frontendUrl = (process.env.FRONTEND_URL || 'https://the-detailer.co').trim();
 
       // Validar formato de URL del frontend
       try {
