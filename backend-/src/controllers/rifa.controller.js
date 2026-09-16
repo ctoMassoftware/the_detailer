@@ -294,11 +294,15 @@ export const registrarBoleta = async (req, res) => {
       // Boleta de orden normal (no venta de mostrador)
       console.log(`📱 Enviando notificación SMS para boleta ${numeroFormatted} a ${telefono}`);
       enviarNotificacionOrdenTerminada(
-          nombre,
           telefono,
-          placa_vehiculo,
-          numeroFormatted,
-          total_pagar || '0'
+          nombre,
+          total_pagar || 0,
+          placa_vehiculo || '',
+          '',    // tipo_vehiculo
+          0,     // cantidad_cascos
+          '',    // numeroOrden
+          '',    // tokenRecibo
+          { tipo: 'boleta_rifa', numeroBoleta: numeroFormatted }
       ).catch(err => console.error('❌ Error enviando notificación:', err));
     }
 

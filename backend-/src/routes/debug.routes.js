@@ -758,6 +758,39 @@ router.get('/validar-token/:token', async (req, res) => {
 });
 
 /**
+ * Corregir numero_rifa de ventas de mostrador
+ * POST /api/debug/corregir-numero-rifa
+ * Body: { ventas: [{ id_venta: 82, numero_rifa: "418" }, ...] }
+ */
+router.post('/corregir-numero-rifa', verifyToken, async (req, res) => {
+  const { ventas } = req.body;
+  if (!ventas || !Array.isArray(ventas) || ventas.length === 0) {
+    return res.status(400).json({ error: 'ventas requerido: [{ id_venta, numero_rifa }]' });
+  }
+
+  const resultados = [];
+  for (const { id_venta, numero_rifa } of ventas) {
+    try {
+      const numeroFormatted = numero_rifa.toString().padStart(3, '0');
+      const r = await pool.query(
+        `UPDATE venta_mostrador SET numero_rifa = $1 WHERE id_venta = $2 RETURNING id_venta, numero_rifa`,
+        [numeroFormatted, id_venta]
+      );
+      if (r.rowCount === 1) {
+        resultados.push({ id_venta, numero_rifa: numeroFormatted, status: 'ok' });
+        console.log(`✅ Venta ${id_venta} corregida: numero_rifa=${numeroFormatted}`);
+      } else {
+        resultados.push({ id_venta, status: 'no encontrada' });
+      }
+    } catch (err) {
+      resultados.push({ id_venta, status: 'error', error: err.message });
+    }
+  }
+
+  res.json({ success: true, resultados });
+});
+
+/**
  * Reenviar SMS de recibo a una venta de mostrador
  * POST /api/debug/reenviar-recibo-venta
  * Body: { id_venta: 82 }
