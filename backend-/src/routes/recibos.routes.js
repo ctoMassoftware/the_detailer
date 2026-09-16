@@ -1354,7 +1354,7 @@ const generarHTMLReciboVenta = (venta) => {
         <strong>Sede</strong>
         <span>${venta.sede || 'N/A'}</span>
       </div>
-      ${(venta.numero_rifa && venta.con_rifa_desde_inicio) ? `
+      ${venta.numero_rifa ? `
       <div class="info-box">
         <strong>Número de Boleta</strong>
         <span>${venta.numero_rifa}</span>
