@@ -758,3 +758,91 @@ router.get('/validar-token/:token', async (req, res) => {
 });
 
 export default router;
+
+/**
+ * Reenviar SMS de recibo a una venta de mostrador
+ * POST /api/debug/reenviar-recibo-venta
+ * Body: { id_venta: 82 }
+ */
+router.post('/reenviar-recibo-venta', verifyToken, async (req, res) => {
+  const { id_venta } = req.body;
+  if (!id_venta) return res.status(400).json({ error: 'id_venta requerido' });
+
+  try {
+    // 1. Obtener datos de la venta
+    const ventaRes = await pool.query(
+      `SELECT v.*, rt.token_hash
+       FROM venta_mostrador v
+       LEFT JOIN recibo_token rt ON rt.id_venta = v.id_venta AND rt.activo = true
+       WHERE v.id_venta = $1
+       ORDER BY rt.created_at DESC
+       LIMIT 1`,
+      [id_venta]
+    );
+
+    if (ventaRes.rows.length === 0) {
+      return res.status(404).json({ error: `Venta ${id_venta} no encontrada` });
+    }
+
+    const venta = ventaRes.rows[0];
+
+    if (!venta.telefono_cliente) {
+      return res.status(400).json({ error: 'La venta no tiene teléfono registrado' });
+    }
+
+    // 2. Si no hay token activo, generar uno nuevo
+    let tokenRecibo;
+    if (!venta.token_hash) {
+      const crypto = (await import('crypto')).default;
+      tokenRecibo = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(tokenRecibo).digest('hex');
+      await pool.query(
+        `INSERT INTO recibo_token (id_venta, token_hash) VALUES ($1, $2)`,
+        [id_venta, tokenHash]
+      );
+      console.log(`✓ Token nuevo generado para venta ${id_venta} (reenvío)`);
+    } else {
+      // Hay token pero no tenemos el original — generar uno nuevo igualmente
+      const crypto = (await import('crypto')).default;
+      tokenRecibo = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(tokenRecibo).digest('hex');
+      await pool.query(
+        `INSERT INTO recibo_token (id_venta, token_hash) VALUES ($1, $2)`,
+        [id_venta, tokenHash]
+      );
+      console.log(`✓ Token nuevo generado para venta ${id_venta} (reenvío, había token previo)`);
+    }
+
+    // 3. Construir y enviar SMS
+    const { enviarReciboMostrador } = await import('../services/notificationRouter.service.js');
+    const total = Number(venta.total || 0);
+    const detalles = venta.numero_rifa ? `Boleta #${venta.numero_rifa}` : 'Ver detalle en link';
+
+    const resultado = await enviarReciboMostrador(
+      venta.telefono_cliente,
+      venta.cliente_nombre,
+      detalles,
+      total,
+      {
+        tokenRecibo,
+        idVenta: id_venta,
+        tipo: 'venta_mostrador',
+        con_rifa_desde_inicio: !!venta.numero_rifa
+      }
+    );
+
+    console.log(`📱 Reenvío SMS venta ${id_venta} → ${venta.telefono_cliente}:`, resultado);
+
+    res.json({
+      success: resultado.success !== false,
+      id_venta,
+      telefono: venta.telefono_cliente,
+      numero_rifa: venta.numero_rifa || null,
+      resultado
+    });
+
+  } catch (error) {
+    console.error('❌ Error en reenvío de recibo:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
