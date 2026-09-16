@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import { validarTokenRecibo, marcarTokenComoDescargado } from '../services/reciboToken.service.js';
 import { pool } from '../config/db.js';
 
