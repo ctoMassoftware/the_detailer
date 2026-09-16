@@ -757,8 +757,6 @@ router.get('/validar-token/:token', async (req, res) => {
   }
 });
 
-export default router;
-
 /**
  * Reenviar SMS de recibo a una venta de mostrador
  * POST /api/debug/reenviar-recibo-venta
@@ -790,28 +788,15 @@ router.post('/reenviar-recibo-venta', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'La venta no tiene teléfono registrado' });
     }
 
-    // 2. Si no hay token activo, generar uno nuevo
-    let tokenRecibo;
-    if (!venta.token_hash) {
-      const crypto = (await import('crypto')).default;
-      tokenRecibo = crypto.randomBytes(32).toString('hex');
-      const tokenHash = crypto.createHash('sha256').update(tokenRecibo).digest('hex');
-      await pool.query(
-        `INSERT INTO recibo_token (id_venta, token_hash) VALUES ($1, $2)`,
-        [id_venta, tokenHash]
-      );
-      console.log(`✓ Token nuevo generado para venta ${id_venta} (reenvío)`);
-    } else {
-      // Hay token pero no tenemos el original — generar uno nuevo igualmente
-      const crypto = (await import('crypto')).default;
-      tokenRecibo = crypto.randomBytes(32).toString('hex');
-      const tokenHash = crypto.createHash('sha256').update(tokenRecibo).digest('hex');
-      await pool.query(
-        `INSERT INTO recibo_token (id_venta, token_hash) VALUES ($1, $2)`,
-        [id_venta, tokenHash]
-      );
-      console.log(`✓ Token nuevo generado para venta ${id_venta} (reenvío, había token previo)`);
-    }
+    // Siempre generar token nuevo para el reenvío
+    const crypto = (await import('crypto')).default;
+    const tokenRecibo = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(tokenRecibo).digest('hex');
+    await pool.query(
+      `INSERT INTO recibo_token (id_venta, token_hash) VALUES ($1, $2)`,
+      [id_venta, tokenHash]
+    );
+    console.log(`✓ Token nuevo generado para venta ${id_venta} (reenvío)`);
 
     // 3. Construir y enviar SMS
     const { enviarReciboMostrador } = await import('../services/notificationRouter.service.js');
@@ -846,3 +831,5 @@ router.post('/reenviar-recibo-venta', verifyToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+export default router;
