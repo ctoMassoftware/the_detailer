@@ -93,8 +93,10 @@ export const registrarVentaMostrador = async (req, res) => {
         }
 
         // 3. Generar token de recibo para la venta (DENTRO de la transacción)
+        // Solo si NO hay rifa — con rifa, el token se genera en registrarBoleta
+        // para garantizar que numero_rifa ya esté en BD cuando el cliente abra el link.
         let tokenRecibo = null;
-        if (telefono_cliente) {
+        if (telefono_cliente && !id_rifa) {
             try {
                 const { token, tokenHash } = generarSoloToken();
                 await insertarTokenEnTransaccion(client, null, null, idVenta, tokenHash);
@@ -102,7 +104,6 @@ export const registrarVentaMostrador = async (req, res) => {
                 console.log(`✓ Token generado para venta ${idVenta}`);
             } catch (tokenError) {
                 console.error('⚠️ Error generando token (continuando sin token):', tokenError.message);
-                // Continuar aunque falle el token - no bloquear la venta
             }
         }
 
@@ -113,8 +114,10 @@ export const registrarVentaMostrador = async (req, res) => {
             throw new Error('❌ Error crítico: No se asignó ID a la venta registrada');
         }
 
-        // 4. Disparar SMS con Recibo (No bloquea la respuesta si la API demora)
-        if (telefono_cliente) {
+        // 4. Disparar SMS con Recibo (solo si NO hay rifa)
+        // Con rifa: el SMS se envía en registrarBoleta, cuando numero_rifa ya está en BD.
+        // Sin rifa: enviar SMS aquí con token ya generado.
+        if (telefono_cliente && !id_rifa) {
             // Formatear detalles de productos de forma compacta (≤160 chars)
             const detallesCompacto = productos
                 .slice(0, 3)  // Máximo 3 productos

@@ -42,7 +42,8 @@ export const historialGanadores = async (req, res) => {
   }
 };
 import { pool } from '../config/db.js';
-import { enviarNotificacionOrdenTerminada } from '../services/notificationRouter.service.js';
+import { enviarNotificacionOrdenTerminada, enviarReciboMostrador } from '../services/notificationRouter.service.js';
+import { generarSoloToken, insertarTokenEnTransaccion } from '../services/reciboToken.service.js';
 
 export const crearRifa = async (req, res) => {
   const { fecha, descripcion_premios, encargado } = req.body;
@@ -259,9 +260,38 @@ export const registrarBoleta = async (req, res) => {
     await client.query('COMMIT');
     console.log(`[TRANSACCIÓN BOLETA] Completada exitosamente: id_boleta=${idBoleta}, numero=${numeroFormatted}, vinculada a venta ${id_venta || 'N/A'}`);
 
-    // 👇 CORRECCIÓN: preferencia_recibo es un ARRAY, validar si incluye 'SMS' 👇
-    // Solo enviar notificación si el cliente solicitó SMS (no solo FISICO)
-    if (telefono && preferencia_recibo && Array.isArray(preferencia_recibo) && preferencia_recibo.includes('SMS')) {
+    // Si es venta de mostrador (id_venta presente): generar token y enviar SMS de recibo
+    // El SMS se envía AQUÍ (no en registrarVentaMostrador) para garantizar que
+    // numero_rifa ya esté actualizado en BD cuando el cliente abra el link.
+    if (id_venta && telefono && preferencia_recibo && Array.isArray(preferencia_recibo) && preferencia_recibo.includes('SMS')) {
+      try {
+        // Generar token para el recibo
+        const { token: tokenRecibo, tokenHash } = generarSoloToken();
+        await pool.query(
+          `INSERT INTO recibo_token (id_venta, token_hash) VALUES ($1, $2)`,
+          [id_venta, tokenHash]
+        );
+        console.log(`✓ Token generado para venta mostrador ${id_venta} (post-boleta)`);
+
+        // Enviar SMS con link al recibo
+        const detallesCompacto = `Boleta #${numeroFormatted}`;
+        enviarReciboMostrador(
+          telefono,
+          nombre,
+          detallesCompacto,
+          total_pagar || 0,
+          {
+            tokenRecibo,
+            idVenta: id_venta,
+            tipo: 'venta_mostrador',
+            con_rifa_desde_inicio: true
+          }
+        ).catch(err => console.error('❌ Error enviando SMS recibo mostrador:', err));
+      } catch (tokenErr) {
+        console.error('⚠️ Error generando token post-boleta:', tokenErr.message);
+      }
+    } else if (!id_venta && telefono && preferencia_recibo && Array.isArray(preferencia_recibo) && preferencia_recibo.includes('SMS')) {
+      // Boleta de orden normal (no venta de mostrador)
       console.log(`📱 Enviando notificación SMS para boleta ${numeroFormatted} a ${telefono}`);
       enviarNotificacionOrdenTerminada(
           nombre,
