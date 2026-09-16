@@ -1081,7 +1081,7 @@ router.get('/descargar/:token', async (req, res) => {
          LEFT JOIN detalle_venta_mostrador d ON v.id_venta = d.id_venta
          LEFT JOIN usuarios u ON v.id_user_vendedor = u.id_user
          WHERE v.id_venta = $1
-         GROUP BY v.id_venta, v.cliente_nombre, v.telefono_cliente, v.metodo_pago, v.total, v.sede, v.id_user_vendedor, v.fecha, v.hora, v.id_rifa, v.numero_rifa, v.id_boleta, v.fecha_sorteo, u.nombre, u.apellido`,
+         GROUP BY v.id_venta, v.cliente_nombre, v.telefono_cliente, v.metodo_pago, v.total, v.sede, v.id_user_vendedor, v.fecha, v.hora, v.id_rifa, v.numero_rifa, v.id_boleta, v.fecha_sorteo, v.con_rifa_desde_inicio, u.nombre, u.apellido`,
         [orden.id_venta]
       );
 
