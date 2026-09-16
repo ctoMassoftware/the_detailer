@@ -773,7 +773,6 @@ router.post('/reenviar-recibo-venta', verifyToken, async (req, res) => {
        FROM venta_mostrador v
        LEFT JOIN recibo_token rt ON rt.id_venta = v.id_venta AND rt.activo = true
        WHERE v.id_venta = $1
-       ORDER BY rt.created_at DESC
        LIMIT 1`,
       [id_venta]
     );
