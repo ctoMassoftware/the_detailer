@@ -1,7 +1,6 @@
 import { pool } from '../config/db.js';
 import { enviarReciboMostrador } from '../services/notificationRouter.service.js';
 import { generarSoloToken, insertarTokenEnTransaccion } from '../services/reciboToken.service.js';
-import { obtenerProxBoletaDisponible, crearBoletaNueva, asignarBoleta } from '../services/asignacionBoleta.service.js';
 
 export const registrarVentaMostrador = async (req, res) => {
     const { id: id_user_vendedor, sede } = req.user;
@@ -50,21 +49,11 @@ export const registrarVentaMostrador = async (req, res) => {
         const ventaRes = await client.query(insertVenta, ventaValues);
         const idVenta = ventaRes.rows[0].id_venta;
 
-        // 1.5. Asignar boleta si la venta participa en rifa
-        if (id_rifa) {
-          const eventoResult = await client.query(`
-            SELECT fecha_sorteo FROM evento_rifa WHERE id_evento = $1
-          `, [id_rifa]);
-          const fechaSorteo = eventoResult.rows[0]?.fecha_sorteo || null;
-
-          let boleta = await obtenerProxBoletaDisponible(client, id_rifa, null, id_rifa);
-
-          if (!boleta) {
-            boleta = await crearBoletaNueva(client, id_rifa, cliente_nombre, telefono_cliente, 'N/A');
-          }
-
-          await asignarBoleta(client, 'venta_mostrador', idVenta, boleta.id_boleta, boleta.numero_boleta, fechaSorteo);
-        }
+        // 1.5. NO asignar boleta aquí — el frontend elige el número específico
+        // y llama a POST /api/rifas/registrar-boleta con id_venta para vincularlo.
+        // Crear una boleta automática aquí causaba que se guardara un número
+        // incorrecto (MAX+1) en venta_mostrador.numero_rifa antes de que el
+        // frontend pudiera corregirlo con el número real escogido por el usuario.
 
         // 2. Insertar Detalles y Descontar Inventario
         for (let prod of productos) {
