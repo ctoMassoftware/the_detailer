@@ -275,11 +275,22 @@ export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreClient
 };
 
 export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, total, placa = '', tipoVehiculo = '', cantidadCascos = 0, numeroOrden = '', tokenRecibo = '', metadata = {}, credentials = null) => {
-  // 🔧 SIN LINK: Los operadores Colombianos (Claro, Movistar) bloquean SMS con URLs
-  // El recibo ya se envió en SMS #2 (orden LISTA) con acceso a descargar
-  // Este SMS #3 es solo confirmación de entrega
-
   let mensaje = `Orden #${numeroOrden} completada.\nGracias por confiar en The Detailer`;
+
+  // ✅ Incluir link de descarga del recibo si hay token válido
+  if (tokenRecibo && /^[a-f0-9]{64}$/.test(tokenRecibo)) {
+    const frontendUrl = (process.env.BASE_URL || 'https://the-detailer.co').trim();
+    const linkRecibo = `${frontendUrl}/api/recibos/descargar/${tokenRecibo}`;
+
+    const mensajeConLink = `${mensaje}\n${linkRecibo}`;
+    if (mensajeConLink.length <= 160) {
+      mensaje = mensajeConLink;
+    } else {
+      // Versión compacta: solo confirmación + link, sin la línea de agradecimiento
+      const mensajeCompacto = `Orden #${numeroOrden} completada.\n${linkRecibo}`;
+      mensaje = mensajeCompacto.length <= 160 ? mensajeCompacto : mensaje;
+    }
+  }
 
   // Solo agregar cascos si es moto Y hay espacio (máx 160)
   const esMoto = tipoVehiculo && String(tipoVehiculo).toUpperCase().includes('MOTO');
@@ -287,7 +298,7 @@ export const enviarNotificacionOrdenTerminada = async (telefono, nombreCliente, 
     mensaje += `\nRecoger ${cantidadCascos} casco(s)`;
   }
 
-  console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160) - SIN LINK (operadores bloquean URLs)`);
+  console.log(`📊 SMS Terminada - ${mensaje.length} chars (máx: 160)`);
 
   return sendViaSMS(telefono, mensaje, {
     type: 'orden_terminada',
@@ -338,7 +349,7 @@ export const enviarReciboMostrador = async (telefono, nombreCliente, detallesRec
       // Continuar sin link si token es inválido
     } else {
       // ✅ CRÍTICO: Usar URL del FRONTEND (the-detailer.co), NO del backend de Railway
-      const frontendUrl = (process.env.FRONTEND_URL || 'https://the-detailer.co').trim();
+      const frontendUrl = (process.env.BASE_URL || 'https://the-detailer.co').trim();
 
       // Validar formato de URL del frontend
       try {

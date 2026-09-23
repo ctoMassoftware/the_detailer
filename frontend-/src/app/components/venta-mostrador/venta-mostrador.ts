@@ -375,7 +375,7 @@ export class VentaMostrador implements OnInit {
       total: this.facturaActual.valorTotal,
       productos: this.carrito,
       preferencia_recibo: this.preferenciaRecibo,
-      id_rifa: this.datosRifaActiva?.id_evento || null
+      id_rifa: this.mostrarRifa ? (this.datosRifaActiva?.id_evento || null) : null
     };
 
     this.ventaMostradorService.registrarVenta(payloadVenta).subscribe({
