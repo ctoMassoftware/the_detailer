@@ -512,7 +512,7 @@ export class ConsultarOrden implements OnInit {
     }
   }
 
-  private ejecutarUpdateEstado(orden: any) {
+  private ejecutarUpdateEstado(orden: any, limpiarRifa: boolean = false) {
     // 🔒 Prevenir múltiples actualizaciones simultáneas
     if (this.ejecutandoUpdate) {
       console.warn('⚠️ Actualización ya en progreso, ignorando llamada duplicada');
@@ -532,7 +532,7 @@ export class ConsultarOrden implements OnInit {
       estadoBackend = 'FINALIZADA_ENTREGADA';
     }
 
-    const payload = {
+    const payload: any = {
       cedula_cliente: orden.cedula,
       nombre_cliente: orden.cliente,
       correo_cliente: orden.email,
@@ -545,14 +545,23 @@ export class ConsultarOrden implements OnInit {
       metodo_pago: orden.metodoPago,
       caja: orden.caja,
       id_user_encargado: orden.id_operario,
-      id_rifa: orden.id_rifa,
-      id_boleta: orden.id_boleta,  // ✅ CRÍTICO: Incluir para no sobrescribir con NULL
       estado: estadoBackend,
       fecha: orden.fecha,
       hora: orden.hora,
       notas: orden.notas,
       servicios: serviciosMapeados
     };
+
+    // ✅ id_rifa/id_boleta se OMITEN del payload por defecto (el backend los deja intactos
+    // cuando la clave no viene). Antes se reenviaban SIEMPRE desde `orden.id_rifa/id_boleta`
+    // en memoria: cualquier transición de estado que no pasara por el modal de rifa (p. ej.
+    // "Orden finalizada" en el <select>, que llama ejecutarUpdateEstado directo sin abrir
+    // la factura) terminaba reafirmando un valor potencialmente desactualizado. Solo cuando
+    // el operario elige explícitamente "sin rifa" en enviarFactura() se piden limpiar aquí.
+    if (limpiarRifa) {
+      payload.id_rifa = null;
+      payload.id_boleta = null;
+    }
 
     this.ordenService.updateOrden(orden.id_orden_db, payload).subscribe({
       next: () => {
@@ -660,9 +669,9 @@ export class ConsultarOrden implements OnInit {
       return;
     }
 
-    const guardarCambioEstadoFinal = (mensajeAlerta: string) => {
+    const guardarCambioEstadoFinal = (mensajeAlerta: string, limpiarRifa: boolean = false) => {
       this.ordenSeleccionada.estado = 'Lista';
-      this.ejecutarUpdateEstado(this.ordenSeleccionada);
+      this.ejecutarUpdateEstado(this.ordenSeleccionada, limpiarRifa);
       this.mostrarFactura = false;
       this.mostrarRifa = false;
       Swal.fire('Completado', mensajeAlerta, 'success');
@@ -745,14 +754,11 @@ export class ConsultarOrden implements OnInit {
         }
       });
     } else {
-      // ✅ Forzar la limpieza aquí, de forma síncrona: si el operario aceptó la rifa y
-      // luego la rechazó (rechazarRifa limpia id_rifa/id_boleta en el backend de forma
-      // async), completar la orden antes de que esa respuesta vuelva reenviaría el
-      // id_boleta viejo desde memoria vía ejecutarUpdateEstado() y quedaría "pegado".
-      this.ordenSeleccionada.id_rifa = null;
-      this.ordenSeleccionada.id_boleta = null;
+      // ✅ limpiarRifa=true: el payload de ejecutarUpdateEstado manda id_rifa/id_boleta en
+      // null explícito para esta orden, sin depender de que el estado en memoria esté al
+      // día (por ejemplo si el operario aceptó la rifa y luego la rechazó justo antes).
       procesarImpresionOSMS();
-      guardarCambioEstadoFinal('Orden completada exitosamente.');
+      guardarCambioEstadoFinal('Orden completada exitosamente.', true);
     }
   }
 

@@ -43,6 +43,33 @@ router.get('/labsmobile-balance', async (req, res) => {
 });
 
 /**
+ * DEBUG: Quitar rifa/boleta de una orden puntual que quedó con datos huérfanos
+ * POST /api/debug/quitar-rifa-orden/:id
+ * Herramienta de corrección manual mientras se investiga el flujo del frontend que
+ * deja boletas "pegadas" en órdenes marcadas sin rifa (ver orden.controller.js).
+ */
+router.post('/quitar-rifa-orden/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `UPDATE public.orden SET id_rifa = NULL, id_boleta = NULL
+       WHERE id_orden = $1
+       RETURNING id_orden, id_rifa, id_boleta`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: `Orden ${id} no encontrada` });
+    }
+
+    res.json({ success: true, orden: result.rows[0] });
+  } catch (error) {
+    console.error('Error quitando rifa de orden:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * DEBUG: Analizar orden completa (PUBLIC - Sin autenticación)
  * GET /api/debug/orden/:id
  */
