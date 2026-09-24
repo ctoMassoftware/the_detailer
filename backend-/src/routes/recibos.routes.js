@@ -5,19 +5,15 @@ import { pool } from '../config/db.js';
 
 const router = Router();
 
-// Ajustar a zona horaria de Colombia (UTC-5)
-function ajustarAColombiaDate(fecha) {
-  if (!fecha) return null;
-  const d = new Date(fecha);
-  // Restar 5 horas para Colombia (UTC-5)
-  d.setHours(d.getUTCHours() - 5);
-  return d;
-}
+// ✅ orden.fecha, venta.fecha y fecha_sorteo son columnas DATE (sin hora/zona horaria).
+// pg las parsea como medianoche UTC del mismo día calendario, así que basta leer
+// los componentes UTC directamente. Restar horas aquí (como se hacía antes) hace
+// retroceder la fecha un día completo y es la causa del desfase reportado por QA.
 
 // Formatear fecha sin conversión de zona horaria
 function formatearFecha(fecha) {
   if (!fecha) return null;
-  const d = ajustarAColombiaDate(fecha);
+  const d = new Date(fecha);
   const anio = d.getUTCFullYear();
   const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
   const dia = String(d.getUTCDate()).padStart(2, '0');
@@ -29,7 +25,7 @@ function formatearFecha(fecha) {
 // Formatear fecha a DD/MM/YYYY (para mostrar en la UI)
 function formatearFechaUI(fecha) {
   if (!fecha) return null;
-  const d = ajustarAColombiaDate(fecha);
+  const d = new Date(fecha);
   const anio = d.getUTCFullYear();
   const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
   const dia = String(d.getUTCDate()).padStart(2, '0');
@@ -1432,6 +1428,11 @@ const generarHTMLReciboVenta = (venta) => {
 /**
  * Generar HTML del recibo (puede convertirse a PDF con librería externa)
  */
+// ✅ Mismo tema oscuro/marca que generarHTMLReciboVenta (los commits 02ae56c/cbf16fc que
+// rediseñaron los recibos con el tema del proyecto solo tocaron el recibo de venta de
+// mostrador; el de orden de servicio quedó con la plantilla clara/Arial anterior — de ahí
+// el reporte de QA de que "el CSS no coincide con el de la página" y que la tabla de
+// servicios se sale del cuadrante (sin overflow-x en la tabla).
 const generarHTMLRecibo = (orden) => {
   const fecha = formatearFechaUI(orden.fecha);
   const total = orden.total_orden || 0;
@@ -1443,42 +1444,205 @@ const generarHTMLRecibo = (orden) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recibo - The Detailer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
+    :root {
+      --primary-color: #fd0100;
+      --primary-hover: #e00000;
+      --bg-dark: #121212;
+      --content-dark: #1F1F1F;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-color-dark: #333333;
+      --radius: 0.5rem;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 10px;
+    }
     .toolbar { text-align: center; margin-bottom: 20px; }
     .btn-descargar {
-      background: #2c3e50;
+      background: var(--primary-color);
       color: white;
       padding: 12px 30px;
       border: none;
-      border-radius: 4px;
+      border-radius: var(--radius);
       cursor: pointer;
       font-size: 16px;
-      font-weight: bold;
+      font-weight: 600;
+      font-family: 'Poppins', sans-serif;
+      transition: all 0.2s;
     }
-    .btn-descargar:hover { background: #34495e; }
-    .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .btn-descargar:hover { background: var(--primary-hover); transform: translateY(-2px); }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--content-dark);
+      padding: 20px;
+      border-radius: 0.75rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    @media (min-width: 600px) {
+      body { padding: 20px; }
+      .container { padding: 40px; }
+    }
     @media print { .toolbar { display: none; } }
-    .header { text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }
-    .header h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
-    .header p { color: #7f8c8d; font-size: 14px; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-    .info-box { padding: 15px; background: #ecf0f1; border-radius: 4px; }
-    .info-box strong { display: block; color: #2c3e50; margin-bottom: 5px; }
-    .info-box span { color: #34495e; font-size: 14px; }
-    .servicios { margin: 30px 0; }
-    .servicios h3 { color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #34495e; color: white; padding: 10px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
-    .total-row { background: #ecf0f1; font-weight: bold; color: #2c3e50; font-size: 16px; }
-    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1; color: #7f8c8d; font-size: 12px; }
-    .estado { display: inline-block; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-top: 10px; }
-    .estado.lista { background: #27ae60; color: white; }
-    .estado.finalizada { background: #2980b9; color: white; }
-    .estado.proceso { background: #f39c12; color: white; }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid var(--primary-color);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: var(--primary-color);
+      font-size: 24px;
+      margin-bottom: 5px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+    .header p { color: var(--text-muted); font-size: 13px; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    @media (min-width: 500px) {
+      .header h1 { font-size: 28px; }
+      .header p { font-size: 14px; }
+      .info-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+    }
+    .info-box {
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius);
+      border-left: 3px solid var(--primary-color);
+    }
+    @media (min-width: 500px) {
+      .info-box { padding: 15px; }
+    }
+    .info-box strong {
+      display: block;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .info-box span {
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 500;
+      word-break: break-word;
+      white-space: pre-line;
+    }
+    @media (min-width: 500px) {
+      .info-box strong { font-size: 12px; margin-bottom: 5px; }
+      .info-box span { font-size: 14px; }
+    }
+    .servicios {
+      margin: 20px 0;
+    }
+    .servicios h3 {
+      color: var(--text-main);
+      margin-bottom: 12px;
+      border-bottom: 2px solid var(--border-color-dark);
+      padding-bottom: 8px;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    @media (min-width: 500px) {
+      .servicios { margin: 30px 0; }
+      .servicios h3 { margin-bottom: 15px; padding-bottom: 10px; font-size: 16px; }
+    }
+    .tabla-wrapper {
+      overflow-x: auto;
+      margin-bottom: 15px;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 100%;
+    }
+    th {
+      background: var(--primary-color);
+      color: white;
+      padding: 10px 6px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+    }
+    @media (min-width: 500px) {
+      th { padding: 12px 8px; font-size: 13px; }
+    }
+    td {
+      padding: 10px 6px;
+      border-bottom: 1px solid var(--border-color-dark);
+      color: var(--text-main);
+      font-size: 12px;
+    }
+    @media (min-width: 500px) {
+      td { padding: 12px 8px; font-size: 13px; }
+    }
+    td:first-child {
+      min-width: 120px;
+    }
+    @media (min-width: 500px) {
+      td:first-child { min-width: 150px; }
+    }
+    td:nth-child(2), td:nth-child(3), td:nth-child(4) {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .total-row {
+      background: rgba(255, 255, 255, 0.05);
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 14px;
+    }
+    @media (min-width: 500px) {
+      .total-row { font-size: 16px; }
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-color-dark);
+      color: var(--text-muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    @media (min-width: 500px) {
+      .footer { margin-top: 30px; padding-top: 20px; font-size: 12px; }
+    }
+    .estado {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      margin-top: 8px;
+      font-size: 12px;
+      color: white;
+    }
+    @media (min-width: 500px) {
+      .estado { padding: 5px 12px; margin-top: 10px; font-size: 14px; }
+    }
+    .estado.lista { background: #27ae60; }
+    .estado.finalizada, .estado.completada { background: #2980b9; }
+    .estado.proceso { background: var(--primary-color); }
   </style>
 </head>
 <body>
@@ -1523,6 +1687,7 @@ const generarHTMLRecibo = (orden) => {
 
     <div class="servicios">
       <h3>Servicios Realizados</h3>
+      <div class="tabla-wrapper">
       <table>
         <thead>
           <tr>
@@ -1547,9 +1712,10 @@ const generarHTMLRecibo = (orden) => {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
-    <div style="text-align: center; margin: 30px 0;">
+    <div style="text-align: center;">
       <span class="estado ${orden.estado.toLowerCase().replace(' ', '-')}">${orden.estado}</span>
     </div>
 

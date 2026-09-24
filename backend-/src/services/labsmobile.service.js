@@ -240,7 +240,9 @@ const sendViaSMS = async (toNumber, messageBody, metadata = {}, credentials = nu
 
 export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, total, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
   // COMPACTO: 160 chars max - SIN TOTAL, SIN LINK
-  const mensaje = `¡Hola ${nombreCliente}! 👋\nRecibimos tu orden #${numeroOrden}\n${placa}\n⏳ Te notificaremos cuando esté lista.\nThe Detailer`;
+  // ✅ Sin emojis: LabsMobile puede rechazar el envío ("Destino no permitido") o corromper
+  // el texto cuando el mensaje incluye caracteres especiales (ver fix de SMS #3, commit 13ceabe).
+  const mensaje = `¡Hola ${nombreCliente}!\nRecibimos tu orden #${numeroOrden}\n${placa}\nTe notificaremos cuando esté lista.\nThe Detailer`;
 
   console.log(`📊 SMS Inicio - ${mensaje.length} chars (máx: 160) - SIN TOTAL/LINK`);
 
@@ -252,7 +254,8 @@ export const enviarNotificacionInicioServicio = async (telefono, nombreCliente, 
 
 export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreCliente, total, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
   // COMPACTO: 160 chars max - CON TOTAL, SIN LINK (link solo en Terminada)
-  const mensaje = `¡Tu orden #${numeroOrden} está LISTA! 🎉\n${placa}\n💰 Total: $${Number(total || 0).toLocaleString('es-CO')}\n\nVen a recogerla. The Detailer`;
+  // ✅ Sin emojis (mismo motivo que enviarNotificacionInicioServicio arriba)
+  const mensaje = `¡Tu orden #${numeroOrden} está LISTA!\n${placa}\nTotal: $${Number(total || 0).toLocaleString('es-CO')}\n\nVen a recogerla. The Detailer`;
 
   console.log(`📊 SMS Lista - ${mensaje.length} chars (máx: 160) - CON TOTAL, SIN LINK`);
 
@@ -264,7 +267,8 @@ export const enviarNotificacionOrdenListaSinRifa = async (telefono, nombreClient
 
 export const enviarNotificacionOrdenListaConRifa = async (telefono, nombreCliente, total, numeroRifa, placa = '', numeroOrden = '', metadata = {}, credentials = null) => {
   // COMPACTO: 160 chars max - CON TOTAL Y RIFA, SIN LINK
-  const mensaje = `¡Tu orden #${numeroOrden} está LISTA! 🎉\n${placa} | Rifa: ${numeroRifa}\n💰 Total: $${Number(total || 0).toLocaleString('es-CO')}`;
+  // ✅ Sin emojis (mismo motivo que enviarNotificacionInicioServicio arriba)
+  const mensaje = `¡Tu orden #${numeroOrden} está LISTA!\n${placa} | Rifa: ${numeroRifa}\nTotal: $${Number(total || 0).toLocaleString('es-CO')}`;
 
   console.log(`📊 SMS Lista+Rifa - ${mensaje.length} chars (máx: 160) - CON TOTAL/RIFA, SIN LINK`);
 

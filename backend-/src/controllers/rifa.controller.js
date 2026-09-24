@@ -43,7 +43,7 @@ export const historialGanadores = async (req, res) => {
 };
 import { pool } from '../config/db.js';
 import { enviarNotificacionOrdenTerminada, enviarReciboMostrador } from '../services/notificationRouter.service.js';
-import { generarSoloToken, insertarTokenEnTransaccion } from '../services/reciboToken.service.js';
+import { generarTokenRecibo } from '../services/reciboToken.service.js';
 
 export const crearRifa = async (req, res) => {
   const { fecha, descripcion_premios, encargado } = req.body;
@@ -264,32 +264,32 @@ export const registrarBoleta = async (req, res) => {
     // El SMS se envía AQUÍ (no en registrarVentaMostrador) para garantizar que
     // numero_rifa ya esté actualizado en BD cuando el cliente abra el link.
     if (id_venta && telefono && preferencia_recibo && Array.isArray(preferencia_recibo) && preferencia_recibo.includes('SMS')) {
-      try {
-        // Generar token para el recibo
-        const { token: tokenRecibo, tokenHash } = generarSoloToken();
-        await pool.query(
-          `INSERT INTO recibo_token (id_venta, token_hash) VALUES ($1, $2)`,
-          [id_venta, tokenHash]
-        );
-        console.log(`✓ Token generado para venta mostrador ${id_venta} (post-boleta)`);
-
-        // Enviar SMS con link al recibo
-        const detallesCompacto = `Boleta #${numeroFormatted}`;
-        enviarReciboMostrador(
-          telefono,
-          nombre,
-          detallesCompacto,
-          total_pagar || 0,
-          {
-            tokenRecibo,
-            idVenta: id_venta,
-            tipo: 'venta_mostrador',
-            con_rifa_desde_inicio: true
-          }
-        ).catch(err => console.error('❌ Error enviando SMS recibo mostrador:', err));
-      } catch (tokenErr) {
-        console.error('⚠️ Error generando token post-boleta:', tokenErr.message);
+      // ✅ Usar el helper compartido (mismo que usan órdenes y ventas SIN rifa) en vez del
+      // INSERT manual anterior: ese INSERT vivía dentro de un try/catch que, si fallaba por
+      // CUALQUIER motivo, dejaba el catch solo con un console.error y NUNCA llegaba a llamar
+      // enviarReciboMostrador — el cliente no recibía ni SMS ni link, sin ningún rastro visible
+      // (bug reportado por QA: venta de mostrador CON rifa, "no llega el mensaje ni el link").
+      // generarTokenRecibo ya maneja sus propios errores y retorna null en vez de lanzar,
+      // así que aquí siempre se intenta enviar el SMS (con link si el token se generó bien,
+      // sin link si no) en lugar de abortar todo el envío en silencio.
+      const tokenRecibo = await generarTokenRecibo(null, placa_vehiculo || null, id_venta);
+      if (!tokenRecibo) {
+        console.error(`❌ No se pudo generar token de recibo para venta ${id_venta} - se enviará el SMS sin link`);
       }
+
+      const detallesCompacto = `Boleta #${numeroFormatted}`;
+      enviarReciboMostrador(
+        telefono,
+        nombre,
+        detallesCompacto,
+        total_pagar || 0,
+        {
+          tokenRecibo,
+          idVenta: id_venta,
+          tipo: 'venta_mostrador',
+          con_rifa_desde_inicio: true
+        }
+      ).catch(err => console.error('❌ Error enviando SMS recibo mostrador:', err));
     } else if (!id_venta && telefono && preferencia_recibo && Array.isArray(preferencia_recibo) && preferencia_recibo.includes('SMS')) {
       // Boleta de orden normal (no venta de mostrador)
       console.log(`📱 Enviando notificación SMS para boleta ${numeroFormatted} a ${telefono}`);

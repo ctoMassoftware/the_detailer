@@ -784,10 +784,30 @@ export class ConsultarOrden implements OnInit {
   }
 
   rechazarRifa() {
+    const idOrden = this.ordenSeleccionada?.id_orden_db;
+    // ✅ aceptarRifa() ya pudo haber guardado id_rifa en BD (se llama al hacer clic en "Sí",
+    // no al confirmar). Si el operario cambia de opinión a "No", hay que revertirlo en el
+    // backend; si no, la orden queda con id_rifa huérfano y una migración posterior
+    // (/api/recibos/por-placa) le asigna una boleta real aunque el cliente eligió "sin rifa".
+    const teniaRifaAsignada = this.opcionRifaSeleccionada === true || !!this.ordenSeleccionada?.id_rifa;
+
     this.mostrarRifa = false;
     this.numeroBoletaRifa = '';
     this.opcionRifaSeleccionada = false; // ✅ "No" está seleccionado
     this.rifaSeleccionada = true; // ✅ Habilita botón "Completar Orden"
+
+    if (idOrden && teniaRifaAsignada) {
+      this.ordenService.asignarRifa(idOrden, { id_rifa: null }).subscribe({
+        next: () => {
+          this.ordenSeleccionada.id_rifa = null;
+          this.ordenSeleccionada.id_boleta = null;
+          console.log(`✅ Rifa removida de orden ${idOrden} (elección: sin rifa)`);
+        },
+        error: (err: any) => {
+          console.error('❌ Error removiendo rifa de la orden:', err);
+        }
+      });
+    }
   }
 
   cargarNumerosRifa() {

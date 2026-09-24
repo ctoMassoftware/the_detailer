@@ -18,17 +18,25 @@ router.post('/notificar-modificacion', verifyToken, notificarModificacion);
 
 // ✅ NEW: Assign raffle WITHOUT changing status (no SMS triggered)
 // PUT /ordenes/:id/asignar-rifa - Only updates id_rifa, does NOT trigger notifications
+// ✅ id_rifa: null también es válido: limpia la rifa (usado cuando el operario elige
+// "Sí" y luego cambia a "No" en el modal, para no dejar id_rifa huérfano en la orden
+// -si eso queda huérfano, la auto-migración de /api/recibos/por-placa le asigna una
+// boleta real más tarde aunque el cliente haya elegido "sin rifa"-.
 router.put('/:id/asignar-rifa', verifyToken, async (req, res) => {
   const { id } = req.params;
   const { id_rifa } = req.body;
 
-  if (id_rifa === undefined || id_rifa === null) {
+  if (id_rifa === undefined) {
     return res.status(400).json({ error: 'id_rifa es requerido' });
   }
 
   try {
     const result = await pool.query(
-      'UPDATE public.orden SET id_rifa = $1 WHERE id_orden = $2 RETURNING id_orden, id_rifa',
+      `UPDATE public.orden
+       SET id_rifa = $1,
+           id_boleta = CASE WHEN $1::int IS NULL THEN NULL ELSE id_boleta END
+       WHERE id_orden = $2
+       RETURNING id_orden, id_rifa, id_boleta`,
       [id_rifa, id]
     );
 
@@ -36,10 +44,10 @@ router.put('/:id/asignar-rifa', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'Orden no encontrada' });
     }
 
-    console.log(`✅ Rifa asignada a orden ${id}: id_rifa=${id_rifa}`);
+    console.log(`✅ Orden ${id}: id_rifa=${id_rifa}`);
     res.json({
       success: true,
-      mensaje: 'Rifa asignada correctamente (sin SMS disparado)',
+      mensaje: id_rifa === null ? 'Rifa removida correctamente' : 'Rifa asignada correctamente (sin SMS disparado)',
       orden: result.rows[0]
     });
   } catch (error) {
