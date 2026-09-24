@@ -2,8 +2,45 @@ import { Router } from 'express';
 import { pool } from '../config/db.js';
 import { verifyToken } from '../controllers/auth.controller.js';
 import { enviarNotificacionPorCambioEstado } from '../services/orderStatusNotification.service.js';
+import { getLabsMobileCredentialsFromDB, resolveCredentials } from '../services/labsmobileConfig.service.js';
 
 const router = Router();
+
+/**
+ * DEBUG: Consultar saldo real de la cuenta LabsMobile (PUBLIC - solo lectura, no expone el token)
+ * GET /api/debug/labsmobile-balance
+ * Diagnóstico para el caso "el sistema registra success pero el SMS nunca llega al celular":
+ * LabsMobile puede aceptar (code 0) un envío y luego no entregarlo si la cuenta se quedó
+ * sin saldo, así que "success" en nuestra BD NO garantiza que el operador móvil lo entregó.
+ */
+router.get('/labsmobile-balance', async (req, res) => {
+  try {
+    const dbCredentials = await getLabsMobileCredentialsFromDB();
+    const { username, apiToken } = resolveCredentials(null, dbCredentials);
+
+    if (!username || !apiToken) {
+      return res.status(400).json({ error: 'No hay credenciales de LabsMobile configuradas' });
+    }
+
+    const auth = Buffer.from(`${username}:${apiToken}`).toString('base64');
+    const response = await fetch('https://api.labsmobile.com/json/balance', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${auth}`
+      }
+    });
+
+    const data = await response.json();
+    res.json({
+      consultado_en: new Date().toISOString(),
+      labsmobile_response: data
+    });
+  } catch (error) {
+    console.error('Error consultando saldo LabsMobile:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 /**
  * DEBUG: Analizar orden completa (PUBLIC - Sin autenticación)
