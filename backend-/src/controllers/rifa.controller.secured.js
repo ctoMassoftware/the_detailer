@@ -1,5 +1,6 @@
 import { pool } from '../config/db.js';
-import { enviarNotificacionOrdenTerminada } from '../services/notificationRouter.service.js';
+import { enviarNotificacionOrdenTerminada, enviarReciboMostrador } from '../services/notificationRouter.service.js';
+import { generarTokenRecibo } from '../services/reciboToken.service.js';
 
 // ============================================================
 // HELPERS DE SEGURIDAD
@@ -443,7 +444,7 @@ export const eliminarRifa = async (req, res) => {
 // ============================================================
 
 export const registrarBoleta = async (req, res) => {
-  const { numero_boleta, nombre, telefono, placa_vehiculo } = req.body;
+  const { numero_boleta, nombre, telefono, placa_vehiculo, total_pagar, preferencia_recibo, id_venta } = req.body;
 
   if (!numero_boleta || !nombre || !telefono || !placa_vehiculo) {
     return res.status(400).json({ error: 'Faltan parámetros requeridos' });
@@ -458,7 +459,7 @@ export const registrarBoleta = async (req, res) => {
 
     // Obtener rifa activa de la sede
     const rifaResult = await client.query(
-      `SELECT id_evento FROM evento_rifa
+      `SELECT id_evento, fecha_sorteo FROM evento_rifa
        WHERE estado = true AND (sede = $1 OR sede = 'GLOBAL')
        LIMIT 1`,
       [sedeUsuario]
@@ -497,10 +498,57 @@ export const registrarBoleta = async (req, res) => {
        RETURNING *`,
       [idEvento, numeroFormatted, nombre, telefono, placa_vehiculo]
     );
+    const boleta = insertResult.rows[0];
+
+    // ✅ Venta de mostrador: esta era la ÚNICA implementación de registrarBoleta realmente
+    // enrutada en producción (rifa.routes.js la importa de este archivo, no del
+    // rifa.controller.js "legacy" que ya no está conectado a ninguna ruta). Antes de este
+    // fix, esta versión ignoraba `id_venta` por completo: insertaba la boleta pero nunca
+    // vinculaba venta_mostrador (id_boleta/numero_rifa quedaban en NULL) ni enviaba el SMS
+    // del recibo — de ahí que la boleta se creara "con éxito" pero el cliente nunca recibiera
+    // ni el mensaje ni el link, y la venta quedara sin boleta visible.
+    if (id_venta) {
+      const updateResult = await client.query(
+        `UPDATE venta_mostrador
+         SET id_rifa = $1, id_boleta = $2, numero_rifa = $3, fecha_sorteo = $4
+         WHERE id_venta = $5`,
+        [idEvento, boleta.id_boleta, numeroFormatted, rifaResult.rows[0].fecha_sorteo, id_venta]
+      );
+
+      if (updateResult.rowCount !== 1) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({
+          error: `No se encontró la venta ${id_venta} para vincular la boleta.`,
+          code: 'VENTA_NOT_FOUND'
+        });
+      }
+    }
 
     await client.query('COMMIT');
 
-    res.json({ message: 'Boleta registrada con éxito', boleta: insertResult.rows[0] });
+    // Enviar SMS del recibo para venta de mostrador (después del COMMIT, para que
+    // numero_rifa ya esté actualizado en BD cuando el cliente abra el link).
+    if (id_venta && telefono && Array.isArray(preferencia_recibo) && preferencia_recibo.includes('SMS')) {
+      const tokenRecibo = await generarTokenRecibo(null, placa_vehiculo || null, id_venta);
+      if (!tokenRecibo) {
+        console.error(`❌ No se pudo generar token de recibo para venta ${id_venta} - se enviará el SMS sin link`);
+      }
+
+      enviarReciboMostrador(
+        telefono,
+        nombre,
+        `Boleta #${numeroFormatted}`,
+        total_pagar || 0,
+        {
+          tokenRecibo,
+          idVenta: id_venta,
+          tipo: 'venta_mostrador',
+          con_rifa_desde_inicio: true
+        }
+      ).catch(err => console.error('❌ Error enviando SMS recibo mostrador:', err));
+    }
+
+    res.json({ message: 'Boleta registrada con éxito', boleta });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error registrando boleta:', error);

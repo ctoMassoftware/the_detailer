@@ -424,8 +424,13 @@ export const updateOrden = async (req, res) => {
       paramIndex++;
     }
 
-    // ✅ Agregar id_boleta si viene (CRÍTICO para preservar boleta asignada)
-    if (id_boleta !== undefined && id_boleta !== null) {
+    // ✅ Agregar id_boleta si la clave viene en el body (incluye null explícito para LIMPIARLA).
+    // Antes exigía "!== null", así que un id_boleta: null nunca se aplicaba y el valor viejo
+    // quedaba pegado en la orden: ejecutarUpdateEstado() en el frontend reenvía id_boleta en
+    // CADA guardado (incluida la orden "sin rifa"), así que si el operario alcanzaba a completar
+    // la orden antes de que terminara la limpieza async de rechazarRifa(), el id_boleta viejo se
+    // volvía a persistir aquí — reproduciendo boletas huérfanas en órdenes marcadas "sin rifa".
+    if (id_boleta !== undefined) {
       updateQuery += `, id_boleta = $${paramIndex}`;
       values.push(id_boleta);
       paramIndex++;

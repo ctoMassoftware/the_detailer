@@ -745,6 +745,12 @@ export class ConsultarOrden implements OnInit {
         }
       });
     } else {
+      // ✅ Forzar la limpieza aquí, de forma síncrona: si el operario aceptó la rifa y
+      // luego la rechazó (rechazarRifa limpia id_rifa/id_boleta en el backend de forma
+      // async), completar la orden antes de que esa respuesta vuelva reenviaría el
+      // id_boleta viejo desde memoria vía ejecutarUpdateEstado() y quedaría "pegado".
+      this.ordenSeleccionada.id_rifa = null;
+      this.ordenSeleccionada.id_boleta = null;
       procesarImpresionOSMS();
       guardarCambioEstadoFinal('Orden completada exitosamente.');
     }
